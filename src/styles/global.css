@@ -1,0 +1,48 @@
+@import 'tailwindcss';
+
+@theme {
+  /* ── Paleta de marca Tierra Roja ── */
+  --color-primario: #b01c2e;
+  --color-primario-claro: #d4343f;
+  --color-acento: #ef493d;
+  --color-negro: #1a1a1a;
+  --color-fondo: #fdf8f6;
+  --color-fondo-alt: #f5efec;
+  --color-fondo-oscuro: #2b1810;
+  --color-superficie: #ffffff;
+  --color-superficie-elevada: #f9f3f0;
+  --color-texto: #2d2321;
+  --color-texto-suave: #6b5b55;
+  --color-borde: #e3d5ce;
+
+  /* ── Tipografía ── */
+  --font-titulo: 'Ubuntu', 'DM Sans', sans-serif;
+  --font-cuerpo: 'DM Sans', 'Inter', sans-serif;
+  --font-acento: 'Petemoss', cursive;
+
+  /* ── Border radius ── */
+  --radius-card: 1.5rem;
+  --radius-pill: 9999px;
+  --radius-btn: 9999px;
+
+  /* ── Sombras ── */
+  --shadow-suave: 0 4px 24px rgba(176, 28, 46, 0.06);
+  --shadow-elevada: 0 12px 32px rgba(43, 24, 16, 0.08);
+  --shadow-hero: 0 24px 64px rgba(43, 24, 16, 0.12);
+}
+
+/* ── Fuentes ── */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/ubuntu/v20/4iCs6KVjbNBYlgoKcg72j00.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/ubuntu/v20/4iCv6KVjbNBYlgoCjC3jvGyN.woff2') format('woff2');
+}

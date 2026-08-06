@@ -1,0 +1,92 @@
+---
+const cabanas = [
+  {
+    nombre: "Cabaña",
+    capacidad: "Capacidad 8 personas",
+    amenities: [
+      { icono: "bed", texto: "3 Habitaciones" },
+      { icono: "ac_unit", texto: "Aire Acondicionado" },
+      { icono: "wifi", texto: "Wi-Fi incluido" },
+      { icono: "pool", texto: "Acceso a 3 piscinas" },
+      { icono: "outdoor_grill", texto: "Quincho con parrilla" },
+    ],
+    precio: "$150.000/noche",
+    imagen: "https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=800&q=80",
+    link: "#",
+  },
+];
+---
+
+<section id="cabanas" class="py-24 lg:py-32 bg-primario px-6 relative overflow-hidden">
+  <!-- Textura de fondo sutil -->
+  <div class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_20%_80%,_white_1px,_transparent_1px)] bg-[length:40px_40px]"></div>
+
+  <div class="max-w-7xl mx-auto relative z-10">
+    <!-- Header centrado -->
+    <div class="text-center mb-16">
+      <span class="font-acento text-white/60 text-5xl mb-2 block">Refugios de Lujo</span>
+      <h2 class="font-titulo font-bold text-4xl lg:text-6xl text-white mb-4">
+        Nuestra Cabaña
+      </h2>
+      <p class="text-white/50 text-lg italic font-titulo">
+        "El confort de un hotel, la esencia de la selva."
+      </p>
+    </div>
+
+    <!-- Tarjeta horizontal -->
+    <div class="max-w-5xl mx-auto">
+      {cabanas.map((cabana) => (
+        <article class="group grid grid-cols-1 lg:grid-cols-5 rounded-card overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm shadow-hero">
+          <!-- Imagen (3/5) -->
+          <div class="lg:col-span-3 relative overflow-hidden min-h-72 lg:min-h-0">
+            <img
+              src={cabana.imagen}
+              alt={cabana.nombre}
+              class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              loading="lazy"
+            />
+            <!-- Badge precio -->
+            <div class="absolute bottom-5 left-5 bg-white/15 backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-pill">
+              <span class="text-white font-titulo font-bold text-sm">{cabana.precio}</span>
+            </div>
+          </div>
+
+          <!-- Panel de info (2/5) -->
+          <div class="lg:col-span-2 p-8 lg:p-10 flex flex-col justify-between gap-8">
+            <div>
+              <!-- Nombre y capacidad -->
+              <h3 class="font-titulo font-bold text-3xl lg:text-4xl text-white italic mb-1">
+                {cabana.nombre}
+              </h3>
+              <p class="text-white/50 text-sm font-titulo mb-8">
+                {cabana.capacidad}
+              </p>
+
+              <!-- Separador -->
+              <div class="w-12 h-px bg-white/20 mb-8"></div>
+
+              <!-- Amenities -->
+              <ul class="space-y-4">
+                {cabana.amenities.map((a) => (
+                  <li class="flex items-center gap-3 text-white/75 text-sm">
+                    <span class="material-symbols-outlined text-base text-white/30">{a.icono}</span>
+                    {a.texto}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <!-- CTA -->
+            <a
+              href={cabana.link}
+              class="inline-flex items-center justify-center gap-2 bg-white text-primario px-7 py-3.5 rounded-pill font-titulo font-bold text-sm hover:scale-105 transition-transform duration-200 shadow-lg"
+            >
+              Ver en Airbnb
+              <span class="material-symbols-outlined text-lg">open_in_new</span>
+            </a>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

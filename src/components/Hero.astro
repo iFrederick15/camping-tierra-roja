@@ -1,0 +1,70 @@
+---
+// Hero section con imagen de fondo
+---
+
+<header class="relative min-h-screen flex items-center overflow-hidden">
+  <!-- Background image placeholder -->
+  <div class="absolute inset-0 z-0">
+    <div
+      class="absolute inset-0 bg-gradient-to-br from-fondo-oscuro via-fondo-oscuro/80 to-primario/40 opacity-10"
+    >
+    </div>
+    <!-- Placeholder: reemplazar con imagen real del parque -->
+    <img
+      src="/public/images/tierra-roja-drone.jpg"
+      alt="Vista aérea del camping Tierra Roja en la selva misionera"
+      class="w-full h-full object-cover"
+      loading="eager"
+    />
+    <div class="absolute inset-0 bg-gradient-to-r from-negro/80 via-negro/50 to-transparent"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-negro/60 via-transparent to-transparent">
+    </div>
+  </div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 pt-32 pb-20 w-full">
+    <div class="max-w-2xl">
+      <!-- Title -->
+      <h1
+        class="font-titulo font-bold text-4xl sm:text-5xl lg:text-7xl leading-[1.05] tracking-tight text-white mb-6"
+      >
+        Bienvenido a Camping<span class="text-acento italic">Tierra Roja</span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="text-lg lg:text-xl text-white/80 max-w-xl mb-10 leading-relaxed">
+        Diversión, Naturaleza y Relax Para Toda La Familia
+      </p>
+
+      <!-- CTAs -->
+      <div class="flex flex-wrap gap-4">
+        <a
+          href="#piscinas"
+          class="bg-gradient-to-r from-primario to-acento text-white px-10 py-4 rounded-pill font-titulo font-bold text-lg hover:shadow-hero hover:-translate-y-1 transition-all duration-300 active:scale-95"
+        >
+          Explorar el Parque
+        </a>
+        <a
+          href="#tarifas"
+          class="bg-white/15 backdrop-blur-md text-white border border-white/25 px-10 py-4 rounded-pill font-titulo font-bold text-lg hover:bg-white/25 transition-all duration-300"
+        >
+          Ver Tarifas
+        </a>
+      </div>
+
+      <!-- Floating badge -->
+      <div
+        class="mt-12 inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/15 px-5 py-3 rounded-card"
+      >
+        <span class="material-symbols-outlined text-acento text-3xl">nature_people</span>
+        <p class="text-white/90 font-titulo font-medium text-sm leading-tight">
+          Conexión Real<br />con la Naturaleza
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
+    <span class="material-symbols-outlined text-white/50 text-3xl">keyboard_arrow_down</span>
+  </div>
+</header>

@@ -1,0 +1,124 @@
+---
+const explorar = [
+  { label: 'Inicio', href: '/' },
+  { label: 'Piscinas', href: '/#piscinas' },
+  { label: 'Camping', href: '/#camping' },
+  { label: 'Cabañas', href: '/#cabanas' },
+];
+
+const info = [
+  { label: 'Normas del Parque', href: '#' },
+  { label: 'Términos y Condiciones', href: '#' },
+  { label: 'Política de Privacidad', href: '#' },
+];
+---
+
+<footer class="bg-white rounded-t-[3rem] mt-8">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8 pt-16 pb-8">
+    <div class="flex flex-col lg:flex-row justify-between items-start gap-12 mb-12">
+      <!-- Brand -->
+      <div class="max-w-xs">
+        <!-- Logo -->
+        <img
+          src="/images/Logo-Tierra-Roja.png"
+          alt="Logo de camping Tierra Roja"
+          class="h-20 w-auto"
+        />
+        <p class="text-texto-suave text-sm leading-relaxed mb-6">
+          Tu portal a la majestuosidad de la selva paranaense. Experiencias auténticas, sustentables
+          y llenas de vida.
+        </p>
+        <!-- Social icons -->
+        <div class="flex gap-3">
+          <a
+            href="#"
+            class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
+            aria-label="Instagram"
+          >
+            <span class="material-symbols-outlined text-lg">photo_camera</span>
+          </a>
+          <a
+            href="#"
+            class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
+            aria-label="Facebook"
+          >
+            <span class="material-symbols-outlined text-lg">share</span>
+          </a>
+          <a
+            href="https://wa.me/5403757000000"
+            class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
+            aria-label="WhatsApp"
+          >
+            <span class="material-symbols-outlined text-lg">chat</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Links grid -->
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-10 lg:gap-16">
+        <div>
+          <h4 class="font-titulo font-bold text-negro text-sm uppercase tracking-wider mb-5">
+            Explorar
+          </h4>
+          <ul class="space-y-3">
+            {
+              explorar.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class="text-texto-suave text-sm hover:text-primario transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="font-titulo font-bold text-negro text-sm uppercase tracking-wider mb-5">
+            Información
+          </h4>
+          <ul class="space-y-3">
+            {
+              info.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class="text-texto-suave text-sm hover:text-primario transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <div class="col-span-2 md:col-span-1">
+          <h4 class="font-titulo font-bold text-negro text-sm uppercase tracking-wider mb-5">
+            Contacto
+          </h4>
+          <p class="text-texto-suave text-sm mb-3 leading-relaxed">
+            Barrio Los Yerbales 2000 Ha<br />
+            Puerto Iguazú, Misiones
+          </p>
+          <a
+            href="mailto:hola@tierraroja.com.ar"
+            class="text-primario font-titulo font-bold text-sm hover:text-acento transition-colors"
+          >
+            hola@tierraroja.com.ar
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="border-t border-borde pt-8 text-center">
+      <p class="text-texto-suave text-xs">
+        © {new Date().getFullYear()} Tierra Roja – Camping y Parque Acuático. Puerto Iguazú, Misiones.
+      </p>
+    </div>
+  </div>
+</footer>

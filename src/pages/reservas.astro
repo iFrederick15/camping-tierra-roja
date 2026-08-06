@@ -1,0 +1,21 @@
+---
+export const prerender = false; // necesita consultar disponibilidad en vivo
+import Layout from '../layouts/Layout.astro';
+import BookingWidget from '../components/BookingWidget';
+---
+
+<Layout
+  title="Reservar — Tierra Roja"
+  description="Reservá tu lugar en Tierra Roja: camping, motorhome, quinchos o cabaña."
+>
+  <section class="py-20 px-6 bg-fondo-alt min-h-[70vh]">
+    <div class="max-w-3xl mx-auto text-center mb-10">
+      <h1 class="font-titulo font-bold text-4xl lg:text-5xl text-negro mb-3">Reservá tu lugar</h1>
+      <p class="text-texto-suave text-lg">
+        Elegí fechas y confirmá al instante. Sin registro, sin vueltas.
+      </p>
+    </div>
+    <!-- client:load: es el único punto interactivo real de la página -->
+    <BookingWidget client:load />
+  </section>
+</Layout>

@@ -1,0 +1,76 @@
+---
+// Sección Camping + Motorhome en layout bento asimétrico
+---
+
+<section id="camping" class="py-24 lg:py-32 px-6 overflow-hidden">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
+      <!-- Camping Card (principal, 7 cols) -->
+      <div
+        class="lg:col-span-7 rounded-card overflow-hidden relative min-h-[520px] flex flex-col justify-end p-8 lg:p-12 group"
+      >
+        <img
+          src="/public/images/camping.jpg"
+          alt="Área de camping en la selva misionera"
+          class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          loading="lazy"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/40 to-transparent">
+        </div>
+
+        <div class="relative z-10">
+          <span
+            class="inline-block text-white font-titulo font-bold tracking-widest uppercase text-xs mb-4 block p-4 bg-white/15 border-white/20 bottom-5 left-5 backdrop-blur-md border px-5 py-2.5 rounded-pill"
+          >
+            Experiencia Bajo las Estrellas
+          </span>
+          <h2 class="font-titulo font-bold text-4xl lg:text-5xl text-white mb-5">
+            Camping en la Selva
+          </h2>
+          <p class="text-white/75 text-lg mb-8 max-w-lg leading-relaxed">
+            Parcelas equipadas, fogones tradicionales y el sonido de los grillos como despertador
+            natural.
+          </p>
+          <a
+            href="#reservar"
+            class="inline-flex items-center gap-2 bg-gradient-to-r from-primario to-acento text-white px-8 py-4 rounded-pill font-titulo font-bold hover:shadow-hero hover:scale-105 transition-all duration-300 active:scale-95"
+          >
+            Reservar Ahora
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Motorhome Card (secundaria, 5 cols) -->
+      <div
+        class="lg:col-span-5 bg-superficie-elevada rounded-card overflow-hidden flex flex-col shadow-suave"
+      >
+        <!-- Imagen -->
+        <div class="h-1/2 relative overflow-hidden">
+          <img
+            src="/public/images/motorhome.png"
+            alt="Espacio para motorhome"
+            class="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+            loading="lazy"
+          />
+        </div>
+        <!-- Contenido -->
+        <div class="h-1/2 p-8 lg:p-10 flex flex-col justify-center">
+          <h2 class="font-titulo font-bold text-2xl lg:text-3xl text-negro mb-4">
+            Espacio Motorhome
+          </h2>
+          <p class="text-texto-suave mb-8 leading-relaxed">
+            Conexiones completas, seguridad 24hs y acceso a todas las instalaciones del parque para
+            tu casa rodante.
+          </p>
+          <a
+            href="#contacto"
+            class="w-full border-2 border-primario text-primario px-8 py-4 rounded-pill font-titulo font-bold text-center hover:bg-primario hover:text-white transition-all duration-300"
+          >
+            Consultar Espacios
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

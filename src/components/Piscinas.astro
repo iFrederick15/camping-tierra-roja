@@ -1,0 +1,75 @@
+---
+const piscinas = [
+  {
+    nombre: "Diversión",
+    descripcion: "Un remanso de paz con borde infinito que se pierde en el horizonte selvático.",
+    icono: "child_care",
+    etiqueta: "Diversión Familiar",
+    imagen: "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?w=600&q=80",
+    color: "primario",
+  },
+  {
+    nombre: "Familiar",
+    descripcion: "El paraíso de los más chicos. Toboganes y juegos diseñados para la aventura extrema.",
+    icono: "family_restroom",
+    etiqueta: "Aventura Familiar",
+    imagen: "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?w=600&q=80",
+    color: "acento",
+  },
+  {
+    nombre: "Relax",
+    descripcion: "Sombra natural y aguas termales. El lugar perfecto para desconectar del mundo exterior.",
+    icono: "spa",
+    etiqueta: "Relax Total",
+    imagen: "https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=600&q=80",
+    color: "primario",
+  },
+];
+---
+
+<section id="piscinas" class="py-24 lg:py-32 bg-fondo-alt px-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-16 lg:mb-20">
+      <h2 class="font-titulo font-bold text-4xl lg:text-5xl text-negro mb-4">
+        Nuestras Piscinas
+      </h2>
+      <p class="text-texto-suave max-w-2xl mx-auto text-lg">
+       Diseñadas para refrescar el alma y encender la diversión.
+      </p>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
+      {piscinas.map((piscina) => (
+        <article class="bg-superficie rounded-card overflow-hidden group hover:shadow-elevada transition-all duration-500">
+          <!-- Imagen -->
+          <div class="aspect-video relative overflow-hidden">
+            <img
+              src={piscina.imagen}
+              alt={`Piscina ${piscina.nombre}`}
+              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              loading="lazy"
+            />
+         
+              </div>
+          
+          </div>
+          <!-- Content -->
+          <div class="p-7 lg:p-8">
+            <h3 class={`font-titulo font-bold text-2xl text-${piscina.color} mb-3 italic`}>
+              {piscina.nombre}
+            </h3>
+            <p class="text-texto-suave mb-6 leading-relaxed">
+              {piscina.descripcion}
+            </p>
+            <div class={`flex items-center gap-2 text-${piscina.color} font-titulo font-bold text-sm`}>
+              <span class="material-symbols-outlined">{piscina.icono}</span>
+              <span>{piscina.etiqueta}</span>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
