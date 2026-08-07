@@ -109,7 +109,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
     dni: '',
     email: '',
     telefono: '',
-    cantidadAcompanantes: 1,
+    cantidadAcompanantes: '',
   });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
