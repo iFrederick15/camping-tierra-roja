@@ -15,6 +15,10 @@
   --color-texto-suave: #6b5b55;
   --color-borde: #e3d5ce;
 
+  /* ── Estado de pago (Panel Admin/Staff) — colores de marca, no semáforo genérico ── */
+  --color-confirmado: #2f6f4f;
+  --color-advertencia: #b8842c;
+
   /* ── Tipografía ── */
   --font-titulo: 'Ubuntu', 'DM Sans', sans-serif;
   --font-cuerpo: 'DM Sans', 'Inter', sans-serif;

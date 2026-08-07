@@ -1,0 +1,71 @@
+---
+// P2 — solo si sobra tiempo, sin gráficos ni exportables (Documento de
+// Producto §5.3). Números simples, calculados server-side.
+import PanelLayout from '../../../layouts/PanelLayout.astro';
+import { supabaseAdmin } from '../../../lib/supabase';
+import { calcularNoches } from '../../../lib/reservas';
+
+const ahora = new Date();
+const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString();
+const inicioMesSiguiente = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1).toISOString();
+const nombreMes = ahora.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+
+const { data: pagosMes } = await supabaseAdmin
+  .from('pagos')
+  .select('monto')
+  .gte('creado_en', inicioMes)
+  .lt('creado_en', inicioMesSiguiente);
+
+const facturadoDelMes = (pagosMes ?? []).reduce((acc, p) => acc + Number(p.monto), 0);
+
+const { data: reservasMes } = await supabaseAdmin
+  .from('reservas')
+  .select('fecha_ingreso, fecha_salida, como_nos_conocio, estado')
+  .gte('fecha_ingreso', inicioMes.slice(0, 10))
+  .lt('fecha_ingreso', inicioMesSiguiente.slice(0, 10))
+  .neq('estado', 'CANCELADA');
+
+const reservasTotales = reservasMes?.length ?? 0;
+const nochesOcupadas = (reservasMes ?? []).reduce(
+  (acc, r) => acc + calcularNoches(r.fecha_ingreso, r.fecha_salida),
+  0
+);
+
+const conteoOrigen = new Map<string, number>();
+for (const r of reservasMes ?? []) {
+  const clave = r.como_nos_conocio?.trim() || 'Sin dato';
+  conteoOrigen.set(clave, (conteoOrigen.get(clave) ?? 0) + 1);
+}
+---
+
+<PanelLayout title="Reportes" activo="reportes">
+  <h1 class="font-titulo font-bold text-3xl text-negro mb-1">Reportes</h1>
+  <p class="text-texto-suave mb-8 capitalize">{nombreMes}</p>
+
+  <div class="grid sm:grid-cols-3 gap-4 mb-10">
+    <div class="bg-superficie rounded-card border-2 border-borde p-5">
+      <span class="text-texto-suave text-sm">Facturado del mes</span>
+      <p class="font-titulo font-bold text-3xl text-negro">${facturadoDelMes.toLocaleString('es-AR')}</p>
+    </div>
+    <div class="bg-superficie rounded-card border-2 border-borde p-5">
+      <span class="text-texto-suave text-sm">Noches ocupadas</span>
+      <p class="font-titulo font-bold text-3xl text-negro">{nochesOcupadas}</p>
+    </div>
+    <div class="bg-superficie rounded-card border-2 border-borde p-5">
+      <span class="text-texto-suave text-sm">Reservas totales</span>
+      <p class="font-titulo font-bold text-3xl text-negro">{reservasTotales}</p>
+    </div>
+  </div>
+
+  <h2 class="font-titulo font-bold text-xl text-negro mb-3">Cómo nos conoció</h2>
+  <div class="flex flex-col gap-2 max-w-md">
+    {
+      Array.from(conteoOrigen.entries()).map(([origen, cantidad]) => (
+        <div class="flex items-center justify-between rounded-card border-2 border-borde px-5 py-3 bg-superficie">
+          <span class="text-texto">{origen}</span>
+          <span class="text-texto-suave font-titulo font-bold">{cantidad}</span>
+        </div>
+      ))
+    }
+  </div>
+</PanelLayout>

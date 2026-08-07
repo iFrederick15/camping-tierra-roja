@@ -1,0 +1,45 @@
+---
+import PanelLayout from '../../layouts/PanelLayout.astro';
+import FilaReserva from '../../components/panel/FilaReserva.astro';
+import { listarReservas } from '../../lib/reservas';
+
+const q = Astro.url.searchParams.get('q') ?? '';
+const resultados = q ? await listarReservas({ modo: 'buscar', q }) : [];
+---
+
+<PanelLayout title="Buscar reserva" activo="buscar">
+  <h1 class="font-titulo font-bold text-3xl text-negro mb-6">Buscar reserva</h1>
+
+  <form method="GET" class="flex gap-2 max-w-md mb-8">
+    <input
+      type="text"
+      name="q"
+      value={q}
+      placeholder="Nombre o DNI…"
+      autofocus
+      class="w-full border-2 border-borde rounded-card px-4 py-2.5 focus:border-primario focus:outline-none transition-colors"
+    />
+    <button
+      type="submit"
+      class="shrink-0 border-2 border-borde rounded-card px-4 py-2.5 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+    >
+      Buscar
+    </button>
+  </form>
+
+  {
+    q && resultados.length === 0 && (
+      <p class="text-texto-suave text-sm bg-superficie border-2 border-borde rounded-card px-5 py-4">
+        No encontramos reservas para "{q}".
+      </p>
+    )
+  }
+
+  {
+    resultados.length > 0 && (
+      <div class="flex flex-col gap-2">
+        {resultados.map((r) => <FilaReserva reserva={r} mostrarFechas />)}
+      </div>
+    )
+  }
+</PanelLayout>

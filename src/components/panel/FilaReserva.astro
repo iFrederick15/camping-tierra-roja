@@ -1,0 +1,29 @@
+---
+import { calcularEstadoPago, ESTILO_ESTADO_PAGO, type ReservaResumen } from '../../lib/reservas';
+
+interface Props {
+  reserva: ReservaResumen;
+  mostrarFechas?: boolean;
+}
+
+const { reserva, mostrarFechas = false } = Astro.props;
+const estadoPago = calcularEstadoPago(reserva.montoTotal, reserva.montoPagado);
+const estilo = ESTILO_ESTADO_PAGO[estadoPago];
+const fmt = (f: string) => new Date(f + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+---
+
+<a
+  href={`/panel/reservas/${reserva.id}`}
+  class="flex items-center justify-between gap-4 rounded-card border-2 border-borde px-5 py-4 hover:border-primario-claro transition-colors bg-superficie"
+>
+  <div class="flex flex-col gap-0.5 min-w-0">
+    <span class="font-titulo font-bold text-negro truncate">{reserva.nombreCliente}</span>
+    <span class="text-texto-suave text-sm truncate">
+      {reserva.unidadNombre}{reserva.parcelaNombre ? ` · ${reserva.parcelaNombre}` : ''}
+      {mostrarFechas && ` · ${fmt(reserva.fechaIngreso)} – ${fmt(reserva.fechaSalida)}`}
+    </span>
+  </div>
+  <span class={`shrink-0 border rounded-pill px-3 py-1 text-xs font-titulo font-bold ${estilo.className}`}>
+    {estilo.label}
+  </span>
+</a>

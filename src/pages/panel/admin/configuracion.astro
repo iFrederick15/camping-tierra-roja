@@ -1,0 +1,204 @@
+---
+import PanelLayout from '../../../layouts/PanelLayout.astro';
+import { supabaseAdmin } from '../../../lib/supabase';
+import { obtenerConfiguracionPagos } from '../../../lib/reservas';
+
+const { data: unidades } = await supabaseAdmin
+  .from('unidades')
+  .select('id, tipo, nombre, precio_por_noche, cupo_total')
+  .order('tipo');
+
+const { data: parcelas } = await supabaseAdmin
+  .from('parcelas')
+  .select('id, numero, nombre, atributos, activa, unidades(tipo, nombre)')
+  .order('numero');
+
+const configPagos = await obtenerConfiguracionPagos();
+
+const parcelasPorUnidad = new Map<string, any[]>();
+for (const p of parcelas ?? []) {
+  const clave = (p as any).unidades?.nombre ?? '—';
+  if (!parcelasPorUnidad.has(clave)) parcelasPorUnidad.set(clave, []);
+  parcelasPorUnidad.get(clave)!.push(p);
+}
+---
+
+<PanelLayout title="Configuración" activo="configuracion">
+  <h1 class="font-titulo font-bold text-3xl text-negro mb-8">Configuración</h1>
+
+  <section class="mb-10">
+    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Precios y cupos</h2>
+    <div class="flex flex-col gap-2">
+      {
+        (unidades ?? []).map((u) => (
+          <form
+            class="form-unidad flex flex-wrap items-end gap-3 rounded-card border-2 border-borde px-5 py-4 bg-superficie"
+            data-id={u.id}
+          >
+            <span class="font-titulo font-bold text-negro w-32">{u.nombre}</span>
+            <label class="flex flex-col gap-1 text-sm text-texto-suave">
+              Precio por noche
+              <input
+                type="number"
+                name="precioPorNoche"
+                value={u.precio_por_noche}
+                class="border-2 border-borde rounded-card px-3 py-2 w-36 focus:border-primario focus:outline-none"
+              />
+            </label>
+            {u.tipo === 'CAMPING' && (
+              <label class="flex flex-col gap-1 text-sm text-texto-suave">
+                Cupo total
+                <input
+                  type="number"
+                  name="cupoTotal"
+                  value={u.cupo_total}
+                  class="border-2 border-borde rounded-card px-3 py-2 w-28 focus:border-primario focus:outline-none"
+                />
+              </label>
+            )}
+            <button
+              type="submit"
+              class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+            >
+              Guardar
+            </button>
+            <span class="msg text-sm"></span>
+          </form>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="mb-10">
+    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Parcelas y atributos</h2>
+    <div class="flex flex-col gap-6">
+      {
+        Array.from(parcelasPorUnidad.entries()).map(([nombreUnidad, lista]) => (
+          <div>
+            <h3 class="font-titulo font-medium text-texto-suave mb-2">{nombreUnidad}</h3>
+            <div class="flex flex-col gap-2">
+              {lista.map((p: any) => (
+                <form class="form-parcela flex flex-wrap items-end gap-3 rounded-card border-2 border-borde px-5 py-3 bg-superficie" data-id={p.id}>
+                  <span class="font-titulo font-medium text-negro w-24">{p.nombre}</span>
+                  <label class="flex flex-col gap-1 text-sm text-texto-suave flex-1 min-w-48">
+                    Atributos (separados por coma)
+                    <input
+                      type="text"
+                      name="atributos"
+                      value={(p.atributos ?? []).join(', ')}
+                      class="border-2 border-borde rounded-card px-3 py-2 focus:border-primario focus:outline-none"
+                    />
+                  </label>
+                  <label class="flex items-center gap-2 text-sm text-texto-suave">
+                    <input type="checkbox" name="activa" checked={p.activa} />
+                    Activa
+                  </label>
+                  <button
+                    type="submit"
+                    class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+                  >
+                    Guardar
+                  </button>
+                  <span class="msg text-sm"></span>
+                </form>
+              ))}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section>
+    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Plazos de pago</h2>
+    <form id="form-plazos" class="flex flex-wrap items-end gap-4 rounded-card border-2 border-borde px-5 py-4 bg-superficie max-w-xl">
+      <label class="flex flex-col gap-1 text-sm text-texto-suave">
+        Plazo largo (hs)
+        <input type="number" name="horasPlazoLargo" value={configPagos.horas_plazo_largo} class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1 text-sm text-texto-suave">
+        Plazo corto (hs)
+        <input type="number" name="horasPlazoCorto" value={configPagos.horas_plazo_corto} class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none" />
+      </label>
+      <label class="flex flex-col gap-1 text-sm text-texto-suave">
+        Umbral anticipación (días)
+        <input type="number" name="diasUmbralAnticipacion" value={configPagos.dias_umbral_anticipacion} class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none" />
+      </label>
+      <button type="submit" class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors">
+        Guardar
+      </button>
+      <span class="msg text-sm"></span>
+    </form>
+  </section>
+
+  <script>
+    // Confirmación explícita antes de guardar cualquier cambio de
+    // Configuración — es uso diario de la dueña, un guardado accidental
+    // afecta precios/cupos en vivo del sitio público.
+    async function guardar(url: string, body: unknown, msgEl: HTMLElement) {
+      if (!confirm('¿Confirmás guardar este cambio?')) return;
+      msgEl.textContent = 'Guardando…';
+      msgEl.className = 'msg text-sm text-texto-suave';
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        msgEl.textContent = data.error ?? 'Error al guardar';
+        msgEl.className = 'msg text-sm text-primario font-medium';
+        return;
+      }
+      msgEl.textContent = 'Guardado';
+      msgEl.className = 'msg text-sm text-confirmado font-medium';
+    }
+
+    document.querySelectorAll<HTMLFormElement>('.form-unidad').forEach((form) => {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        guardar(
+          '/api/panel/admin/unidades',
+          {
+            id: form.dataset.id,
+            precioPorNoche: fd.get('precioPorNoche'),
+            cupoTotal: fd.get('cupoTotal') || undefined,
+          },
+          form.querySelector('.msg')!
+        );
+      });
+    });
+
+    document.querySelectorAll<HTMLFormElement>('.form-parcela').forEach((form) => {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const atributos = String(fd.get('atributos') ?? '')
+          .split(',')
+          .map((a) => a.trim())
+          .filter(Boolean);
+        guardar(
+          '/api/panel/admin/parcelas',
+          { id: form.dataset.id, atributos, activa: fd.get('activa') === 'on' },
+          form.querySelector('.msg')!
+        );
+      });
+    });
+
+    const formPlazos = document.getElementById('form-plazos') as HTMLFormElement | null;
+    formPlazos?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fd = new FormData(formPlazos);
+      guardar(
+        '/api/panel/admin/configuracion-pagos',
+        {
+          horasPlazoLargo: fd.get('horasPlazoLargo'),
+          horasPlazoCorto: fd.get('horasPlazoCorto'),
+          diasUmbralAnticipacion: fd.get('diasUmbralAnticipacion'),
+        },
+        formPlazos.querySelector('.msg')!
+      );
+    });
+  </script>
+</PanelLayout>

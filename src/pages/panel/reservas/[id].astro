@@ -1,0 +1,176 @@
+---
+import PanelLayout from '../../../layouts/PanelLayout.astro';
+import RegistrarPago from '../../../components/panel/RegistrarPago.tsx';
+import {
+  obtenerReserva,
+  calcularEstadoPago,
+  ESTILO_ESTADO_PAGO,
+  puedeHacerCheckin,
+  puedeHacerCheckout,
+} from '../../../lib/reservas';
+
+const { id } = Astro.params;
+const reserva = await obtenerReserva(id!);
+
+if (!reserva) {
+  return Astro.redirect('/panel');
+}
+
+const estadoPago = calcularEstadoPago(reserva.montoTotal, reserva.montoPagado);
+const estilo = ESTILO_ESTADO_PAGO[estadoPago];
+const habilitaCheckin = puedeHacerCheckin(reserva.montoTotal, reserva.montoPagado);
+const habilitaCheckout = puedeHacerCheckout(reserva.montoTotal, reserva.montoPagado);
+
+const fmt = (f: string) =>
+  new Date(f + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+
+const ESTADO_LABEL: Record<string, string> = {
+  CONFIRMADA: 'Confirmada',
+  CHECKIN_HECHO: 'Check-in hecho',
+  CHECKOUT_HECHO: 'Check-out hecho',
+  CANCELADA: 'Cancelada',
+};
+---
+
+<PanelLayout title={reserva.nombreCliente} activo="hoy">
+  <a href="/panel" class="text-texto-suave text-sm hover:text-primario mb-4 inline-block">← Volver</a>
+
+  <div class="flex items-start justify-between gap-4 mb-2">
+    <h1 class="font-titulo font-bold text-3xl text-negro">{reserva.nombreCliente}</h1>
+    <span class={`shrink-0 border rounded-pill px-3 py-1 text-xs font-titulo font-bold ${estilo.className}`}>
+      {estilo.label}
+    </span>
+  </div>
+  <p class="text-texto-suave mb-8">{ESTADO_LABEL[reserva.estado]} · {reserva.origen === 'WEB' ? 'Reserva web' : 'Reserva manual'}</p>
+
+  <div class="grid md:grid-cols-2 gap-6 mb-8">
+    <div class="bg-superficie rounded-card border-2 border-borde p-5 flex flex-col gap-2">
+      <h2 class="font-titulo font-bold text-negro mb-1">Datos del cliente</h2>
+      <p class="text-sm text-texto"><span class="text-texto-suave">DNI:</span> {reserva.dni}</p>
+      <p class="text-sm text-texto"><span class="text-texto-suave">Email:</span> {reserva.email ?? '—'}</p>
+      <p class="text-sm text-texto"><span class="text-texto-suave">Teléfono:</span> {reserva.telefono ?? '—'}</p>
+      <p class="text-sm text-texto"><span class="text-texto-suave">Acompañantes:</span> {reserva.cantidadAcompanantes}</p>
+    </div>
+
+    <div class="bg-superficie rounded-card border-2 border-borde p-5 flex flex-col gap-2">
+      <h2 class="font-titulo font-bold text-negro mb-1">Reserva</h2>
+      <p class="text-sm text-texto">
+        <span class="text-texto-suave">Unidad:</span> {reserva.unidadNombre}{reserva.parcelaNombre ? ` · ${reserva.parcelaNombre}` : ''}
+      </p>
+      <p class="text-sm text-texto"><span class="text-texto-suave">Fechas:</span> {fmt(reserva.fechaIngreso)} al {fmt(reserva.fechaSalida)}</p>
+      <p class="text-sm text-texto">
+        <span class="text-texto-suave">Total:</span> ${reserva.montoTotal.toLocaleString('es-AR')} ·
+        <span class="text-texto-suave">Pagado:</span> ${reserva.montoPagado.toLocaleString('es-AR')}
+      </p>
+    </div>
+  </div>
+
+  {reserva.estado !== 'CANCELADA' && reserva.estado !== 'CHECKOUT_HECHO' && (
+    <div class="mb-8">
+      <RegistrarPago reservaId={reserva.id} client:load />
+    </div>
+  )}
+
+  {reserva.estado === 'CONFIRMADA' && (
+    <form id="form-checkin" class="bg-superficie rounded-card border-2 border-borde p-5 flex flex-col gap-3 mb-6">
+      <h2 class="font-titulo font-bold text-negro">Check-in</h2>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="flex flex-col gap-1 text-sm text-texto-suave">
+          Acompañantes
+          <input
+            type="number"
+            name="cantidadAcompanantes"
+            min="0"
+            value={reserva.cantidadAcompanantes}
+            class="border-2 border-borde rounded-card px-4 py-2.5 focus:border-primario focus:outline-none"
+          />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-texto-suave">
+          Vehículo
+          <input
+            type="text"
+            name="datosVehiculo"
+            placeholder="Patente / modelo"
+            class="border-2 border-borde rounded-card px-4 py-2.5 focus:border-primario focus:outline-none"
+          />
+        </label>
+      </div>
+      {!habilitaCheckin && (
+        <p class="text-primario text-sm font-medium">Registrá al menos un pago para poder hacer check-in.</p>
+      )}
+      <button
+        type="submit"
+        disabled={!habilitaCheckin}
+        class="self-start inline-flex items-center gap-2 bg-gradient-to-r from-primario to-acento text-white px-6 py-2.5 rounded-pill font-titulo font-bold hover:shadow-hero transition-all disabled:opacity-40 disabled:pointer-events-none"
+      >
+        Confirmar check-in
+      </button>
+    </form>
+  )}
+
+  {reserva.estado === 'CHECKIN_HECHO' && (
+    <div class="bg-superficie rounded-card border-2 border-borde p-5 flex flex-col gap-3 mb-6">
+      <h2 class="font-titulo font-bold text-negro">Check-out</h2>
+      {!habilitaCheckout && (
+        <p class="text-primario text-sm font-medium">El pago debe estar completo para hacer check-out.</p>
+      )}
+      <button
+        id="btn-checkout"
+        disabled={!habilitaCheckout}
+        class="self-start inline-flex items-center gap-2 bg-gradient-to-r from-primario to-acento text-white px-6 py-2.5 rounded-pill font-titulo font-bold hover:shadow-hero transition-all disabled:opacity-40 disabled:pointer-events-none"
+      >
+        Confirmar check-out
+      </button>
+    </div>
+  )}
+
+  {(reserva.estado === 'CONFIRMADA' || reserva.estado === 'CHECKIN_HECHO') && (
+    <button
+      id="btn-cancelar"
+      class="text-primario text-sm font-medium hover:underline"
+    >
+      Cancelar reserva
+    </button>
+  )}
+
+  <script define:vars={{ id: reserva.id }}>
+    async function accionar(url, opciones) {
+      const res = await fetch(url, { method: 'POST', ...opciones });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error ?? 'Ocurrió un error');
+        return;
+      }
+      window.location.reload();
+    }
+
+    const formCheckin = document.getElementById('form-checkin');
+    if (formCheckin) {
+      formCheckin.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const form = new FormData(formCheckin);
+        accionar(`/api/panel/reservas/${id}/checkin`, {
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cantidadAcompanantes: Number(form.get('cantidadAcompanantes')),
+            datosVehiculo: form.get('datosVehiculo'),
+          }),
+        });
+      });
+    }
+
+    const btnCheckout = document.getElementById('btn-checkout');
+    if (btnCheckout) {
+      btnCheckout.addEventListener('click', () => accionar(`/api/panel/reservas/${id}/checkout`, {}));
+    }
+
+    const btnCancelar = document.getElementById('btn-cancelar');
+    if (btnCancelar) {
+      btnCancelar.addEventListener('click', () => {
+        if (confirm('¿Cancelar esta reserva? Esta acción libera la unidad.')) {
+          accionar(`/api/panel/reservas/${id}/cancelar`, {});
+        }
+      });
+    }
+  </script>
+</PanelLayout>

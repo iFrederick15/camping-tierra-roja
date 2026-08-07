@@ -1,0 +1,9 @@
+---
+import PanelLayout from '../../../layouts/PanelLayout.astro';
+import BookingWidget from '../../../components/BookingWidget';
+---
+
+<PanelLayout title="Nueva reserva" activo="nueva">
+  <h1 class="font-titulo font-bold text-3xl text-negro mb-8">Nueva reserva manual</h1>
+  <BookingWidget modo="staff" client:load />
+</PanelLayout>

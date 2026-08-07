@@ -6,10 +6,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../lib/supabase';
 import { enviarEmailConfirmacion } from '../../lib/email';
-
-const HORAS_PLAZO_LARGO = 48;
-const HORAS_PLAZO_CORTO = 6; // reservas de último momento (< 3 días de anticipación)
-const DIAS_UMBRAL_ANTICIPACION = 3;
+import { calcularNoches, calcularFechaLimitePago, obtenerConfiguracionPagos } from '../../lib/reservas';
 
 export const POST: APIRoute = async ({ request }) => {
   const body = await request.json();
@@ -42,20 +39,13 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: 'Unidad no válida' }), { status: 400 });
   }
 
-  const ingreso = new Date(fechaIngreso);
-  const salida = new Date(fechaSalida);
-  const noches = Math.max(
-    1,
-    Math.round((salida.getTime() - ingreso.getTime()) / (1000 * 60 * 60 * 24))
-  );
+  const noches = calcularNoches(fechaIngreso, fechaSalida);
   const montoTotal = Number(unidad.precio_por_noche) * noches;
 
-  // Plazo de pago según antelación (ver Documento de Producto §4.2)
-  const ahora = new Date();
-  const diasAnticipacion = (ingreso.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24);
-  const horasPlazo =
-    diasAnticipacion > DIAS_UMBRAL_ANTICIPACION ? HORAS_PLAZO_LARGO : HORAS_PLAZO_CORTO;
-  const fechaLimitePago = new Date(ahora.getTime() + horasPlazo * 60 * 60 * 1000);
+  // Plazo de pago según antelación (ver Documento de Producto §4.2),
+  // configurable desde el Panel Admin (tabla configuracion_pagos).
+  const configPagos = await obtenerConfiguracionPagos();
+  const fechaLimitePago = calcularFechaLimitePago(fechaIngreso, configPagos);
 
   // NOTA (Semana 2 del plan): esto todavía no está protegido contra dos
   // clientes reservando la misma parcela/cupo en el mismo instante.
@@ -90,8 +80,8 @@ export const POST: APIRoute = async ({ request }) => {
     email,
     nombreCliente,
     unidadNombre: unidad.nombre,
-    fechaIngreso: ingreso,
-    fechaSalida: salida,
+    fechaIngreso: new Date(fechaIngreso),
+    fechaSalida: new Date(fechaSalida),
     montoTotal,
     fechaLimitePago,
   });

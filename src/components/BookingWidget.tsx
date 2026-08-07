@@ -85,9 +85,17 @@ function Carousel({ imagenes, alt }: { imagenes: string[]; alt: string }) {
   );
 }
 
+interface Props {
+  // 'staff': lo usa /panel/reservas/nueva (Staff). Misma UI, pero postea a
+  // /api/panel/reservas/manual, no exige email/teléfono, y al confirmar
+  // manda directo al Detalle de la reserva (para check-in/pago) en vez de
+  // mostrar el paso "confirmado" genérico del Portal público.
+  modo?: 'publico' | 'staff';
+}
+
 // Único componente React del sitio — todo lo demás sigue siendo Astro plano.
 // Sin cuenta, sin login: 4 pasos, todo el estado vive acá.
-export default function BookingWidget() {
+export default function BookingWidget({ modo = 'publico' }: Props) {
   const [paso, setPaso] = useState<Paso>('unidad');
   const [unidad, setUnidad] = useState<TipoUnidad | null>(null);
   const [fechaIngreso, setFechaIngreso] = useState('');
@@ -146,15 +154,15 @@ export default function BookingWidget() {
   const datosCompletos =
     datosCliente.nombreCliente.trim() !== '' &&
     datosCliente.dni.trim() !== '' &&
-    datosCliente.email.trim() !== '' &&
-    datosCliente.telefono.trim() !== '' &&
+    (modo === 'staff' ||
+      (datosCliente.email.trim() !== '' && datosCliente.telefono.trim() !== '')) &&
     datosCliente.cantidadAcompanantes >= 1;
 
   async function confirmarReserva() {
     setEnviando(true);
     setError(null);
     try {
-      const res = await fetch('/api/reservar', {
+      const res = await fetch(modo === 'staff' ? '/api/panel/reservas/manual' : '/api/reservar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -165,9 +173,13 @@ export default function BookingWidget() {
           ...datosCliente,
         }),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error ?? 'No pudimos confirmar la reserva');
+      }
+      if (modo === 'staff') {
+        window.location.href = `/panel/reservas/${data.reservaId}`;
+        return;
       }
       setPaso('confirmado');
     } catch (e: any) {
@@ -188,7 +200,7 @@ export default function BookingWidget() {
     <div className="max-w-xl mx-auto bg-superficie rounded-card shadow-elevada p-8 lg:p-10">
       {paso === 'unidad' && (
         <section className="flex flex-col gap-6">
-          <h2 className="font-titulo font-bold text-3xl text-negro">¿Qué querés reservar?</h2>
+          <h2 className="font-titulo font-bold text-3xl text-negro">¿Qué quieres reservar?</h2>
           <div className="grid grid-cols-3 gap-3">
             {UNIDADES.map((u) => (
               <button
@@ -251,7 +263,7 @@ export default function BookingWidget() {
           {disponibilidad?.tipo === 'cupo' && (
             <p
               className={
-                disponibilidad.disponible ? 'text-primario font-medium' : 'text-texto-suave'
+                disponibilidad.disponible ? 'text-confirmado font-medium' : 'text-texto-suave'
               }
             >
               {disponibilidad.disponible
@@ -262,7 +274,7 @@ export default function BookingWidget() {
           {disponibilidad?.tipo === 'unica' && (
             <p
               className={
-                disponibilidad.disponible ? 'text-primario font-medium' : 'text-texto-suave'
+                disponibilidad.disponible ? 'text-confirmado font-medium' : 'text-texto-suave'
               }
             >
               {disponibilidad.disponible
@@ -328,14 +340,14 @@ export default function BookingWidget() {
           />
           <input
             className={input}
-            placeholder="Email"
+            placeholder={modo === 'staff' ? 'Email (opcional)' : 'Email'}
             type="email"
             value={datosCliente.email}
             onChange={(e) => setDatosCliente({ ...datosCliente, email: e.target.value })}
           />
           <input
             className={input}
-            placeholder="Teléfono"
+            placeholder={modo === 'staff' ? 'Teléfono (opcional)' : 'Teléfono'}
             value={datosCliente.telefono}
             onChange={(e) => setDatosCliente({ ...datosCliente, telefono: e.target.value })}
           />

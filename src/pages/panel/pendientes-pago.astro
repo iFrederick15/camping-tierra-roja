@@ -1,0 +1,38 @@
+---
+import PanelLayout from '../../layouts/PanelLayout.astro';
+import FilaReserva from '../../components/panel/FilaReserva.astro';
+import { listarReservas } from '../../lib/reservas';
+
+const pendientes = await listarReservas({ modo: 'pendientes-pago' });
+
+const fmtHora = (f: string) =>
+  new Date(f).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+---
+
+<PanelLayout title="Pendientes de pago" activo="pendientes">
+  <h1 class="font-titulo font-bold text-3xl text-negro mb-2">Pendientes de pago</h1>
+  <p class="text-texto-suave mb-8">
+    Reservas web con plazo de pago próximo a vencer. Avisá manualmente por WhatsApp con los datos de contacto.
+  </p>
+
+  {
+    pendientes.length === 0 ? (
+      <p class="text-texto-suave text-sm bg-superficie border-2 border-borde rounded-card px-5 py-4">
+        No hay reservas pendientes de pago.
+      </p>
+    ) : (
+      <div class="flex flex-col gap-2">
+        {pendientes.map((r) => (
+          <div class="flex items-center justify-between gap-4 rounded-card border-2 border-borde px-5 py-4 bg-superficie">
+            <a href={`/panel/reservas/${r.id}`} class="flex flex-col gap-0.5 min-w-0">
+              <span class="font-titulo font-bold text-negro">{r.nombreCliente}</span>
+              <span class="text-texto-suave text-sm">
+                {r.telefono ?? r.email ?? 'Sin contacto'} · vence {r.fechaLimitePago ? fmtHora(r.fechaLimitePago) : '—'}
+              </span>
+            </a>
+          </div>
+        ))}
+      </div>
+    )
+  }
+</PanelLayout>

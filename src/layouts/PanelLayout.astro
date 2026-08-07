@@ -1,0 +1,96 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  activo?: string;
+}
+
+const { title, activo } = Astro.props;
+const usuario = Astro.locals.usuario!;
+
+const navStaff = [
+  { href: '/panel', label: 'Hoy', key: 'hoy' },
+  { href: '/panel/buscar', label: 'Buscar', key: 'buscar' },
+  { href: '/panel/reservas/nueva', label: 'Nueva reserva', key: 'nueva' },
+  { href: '/panel/pendientes-pago', label: 'Pendientes de pago', key: 'pendientes' },
+];
+
+const navAdmin = [
+  { href: '/panel/admin', label: 'Vista operativa', key: 'operativa' },
+  { href: '/panel/admin/configuracion', label: 'Configuración', key: 'configuracion' },
+  { href: '/panel/admin/reportes', label: 'Reportes', key: 'reportes' },
+];
+
+const nav = usuario.rol === 'admin' ? [...navStaff, ...navAdmin] : navStaff;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} — Panel Tierra Roja</title>
+  </head>
+  <body class="bg-gray-50 font-cuerpo text-texto antialiased min-h-screen lg:flex">
+    <aside class="lg:w-64 lg:shrink-0 bg-superficie border-b lg:border-b-0 lg:border-r border-borde lg:min-h-screen">
+      <div class="p-6 flex lg:flex-col justify-between lg:justify-start items-center lg:items-stretch gap-4">
+        <a href="/panel">
+          <img src="/images/Logo-Tierra-Roja.png" alt="Logo de camping Tierra Roja" class="h-12 w-auto" />
+        </a>
+
+        <nav class="hidden lg:flex flex-col gap-1 mt-6">
+          {
+            nav.map((item) => (
+              <a
+                href={item.href}
+                class:list={[
+                  'font-titulo font-medium text-sm px-3 py-2 rounded-card transition-colors',
+                  activo === item.key
+                    ? 'bg-superficie-elevada text-primario'
+                    : 'text-texto-suave hover:bg-superficie-elevada hover:text-primario',
+                ]}
+              >
+                {item.label}
+              </a>
+            ))
+          }
+        </nav>
+
+        <div class="hidden lg:flex flex-col gap-2 mt-8 pt-4 border-t border-borde">
+          <span class="text-sm text-texto-suave">
+            {usuario.nombre} · <span class="font-medium">{usuario.rol === 'admin' ? 'Admin' : 'Staff'}</span>
+          </span>
+          <form method="POST" action="/panel/logout">
+            <button type="submit" class="text-sm text-primario font-medium hover:underline">
+              Cerrar sesión
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Nav mobile: barra horizontal scrolleable, sin JS -->
+      <nav class="lg:hidden flex gap-1 overflow-x-auto px-4 pb-4">
+        {
+          nav.map((item) => (
+            <a
+              href={item.href}
+              class:list={[
+                'font-titulo font-medium text-sm px-3 py-2 rounded-card whitespace-nowrap transition-colors',
+                activo === item.key
+                  ? 'bg-superficie-elevada text-primario'
+                  : 'text-texto-suave hover:bg-superficie-elevada',
+              ]}
+            >
+              {item.label}
+            </a>
+          ))
+        }
+      </nav>
+    </aside>
+
+    <main class="flex-1 p-6 lg:p-10 max-w-5xl">
+      <slot />
+    </main>
+  </body>
+</html>

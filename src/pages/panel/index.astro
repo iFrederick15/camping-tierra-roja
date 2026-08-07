@@ -1,0 +1,66 @@
+---
+import PanelLayout from '../../layouts/PanelLayout.astro';
+import FilaReserva from '../../components/panel/FilaReserva.astro';
+import { listarReservas } from '../../lib/reservas';
+
+const [llegadas, salidas] = await Promise.all([
+  listarReservas({ modo: 'llegadas-hoy' }),
+  listarReservas({ modo: 'salidas-hoy' }),
+]);
+---
+
+<PanelLayout title="Hoy" activo="hoy">
+  <div class="flex flex-col gap-2 mb-8">
+    <h1 class="font-titulo font-bold text-3xl text-negro">Hoy</h1>
+    <form method="GET" action="/panel/buscar" class="flex gap-2 max-w-md">
+      <input
+        type="text"
+        name="q"
+        placeholder="Buscar por nombre o DNI…"
+        class="w-full border-2 border-borde rounded-card px-4 py-2.5 focus:border-primario focus:outline-none transition-colors"
+      />
+      <button
+        type="submit"
+        class="shrink-0 border-2 border-borde rounded-card px-4 py-2.5 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+      >
+        Buscar
+      </button>
+    </form>
+    <a
+      href="/panel/reservas/nueva"
+      class="self-start inline-flex items-center gap-2 bg-gradient-to-r from-primario to-acento text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:shadow-hero transition-all mt-2"
+    >
+      + Nueva reserva
+    </a>
+  </div>
+
+  <section class="mb-10">
+    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Llegadas de hoy</h2>
+    {
+      llegadas.length === 0 ? (
+        <p class="text-texto-suave text-sm bg-superficie border-2 border-borde rounded-card px-5 py-4">
+          No hay llegadas programadas para hoy.
+        </p>
+      ) : (
+        <div class="flex flex-col gap-2">
+          {llegadas.map((r) => <FilaReserva reserva={r} />)}
+        </div>
+      )
+    }
+  </section>
+
+  <section>
+    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Salidas de hoy</h2>
+    {
+      salidas.length === 0 ? (
+        <p class="text-texto-suave text-sm bg-superficie border-2 border-borde rounded-card px-5 py-4">
+          No hay salidas programadas para hoy.
+        </p>
+      ) : (
+        <div class="flex flex-col gap-2">
+          {salidas.map((r) => <FilaReserva reserva={r} />)}
+        </div>
+      )
+    }
+  </section>
+</PanelLayout>

@@ -1,0 +1,81 @@
+---
+import '../../styles/global.css';
+import { createSupabaseServerClient } from '../../lib/supabase-server';
+import { supabaseAdmin } from '../../lib/supabase';
+
+let error: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const email = String(form.get('email') ?? '');
+  const password = String(form.get('password') ?? '');
+
+  const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
+  const { data, error: errLogin } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (errLogin || !data.user) {
+    // TEMPORAL: log del error real en el server para diagnosticar el login.
+    // El mensaje al usuario se queda genérico a propósito (no confirmar si
+    // el email existe o no).
+    console.error('Error de login Supabase:', errLogin);
+    error = 'Email o contraseña incorrectos';
+  } else {
+    const { data: perfil } = await supabaseAdmin
+      .from('perfiles')
+      .select('rol')
+      .eq('id', data.user.id)
+      .single();
+
+    if (!perfil) {
+      error = 'Tu usuario no tiene un perfil asignado. Contactá al administrador.';
+    } else {
+      return Astro.redirect(perfil.rol === 'admin' ? '/panel/admin' : '/panel');
+    }
+  }
+}
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ingresar — Panel Tierra Roja</title>
+  </head>
+  <body class="bg-fondo-alt font-cuerpo text-texto min-h-screen flex items-center justify-center px-6">
+    <div class="w-full max-w-sm bg-superficie rounded-card shadow-elevada p-8">
+      <h1 class="font-titulo font-bold text-2xl text-negro mb-1">Panel Tierra Roja</h1>
+      <p class="text-texto-suave text-sm mb-6">Acceso para Staff y Administración</p>
+
+      <form method="POST" class="flex flex-col gap-4">
+        <label class="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
+          Email
+          <input
+            type="email"
+            name="email"
+            required
+            class="w-full border-2 border-borde rounded-card px-4 py-2.5 focus:border-primario focus:outline-none transition-colors"
+          />
+        </label>
+        <label class="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
+          Contraseña
+          <input
+            type="password"
+            name="password"
+            required
+            class="w-full border-2 border-borde rounded-card px-4 py-2.5 focus:border-primario focus:outline-none transition-colors"
+          />
+        </label>
+
+        {error && <p class="text-primario text-sm font-medium">{error}</p>}
+
+        <button
+          type="submit"
+          class="mt-2 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primario to-acento text-white px-6 py-3 rounded-pill font-titulo font-bold hover:shadow-hero transition-all"
+        >
+          Ingresar
+        </button>
+      </form>
+    </div>
+  </body>
+</html>
