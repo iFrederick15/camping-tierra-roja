@@ -1,13 +1,18 @@
 ---
+const currentPath = Astro.url.pathname;
+
 const navLinks = [
-  { label: 'Inicio', href: '/', active: true },
+  { label: 'Inicio', href: '/' },
   { label: 'Piscinas', href: '/#piscinas' },
   { label: 'Camping', href: '/#camping' },
   { label: 'Cabañas', href: '/#cabanas' },
   { label: 'Reservas', href: '/reservas' },
   { label: 'Galería', href: '/galeria' },
   { label: 'Contacto', href: '/contacto' },
-];
+].map((link) => ({
+  ...link,
+  active: link.href === currentPath,
+}));
 ---
 
 <nav id="navbar" class="top-0 w-full z-50 bg-white">

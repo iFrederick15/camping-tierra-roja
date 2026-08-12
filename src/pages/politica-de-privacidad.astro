@@ -1,0 +1,250 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+
+const actualizado = '12 de agosto de 2026';
+
+const secciones = [
+  { id: 'responsable', label: '1. Responsable del tratamiento' },
+  { id: 'datos', label: '2. Datos que recopilamos' },
+  { id: 'finalidad', label: '3. Para qué usamos tus datos' },
+  { id: 'terceros', label: '4. Con quién compartimos tus datos' },
+  { id: 'cookies', label: '5. Cookies' },
+  { id: 'conservacion', label: '6. Conservación de los datos' },
+  { id: 'derechos', label: '7. Tus derechos' },
+  { id: 'seguridad', label: '8. Seguridad de la información' },
+  { id: 'menores', label: '9. Menores de edad' },
+  { id: 'cambios', label: '10. Cambios a esta política' },
+  { id: 'contacto', label: '11. Contacto' },
+];
+---
+
+<Layout
+  title="Política de Privacidad — Tierra Roja"
+  description="Cómo Tierra Roja recopila, usa y protege los datos personales de quienes reservan o se contactan a través de este sitio."
+>
+  <!-- Encabezado -->
+  <section class="max-w-7xl mx-auto px-6 pt-12 pb-10 md:pt-16 md:pb-14 text-center md:text-left">
+    <p class="font-titulo font-bold text-sm tracking-widest uppercase text-primario mb-4">
+      Legal
+    </p>
+    <h1
+      class="font-titulo font-extrabold text-4xl md:text-6xl text-texto mb-5 tracking-tight leading-tight"
+    >
+      Política de <span class="text-primario italic">Privacidad</span>
+    </h1>
+    <p class="text-texto-suave text-lg max-w-2xl mx-auto md:mx-0 leading-relaxed">
+      En Tierra Roja cuidamos tus datos con la misma calidez con la que te recibimos en el
+      camping. Acá te contamos, en criollo, qué información recopilamos, para qué la usamos y
+      cómo podés ejercer tus derechos.
+    </p>
+    <p class="text-texto-suave text-sm mt-5">
+      Última actualización: <span class="font-semibold text-texto">{actualizado}</span>
+    </p>
+  </section>
+
+  <!-- Contenido -->
+  <section class="max-w-7xl mx-auto px-6 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <!-- Índice -->
+    <nav class="lg:col-span-4 lg:sticky lg:top-28 order-2 lg:order-1">
+      <div class="bg-superficie p-6 md:p-8 rounded-xl shadow-(--shadow-elevada) border border-borde/10">
+        <h2 class="font-titulo font-bold text-lg text-texto mb-4">En esta página</h2>
+        <ul class="space-y-2.5">
+          {
+            secciones.map((s) => (
+              <li>
+                <a
+                  href={`#${s.id}`}
+                  class="text-texto-suave text-sm hover:text-primario transition-colors"
+                >
+                  {s.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="mt-6 pt-6 border-t border-borde/60">
+          <p class="text-texto-suave text-xs leading-relaxed">
+            ¿Tenés dudas sobre tus datos? Escribinos a{' '}
+            <a href="mailto:hola@tierraroja.com.ar" class="text-primario font-semibold">
+              hola@tierraroja.com.ar
+            </a>
+          </p>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Texto legal -->
+    <div
+      class="lg:col-span-8 order-1 lg:order-2 bg-superficie p-8 md:p-12 rounded-xl shadow-(--shadow-elevada) border border-borde/10 space-y-12"
+    >
+      <div id="responsable" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">1. Responsable del tratamiento</h2>
+        <p class="text-texto-suave leading-relaxed">
+          El responsable del tratamiento de los datos personales recogidos a través de este
+          sitio es <strong class="text-texto">Tierra Roja – Camping y Parque Acuático</strong>,
+          con domicilio en Barrio Los Yerbales 2000 Ha, Puerto Iguazú, Misiones, Argentina.
+        </p>
+        <p class="text-texto-suave leading-relaxed">
+          Esta política se rige por la Ley 25.326 de Protección de los Datos Personales de la
+          República Argentina y su normativa complementaria, y aplica a los datos que nos
+          brindás al reservar, contactarnos o navegar por{' '}
+          <a href="https://tierraroja.com.ar" class="text-primario font-semibold"
+            >tierraroja.com.ar</a
+          >.
+        </p>
+      </div>
+
+      <div id="datos" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">2. Datos que recopilamos</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Recopilamos únicamente los datos que nos proporcionás de forma directa y voluntaria
+          al usar el sitio:
+        </p>
+        <ul class="space-y-3">
+          <li class="flex items-start gap-3">
+            <span class="material-symbols-outlined text-primario mt-0.5 text-lg">check_circle</span>
+            <span class="text-texto-suave leading-relaxed">
+              <strong class="text-texto">Al hacer una reserva:</strong> nombre y apellido, DNI,
+              email, teléfono, fechas de estadía, tipo de unidad (camping, motorhome, quincho o
+              cabaña) y cantidad de acompañantes.
+            </span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="material-symbols-outlined text-primario mt-0.5 text-lg">check_circle</span>
+            <span class="text-texto-suave leading-relaxed">
+              <strong class="text-texto">Al escribirnos por el formulario de contacto o
+              WhatsApp:</strong> nombre, email y el contenido de tu mensaje o consulta.
+            </span>
+          </li>
+        </ul>
+        <p class="text-texto-suave leading-relaxed">
+          No pedimos ni almacenamos datos de tarjetas ni medios de pago: las reservas se abonan
+          por transferencia y nuestro equipo verifica el comprobante manualmente.
+        </p>
+      </div>
+
+      <div id="finalidad" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">3. Para qué usamos tus datos</h2>
+        <p class="text-texto-suave leading-relaxed">Usamos tus datos exclusivamente para:</p>
+        <ul class="list-disc list-outside pl-5 space-y-2 text-texto-suave leading-relaxed marker:text-primario">
+          <li>Gestionar y confirmar tu reserva, y coordinar tu ingreso al camping.</li>
+          <li>Enviarte el email de confirmación y avisos relacionados con tu estadía.</li>
+          <li>Verificar el pago de tu reserva y contactarte ante cualquier inconveniente.</li>
+          <li>Responder tus consultas realizadas por el formulario de contacto o WhatsApp.</li>
+        </ul>
+        <p class="text-texto-suave leading-relaxed">
+          No usamos tus datos con fines de marketing ni los cedemos a terceros para fines
+          comerciales.
+        </p>
+      </div>
+
+      <div id="terceros" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">4. Con quién compartimos tus datos</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Tus datos no se venden ni se comparten con fines publicitarios. Solo los compartimos
+          con proveedores que nos ayudan a operar el sitio y las reservas, bajo sus propias
+          políticas de seguridad:
+        </p>
+        <ul class="list-disc list-outside pl-5 space-y-2 text-texto-suave leading-relaxed marker:text-primario">
+          <li><strong class="text-texto">Supabase</strong>, donde alojamos la base de datos de reservas.</li>
+          <li><strong class="text-texto">Resend</strong>, que utilizamos para enviar los emails de confirmación de reserva.</li>
+          <li>
+            Autoridades públicas, únicamente cuando exista una obligación legal que así lo
+            requiera.
+          </li>
+        </ul>
+      </div>
+
+      <div id="cookies" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">5. Cookies</h2>
+        <p class="text-texto-suave leading-relaxed">
+          El sitio público de Tierra Roja no utiliza cookies de analítica ni de publicidad. Solo
+          usamos cookies técnicas, estrictamente necesarias, para mantener la sesión iniciada del
+          personal en el panel administrativo interno de gestión de reservas — no se aplican a
+          quienes navegan el sitio como visitantes.
+        </p>
+      </div>
+
+      <div id="conservacion" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">6. Conservación de los datos</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Conservamos tus datos mientras sean necesarios para gestionar tu reserva y cumplir con
+          obligaciones legales, contables o impositivas. Podés solicitar la eliminación de tus
+          datos en cualquier momento, salvo que debamos conservarlos por una obligación legal.
+        </p>
+      </div>
+
+      <div id="derechos" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">7. Tus derechos</h2>
+        <p class="text-texto-suave leading-relaxed">
+          De acuerdo con la Ley 25.326, tenés derecho a acceder, rectificar, actualizar o
+          solicitar la supresión de tus datos personales de forma gratuita. Para ejercer
+          cualquiera de estos derechos, escribinos a{' '}
+          <a href="mailto:hola@tierraroja.com.ar" class="text-primario font-semibold"
+            >hola@tierraroja.com.ar</a
+          >.
+        </p>
+        <p class="text-texto-suave leading-relaxed">
+          La Agencia de Acceso a la Información Pública, en su carácter de Órgano de Control de
+          la Ley 25.326, tiene la atribución de atender denuncias y reclamos que interpongan
+          quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en
+          materia de protección de datos personales.
+        </p>
+      </div>
+
+      <div id="seguridad" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">8. Seguridad de la información</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Adoptamos medidas técnicas y organizativas razonables para proteger tus datos frente al
+          acceso no autorizado, la pérdida o la alteración. El acceso a la información de
+          reservas está restringido al personal autorizado de Tierra Roja.
+        </p>
+      </div>
+
+      <div id="menores" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">9. Menores de edad</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Las reservas solo pueden ser realizadas por personas mayores de 18 años. Los datos de
+          menores que viajan en el grupo (por ejemplo, cantidad de acompañantes) son
+          proporcionados por el adulto responsable de la reserva.
+        </p>
+      </div>
+
+      <div id="cambios" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">10. Cambios a esta política</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Podemos actualizar esta política ocasionalmente para reflejar cambios en el sitio o en
+          la normativa vigente. La fecha de la última actualización figura al inicio de esta
+          página.
+        </p>
+      </div>
+
+      <div id="contacto" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">11. Contacto</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Si tenés preguntas sobre esta Política de Privacidad o sobre el tratamiento de tus
+          datos, escribinos:
+        </p>
+        <div class="flex flex-col gap-3 pt-2">
+          <div class="flex items-center gap-3">
+            <div class="bg-primario/10 p-2.5 rounded-lg text-primario">
+              <span class="material-symbols-outlined text-lg">mail</span>
+            </div>
+            <a href="mailto:hola@tierraroja.com.ar" class="text-texto font-semibold hover:text-primario transition-colors">
+              hola@tierraroja.com.ar
+            </a>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="bg-primario/10 p-2.5 rounded-lg text-primario">
+              <span class="material-symbols-outlined text-lg">location_on</span>
+            </div>
+            <span class="text-texto font-semibold">
+              Barrio Los Yerbales 2000 Ha, Puerto Iguazú, Misiones
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
