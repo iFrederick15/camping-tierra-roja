@@ -1,0 +1,291 @@
+---
+const categorias = [
+  { id: 'todas', label: 'Todas' },
+  { id: 'naturaleza', label: 'Naturaleza' },
+  { id: 'piscinas', label: 'Piscinas' },
+  { id: 'camping', label: 'Camping' },
+  { id: 'cabanas', label: 'Cabañas' },
+];
+
+const fotos = [
+  {
+    categoria: 'naturaleza',
+    imagen: '/images/tierra-roja-drone.jpg',
+    titulo: 'Vista aérea de Tierra Roja',
+    tall: true,
+  },
+  {
+    categoria: 'camping',
+    imagen: '/images/camping.jpg',
+    titulo: 'Parcelas de camping',
+    tall: true,
+  },
+  {
+    categoria: 'piscinas',
+    imagen: 'https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?w=700&q=80',
+    titulo: 'Piscina de diversión',
+  },
+  {
+    categoria: 'cabanas',
+    imagen: 'https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=700&q=80',
+    titulo: 'Interior de nuestra cabaña',
+    tall: true,
+  },
+  {
+    categoria: 'camping',
+    imagen: '/images/motorhome.png',
+    titulo: 'Espacio motorhome',
+  },
+  {
+    categoria: 'naturaleza',
+    imagen: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=700&q=80',
+    titulo: 'Senderos de la selva misionera',
+  },
+  {
+    categoria: 'piscinas',
+    imagen: 'https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=700&q=80',
+    titulo: 'Piscina de relax',
+    tall: true,
+  },
+  {
+    categoria: 'camping',
+    imagen: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=700&q=80',
+    titulo: 'Noches bajo las estrellas',
+  },
+  {
+    categoria: 'naturaleza',
+    imagen: 'https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?w=700&q=80',
+    titulo: 'Cascadas cercanas',
+  },
+];
+---
+
+<!-- Header -->
+<section class="max-w-7xl mx-auto px-6 mb-12 text-center md:text-left">
+  <span class="font-acento text-primario text-4xl md:text-5xl mb-2 block">Momentos</span>
+  <h1
+    class="font-titulo font-extrabold text-5xl md:text-7xl text-texto mb-6 tracking-tight leading-tight"
+  >
+    Nuestra <span class="text-primario italic">Galería</span>
+  </h1>
+  <p class="text-texto-suave text-lg max-w-2xl leading-relaxed mx-auto md:mx-0">
+    Un recorrido visual por las piscinas, el camping, las cabañas y la selva misionera que rodea
+    a Tierra Roja.
+  </p>
+</section>
+
+<!-- Filtros -->
+<section class="max-w-7xl mx-auto px-6 mb-10">
+  <div class="flex flex-wrap justify-center md:justify-start gap-3" id="galeria-filtros">
+    {
+      categorias.map((cat, i) => (
+        <button
+          type="button"
+          data-categoria={cat.id}
+          class:list={[
+            'filtro-btn font-titulo font-bold text-sm px-6 py-2.5 rounded-pill transition-all duration-200',
+            i === 0
+              ? 'bg-primario text-white shadow-suave'
+              : 'bg-fondo-alt text-texto-suave hover:bg-primario/10 hover:text-primario',
+          ]}
+          aria-pressed={i === 0 ? 'true' : 'false'}
+        >
+          {cat.label}
+        </button>
+      ))
+    }
+  </div>
+</section>
+
+<!-- Grid tipo masonry -->
+<section class="max-w-7xl mx-auto px-6 mb-24">
+  <div class="columns-2 md:columns-3 lg:columns-4 gap-4" id="galeria-grid">
+    {
+      fotos.map((foto, i) => (
+        <button
+          type="button"
+          class="galeria-item block w-full mb-4 break-inside-avoid rounded-card overflow-hidden group relative shadow-suave hover:shadow-elevada transition-shadow duration-300"
+          data-categoria={foto.categoria}
+          data-index={i}
+          aria-label={`Ampliar foto: ${foto.titulo}`}
+        >
+          <img
+            src={foto.imagen}
+            alt={foto.titulo}
+            loading="lazy"
+            onerror="this.onerror=null;this.src='/images/camping.jpg';"
+            class:list={[
+              'w-full object-cover group-hover:scale-105 transition-transform duration-700',
+              foto.tall ? 'aspect-[3/4]' : 'aspect-square',
+            ]}
+          />
+          <div
+            class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4"
+          >
+            <span class="text-white font-titulo font-bold text-sm text-left">{foto.titulo}</span>
+          </div>
+          <span
+            class="material-symbols-outlined absolute top-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30 rounded-full p-1.5 text-base"
+          >
+            zoom_in
+          </span>
+        </button>
+      ))
+    }
+  </div>
+</section>
+
+<!-- Lightbox -->
+<div
+  id="lightbox"
+  class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm hidden items-center justify-center px-4"
+>
+  <button
+    id="lightbox-cerrar"
+    type="button"
+    aria-label="Cerrar"
+    class="absolute top-5 right-5 md:top-8 md:right-8 text-white/80 hover:text-white transition-colors"
+  >
+    <span class="material-symbols-outlined text-4xl">close</span>
+  </button>
+  <button
+    id="lightbox-prev"
+    type="button"
+    aria-label="Foto anterior"
+    class="absolute left-3 md:left-8 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+  >
+    <span class="material-symbols-outlined text-4xl md:text-5xl">chevron_left</span>
+  </button>
+  <button
+    id="lightbox-next"
+    type="button"
+    aria-label="Foto siguiente"
+    class="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+  >
+    <span class="material-symbols-outlined text-4xl md:text-5xl">chevron_right</span>
+  </button>
+  <figure class="max-w-4xl max-h-[85vh] flex flex-col items-center gap-4">
+    <img
+      id="lightbox-img"
+      src=""
+      alt=""
+      class="max-w-full max-h-[75vh] object-contain rounded-lg shadow-hero"
+    />
+    <figcaption id="lightbox-caption" class="text-white/80 font-titulo text-sm text-center" />
+  </figure>
+</div>
+
+<!-- CTA -->
+<section class="max-w-7xl mx-auto px-6 mb-24">
+  <div
+    class="bg-primario rounded-card px-8 py-14 md:py-16 text-center relative overflow-hidden"
+  >
+    <div class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_20%_80%,_white_1px,_transparent_1px)] bg-[length:40px_40px]" />
+    <div class="relative z-10">
+      <h2 class="font-titulo font-bold text-3xl md:text-4xl text-white mb-4">
+        ¿Listo para vivir la experiencia?
+      </h2>
+      <p class="text-white/70 mb-8 max-w-xl mx-auto">
+        Reservá tu lugar en Tierra Roja y sé parte de estos momentos.
+      </p>
+      <a
+        href="/reservas"
+        class="inline-flex items-center gap-2 bg-white text-primario px-8 py-3.5 rounded-pill font-titulo font-bold text-sm hover:scale-105 transition-transform duration-200 shadow-lg"
+      >
+        Reservar Ahora
+        <span class="material-symbols-outlined text-lg">arrow_forward</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<script is:inline>
+  (function () {
+    const filtros = document.querySelectorAll('#galeria-filtros .filtro-btn');
+    const items = Array.from(document.querySelectorAll('.galeria-item'));
+
+    function visibleItems() {
+      return items.filter((el) => !el.classList.contains('hidden'));
+    }
+
+    filtros.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const categoria = btn.dataset.categoria;
+
+        filtros.forEach((b) => {
+          const activo = b === btn;
+          b.classList.toggle('bg-primario', activo);
+          b.classList.toggle('text-white', activo);
+          b.classList.toggle('shadow-suave', activo);
+          b.classList.toggle('bg-fondo-alt', !activo);
+          b.classList.toggle('text-texto-suave', !activo);
+          b.setAttribute('aria-pressed', String(activo));
+        });
+
+        items.forEach((el) => {
+          const coincide = categoria === 'todas' || el.dataset.categoria === categoria;
+          el.classList.toggle('hidden', !coincide);
+        });
+      });
+    });
+
+    // Lightbox
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxCaption = document.getElementById('lightbox-caption');
+    let currentIndex = 0;
+
+    function abrir(index) {
+      const visibles = visibleItems();
+      if (!visibles.length) return;
+      currentIndex = index;
+      const item = visibles[currentIndex];
+      const img = item.querySelector('img');
+      lightboxImg.src = img.src;
+      lightboxImg.alt = img.alt;
+      lightboxCaption.textContent = img.alt;
+      lightbox.classList.remove('hidden');
+      lightbox.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function cerrar() {
+      lightbox.classList.add('hidden');
+      lightbox.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    function mover(delta) {
+      const visibles = visibleItems();
+      if (!visibles.length) return;
+      currentIndex = (currentIndex + delta + visibles.length) % visibles.length;
+      const img = visibles[currentIndex].querySelector('img');
+      lightboxImg.src = img.src;
+      lightboxImg.alt = img.alt;
+      lightboxCaption.textContent = img.alt;
+    }
+
+    items.forEach((item) => {
+      item.addEventListener('click', () => {
+        const visibles = visibleItems();
+        const index = visibles.indexOf(item);
+        abrir(index === -1 ? 0 : index);
+      });
+    });
+
+    document.getElementById('lightbox-cerrar').addEventListener('click', cerrar);
+    document.getElementById('lightbox-prev').addEventListener('click', () => mover(-1));
+    document.getElementById('lightbox-next').addEventListener('click', () => mover(1));
+
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) cerrar();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (lightbox.classList.contains('hidden')) return;
+      if (e.key === 'Escape') cerrar();
+      if (e.key === 'ArrowLeft') mover(-1);
+      if (e.key === 'ArrowRight') mover(1);
+    });
+  })();
+</script>

@@ -1,0 +1,14 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+import Galeria from '../components/Galeria.astro';
+---
+
+<Layout
+  title="Tierra Roja - Galería"
+  description="Recorré nuestra galería de fotos: piscinas, camping, cabañas y la selva misionera de Camping Tierra Roja en Puerto Iguazú."
+>
+  <div class="pt-8 md:pt-12">
+    <Galeria />
+  </div>
+</Layout>
