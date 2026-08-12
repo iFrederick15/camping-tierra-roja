@@ -23,6 +23,7 @@ const habilitaCheckout = puedeHacerCheckout(reserva.montoTotal, reserva.montoPag
 
 const fmt = (f: string) =>
   new Date(f + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+const fmtMoneda = (n: number) => `$${n.toLocaleString('es-AR')}`;
 
 const ESTADO_LABEL: Record<string, string> = {
   CONFIRMADA: 'Confirmada',
@@ -62,6 +63,22 @@ const ESTADO_LABEL: Record<string, string> = {
         <span class="text-texto-suave">Total:</span> ${reserva.montoTotal.toLocaleString('es-AR')} ·
         <span class="text-texto-suave">Pagado:</span> ${reserva.montoPagado.toLocaleString('es-AR')}
       </p>
+      {(reserva.cantidadMenores > 0 || reserva.cantidadMayores > 0) && (
+        <p class="text-sm text-texto">
+          <span class="text-texto-suave">Personas:</span> {reserva.cantidadMayores} mayores, {reserva.cantidadMenores} menores
+        </p>
+      )}
+      {reserva.detallePrecio.length > 0 && (
+        <div class="pt-2 mt-1 border-t border-borde flex flex-col gap-1">
+          <span class="text-texto-suave text-xs font-titulo font-medium uppercase tracking-wide">Desglose</span>
+          {reserva.detallePrecio.map((d) => (
+            <p class="text-sm text-texto flex justify-between gap-3">
+              <span>{d.etiqueta}{d.cantidad > 1 ? ` × ${d.cantidad}` : ''}</span>
+              <span class="text-texto-suave shrink-0">{fmtMoneda(d.subtotal)}</span>
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   </div>
 

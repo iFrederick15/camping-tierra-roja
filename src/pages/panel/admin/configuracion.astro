@@ -5,13 +5,24 @@ import { obtenerConfiguracionPagos } from '../../../lib/reservas';
 
 const { data: unidades } = await supabaseAdmin
   .from('unidades')
-  .select('id, tipo, nombre, precio_por_noche, cupo_total')
+  .select('id, tipo, nombre, cupo_total')
   .order('tipo');
+
+const { data: opcionesPrecio } = await supabaseAdmin
+  .from('opciones_precio')
+  .select('id, clave, etiqueta, tipo_cargo, precio_por_noche, unidad_id')
+  .order('orden');
 
 const { data: parcelas } = await supabaseAdmin
   .from('parcelas')
   .select('id, numero, nombre, atributos, activa, unidades(tipo, nombre)')
   .order('numero');
+
+const opcionesPorUnidad = new Map<string, any[]>();
+for (const op of opcionesPrecio ?? []) {
+  if (!opcionesPorUnidad.has(op.unidad_id)) opcionesPorUnidad.set(op.unidad_id, []);
+  opcionesPorUnidad.get(op.unidad_id)!.push(op);
+}
 
 const configPagos = await obtenerConfiguracionPagos();
 
@@ -28,42 +39,60 @@ for (const p of parcelas ?? []) {
 
   <section class="mb-10">
     <h2 class="font-titulo font-bold text-xl text-negro mb-3">Precios y cupos</h2>
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-6">
       {
         (unidades ?? []).map((u) => (
-          <form
-            class="form-unidad flex flex-wrap items-end gap-3 rounded-card border-2 border-borde px-5 py-4 bg-superficie"
-            data-id={u.id}
-          >
-            <span class="font-titulo font-bold text-negro w-32">{u.nombre}</span>
-            <label class="flex flex-col gap-1 text-sm text-texto-suave">
-              Precio por noche
-              <input
-                type="number"
-                name="precioPorNoche"
-                value={u.precio_por_noche}
-                class="border-2 border-borde rounded-card px-3 py-2 w-36 focus:border-primario focus:outline-none"
-              />
-            </label>
-            {u.tipo === 'CAMPING' && (
-              <label class="flex flex-col gap-1 text-sm text-texto-suave">
-                Cupo total
-                <input
-                  type="number"
-                  name="cupoTotal"
-                  value={u.cupo_total}
-                  class="border-2 border-borde rounded-card px-3 py-2 w-28 focus:border-primario focus:outline-none"
-                />
-              </label>
-            )}
-            <button
-              type="submit"
-              class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
-            >
-              Guardar
-            </button>
-            <span class="msg text-sm"></span>
-          </form>
+          <div class="rounded-card border-2 border-borde px-5 py-4 bg-superficie flex flex-col gap-3">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+              <span class="font-titulo font-bold text-negro text-lg">{u.nombre}</span>
+              {u.tipo === 'CAMPING' && (
+                <form class="form-unidad flex items-end gap-3" data-id={u.id}>
+                  <label class="flex flex-col gap-1 text-sm text-texto-suave">
+                    Cupo total
+                    <input
+                      type="number"
+                      name="cupoTotal"
+                      value={u.cupo_total}
+                      class="border-2 border-borde rounded-card px-3 py-2 w-28 focus:border-primario focus:outline-none"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+                  >
+                    Guardar
+                  </button>
+                  <span class="msg text-sm"></span>
+                </form>
+              )}
+            </div>
+            <div class="flex flex-col gap-2">
+              {(opcionesPorUnidad.get(u.id) ?? []).map((op: any) => (
+                <form
+                  class="form-opcion-precio flex flex-wrap items-end gap-3 bg-fondo-alt rounded-card px-4 py-3"
+                  data-id={op.id}
+                >
+                  <span class="text-sm text-texto flex-1 min-w-48">{op.etiqueta}</span>
+                  <label class="flex flex-col gap-1 text-sm text-texto-suave">
+                    $ por noche
+                    <input
+                      type="number"
+                      name="precioPorNoche"
+                      value={op.precio_por_noche}
+                      class="border-2 border-borde rounded-card px-3 py-2 w-32 focus:border-primario focus:outline-none"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+                  >
+                    Guardar
+                  </button>
+                  <span class="msg text-sm"></span>
+                </form>
+              ))}
+            </div>
+          </div>
         ))
       }
     </div>
@@ -162,8 +191,22 @@ for (const p of parcelas ?? []) {
           '/api/panel/admin/unidades',
           {
             id: form.dataset.id,
-            precioPorNoche: fd.get('precioPorNoche'),
             cupoTotal: fd.get('cupoTotal') || undefined,
+          },
+          form.querySelector('.msg')!
+        );
+      });
+    });
+
+    document.querySelectorAll<HTMLFormElement>('.form-opcion-precio').forEach((form) => {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        guardar(
+          '/api/panel/admin/opciones-precio',
+          {
+            id: form.dataset.id,
+            precioPorNoche: fd.get('precioPorNoche'),
           },
           form.querySelector('.msg')!
         );

@@ -8,14 +8,31 @@ import BookingWidget from '../components/BookingWidget';
   title="Reservar — Tierra Roja"
   description="Reservá tu lugar en Tierra Roja: camping, motorhome, quinchos o cabaña."
 >
-  <section class="py-20 px-6 bg-fondo-alt min-h-[70vh]">
-    <div class="max-w-3xl mx-auto text-center mb-10">
-      <h1 class="font-titulo font-bold text-4xl lg:text-5xl text-negro mb-3">Reservá tu lugar</h1>
-      <p class="text-texto-suave text-lg">
-        Elegí fechas y confirmá al instante. Sin registro, sin vueltas.
-      </p>
+  <header class="relative w-full h-[36vh] md:h-[44vh] overflow-hidden">
+    <img
+      src="/images/camping.jpg"
+      alt="Camping Tierra Roja entre la selva misionera"
+      class="absolute inset-0 w-full h-full object-cover"
+      loading="eager"
+    />
+    <div class="absolute inset-0 bg-gradient-to-t from-fondo-alt via-negro/40 to-negro/10"></div>
+    <div class="absolute inset-0 flex items-end">
+      <div class="max-w-7xl mx-auto px-6 lg:px-8 pb-10 w-full">
+        <h1 class="font-titulo font-bold text-4xl md:text-6xl text-white tracking-tight mb-2">
+          Reservá tu lugar
+        </h1>
+        <p class="text-white/85 text-lg max-w-md">
+          Elegí fechas y confirmá al instante. Sin registro, sin vueltas.
+        </p>
+      </div>
     </div>
-    <!-- client:load: es el único punto interactivo real de la página -->
-    <BookingWidget client:load />
+  </header>
+
+  <section class="bg-fondo-alt px-6 pb-20 pt-10 md:pt-0">
+    <!-- Superpone el widget sobre el borde inferior del header para dar profundidad -->
+    <div class="-mt-0 md:-mt-16 relative z-10">
+      <!-- client:load: es el único punto interactivo real de la página -->
+      <BookingWidget client:load />
+    </div>
   </section>
 </Layout>

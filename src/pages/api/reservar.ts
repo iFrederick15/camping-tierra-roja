@@ -6,7 +6,12 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../lib/supabase';
 import { enviarEmailConfirmacion } from '../../lib/email';
-import { calcularNoches, calcularFechaLimitePago, obtenerConfiguracionPagos } from '../../lib/reservas';
+import {
+  calcularNoches,
+  calcularFechaLimitePago,
+  obtenerConfiguracionPagos,
+  calcularPrecio,
+} from '../../lib/reservas';
 
 export const POST: APIRoute = async ({ request }) => {
   const body = await request.json();
@@ -19,7 +24,11 @@ export const POST: APIRoute = async ({ request }) => {
     dni,
     email,
     telefono,
-    cantidadAcompanantes,
+    cantidadAcompanantes, // MOTORHOME
+    categoria, // MOTORHOME / QUINCHOS / CABANA
+    remolque, // MOTORHOME
+    cantidadMenores, // CAMPING (cobra) / CABANA (informativo)
+    cantidadMayores, // CAMPING (cobra) / CABANA (informativo)
   } = body;
 
   if (!email || !telefono) {
@@ -31,7 +40,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   const { data: unidad, error: errUnidad } = await supabaseAdmin
     .from('unidades')
-    .select('id, nombre, precio_por_noche')
+    .select('id, nombre')
     .eq('tipo', unidadTipo)
     .single();
 
@@ -40,7 +49,17 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const noches = calcularNoches(fechaIngreso, fechaSalida);
-  const montoTotal = Number(unidad.precio_por_noche) * noches;
+  const precio = await calcularPrecio(unidadTipo, noches, {
+    categoria,
+    remolque,
+    acompanantes: cantidadAcompanantes,
+    menores: cantidadMenores,
+    mayores: cantidadMayores,
+  });
+  if ('error' in precio) {
+    return new Response(JSON.stringify({ error: precio.error }), { status: precio.status });
+  }
+  const { montoTotal, detalle } = precio;
 
   // Plazo de pago según antelación (ver Documento de Producto §4.2),
   // configurable desde el Panel Admin (tabla configuracion_pagos).
@@ -60,6 +79,11 @@ export const POST: APIRoute = async ({ request }) => {
       email,
       telefono,
       cantidad_acompanantes: cantidadAcompanantes ?? 0,
+      categoria_seleccionada: categoria ?? null,
+      remolque: Boolean(remolque),
+      cantidad_menores: cantidadMenores ?? 0,
+      cantidad_mayores: cantidadMayores ?? 0,
+      detalle_precio: detalle,
       fecha_ingreso: fechaIngreso,
       fecha_salida: fechaSalida,
       monto_total: montoTotal,

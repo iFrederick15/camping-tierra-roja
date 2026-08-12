@@ -5,7 +5,7 @@
 // y no exige email/teléfono.
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../../lib/supabase';
-import { calcularNoches } from '../../../../lib/reservas';
+import { calcularNoches, calcularPrecio } from '../../../../lib/reservas';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.usuario) {
@@ -23,6 +23,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     email,
     telefono,
     cantidadAcompanantes,
+    categoria,
+    remolque,
+    cantidadMenores,
+    cantidadMayores,
   } = body;
 
   if (!nombreCliente || !dni || !fechaIngreso || !fechaSalida) {
@@ -34,7 +38,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const { data: unidad, error: errUnidad } = await supabaseAdmin
     .from('unidades')
-    .select('id, nombre, precio_por_noche')
+    .select('id, nombre')
     .eq('tipo', unidadTipo)
     .single();
 
@@ -43,7 +47,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const noches = calcularNoches(fechaIngreso, fechaSalida);
-  const montoTotal = Number(unidad.precio_por_noche) * noches;
+  const precio = await calcularPrecio(unidadTipo, noches, {
+    categoria,
+    remolque,
+    acompanantes: cantidadAcompanantes,
+    menores: cantidadMenores,
+    mayores: cantidadMayores,
+  });
+  if ('error' in precio) {
+    return new Response(JSON.stringify({ error: precio.error }), { status: precio.status });
+  }
+  const { montoTotal, detalle } = precio;
 
   const { data: reserva, error: errInsert } = await supabaseAdmin
     .from('reservas')
@@ -55,6 +69,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       email: email || null,
       telefono: telefono || null,
       cantidad_acompanantes: cantidadAcompanantes ?? 0,
+      categoria_seleccionada: categoria ?? null,
+      remolque: Boolean(remolque),
+      cantidad_menores: cantidadMenores ?? 0,
+      cantidad_mayores: cantidadMayores ?? 0,
+      detalle_precio: detalle,
       fecha_ingreso: fechaIngreso,
       fecha_salida: fechaSalida,
       monto_total: montoTotal,

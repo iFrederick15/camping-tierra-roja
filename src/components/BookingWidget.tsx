@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 type TipoUnidad = 'CAMPING' | 'MOTORHOME' | 'CABANA' | 'QUINCHOS';
 type Paso = 'unidad' | 'fechas' | 'datos' | 'confirmado';
+type TipoCargo = 'BASE' | 'CANTIDAD' | 'ADICIONAL';
 
 interface OpcionParcela {
   id: string;
@@ -9,17 +10,100 @@ interface OpcionParcela {
   atributos: string[];
 }
 
+interface OpcionPrecio {
+  clave: string;
+  etiqueta: string;
+  tipoCargo: TipoCargo;
+  precioPorNoche: number;
+}
+
+interface ItemPrecio {
+  clave: string;
+  etiqueta: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+}
+
 type Disponibilidad =
   | { tipo: 'cupo'; disponible: boolean; cuposLibres: number }
   | { tipo: 'unica'; disponible: boolean }
   | { tipo: 'lista'; opciones: OpcionParcela[] };
 
-const UNIDADES: { tipo: TipoUnidad; label: string }[] = [
-  { tipo: 'CAMPING', label: 'Camping' },
-  { tipo: 'MOTORHOME', label: 'Motorhome' },
-  { tipo: 'CABANA', label: 'Cabaña' },
-  { tipo: 'QUINCHOS', label: 'Quincho' },
+const UNIDADES: { tipo: TipoUnidad; label: string; descripcion: string; icono: string }[] = [
+  {
+    tipo: 'CAMPING',
+    label: 'Camping',
+    descripcion: 'Arma tu carpa bajo el dosel de la selva.',
+    icono: 'forest',
+  },
+  {
+    tipo: 'MOTORHOME',
+    label: 'Motorhome',
+    descripcion: 'Parcela con luz y agua para tu rodante.',
+    icono: 'airport_shuttle',
+  },
+  {
+    tipo: 'CABANA',
+    label: 'Cabaña',
+    descripcion: 'Comodidad techada en plena naturaleza.',
+    icono: 'cottage',
+  },
+  {
+    tipo: 'QUINCHOS',
+    label: 'Quincho',
+    descripcion: 'Espacio con parrilla para tu grupo.',
+    icono: 'outdoor_grill',
+  },
 ];
+
+function formatoMoneda(monto: number): string {
+  return monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+}
+
+function calcularNochesLocal(desde: string, hasta: string): number {
+  const ingreso = new Date(desde);
+  const salida = new Date(hasta);
+  return Math.max(1, Math.round((salida.getTime() - ingreso.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
+// Espejo de calcularPrecio() en src/lib/reservas.ts — el servidor recalcula
+// todo al confirmar, esto es solo para mostrar el total en vivo sin pedirlo
+// de nuevo por red.
+function calcularDetalle(
+  opciones: OpcionPrecio[],
+  seleccion: {
+    categoria: string | null;
+    remolque: boolean;
+    acompanantes: number;
+    menores: number;
+    mayores: number;
+  },
+  noches: number
+): ItemPrecio[] {
+  const detalle: ItemPrecio[] = [];
+  for (const op of opciones) {
+    let cantidad = 0;
+    if (op.tipoCargo === 'BASE') {
+      cantidad = seleccion.categoria === op.clave ? 1 : 0;
+    } else if (op.tipoCargo === 'ADICIONAL') {
+      cantidad = op.clave === 'REMOLQUE' && seleccion.remolque ? 1 : 0;
+    } else if (op.tipoCargo === 'CANTIDAD') {
+      if (op.clave === 'ACOMPANANTE') cantidad = seleccion.acompanantes;
+      else if (op.clave === 'MENOR') cantidad = seleccion.menores;
+      else if (op.clave === 'MAYOR') cantidad = seleccion.mayores;
+    }
+    if (cantidad <= 0) continue;
+    detalle.push({
+      clave: op.clave,
+      etiqueta: op.etiqueta,
+      cantidad,
+      precioUnitario: op.precioPorNoche,
+      subtotal: cantidad * op.precioPorNoche * noches,
+    });
+  }
+  return detalle;
+}
 
 // TODO: reemplazar por fotos reales por tipo (hoy solo hay una imagen para
 // camping y motorhome, y ninguna para cabaña/quincho — placeholders temporales).
@@ -98,8 +182,26 @@ interface Props {
 export default function BookingWidget({ modo = 'publico' }: Props) {
   const [paso, setPaso] = useState<Paso>('unidad');
   const [unidad, setUnidad] = useState<TipoUnidad | null>(null);
+
+  // Ítems de precio de la unidad elegida (ver sql/003_precios_itemizados.sql)
+  // y la selección del cliente sobre esos ítems. Se piden apenas se elige la
+  // unidad — antes de fechas, porque QUINCHOS necesita la categoría para
+  // poder consultar disponibilidad (cada categoría tiene sus propias parcelas).
+  const [opcionesPrecio, setOpcionesPrecio] = useState<OpcionPrecio[]>([]);
+  const [categoria, setCategoria] = useState<string | null>(null);
+  const [remolque, setRemolque] = useState(false);
+  const [acompanantes, setAcompanantes] = useState(0); // MOTORHOME
+  const [menores, setMenores] = useState(0); // CAMPING (cobra) / CABANA (informativo)
+  const [mayores, setMayores] = useState(0); // CAMPING (cobra) / CABANA (informativo, "adultos")
+
   const [fechaIngreso, setFechaIngreso] = useState('');
   const [fechaSalida, setFechaSalida] = useState('');
+  // Safari muestra la fecha de hoy en gris como "hint" nativo de un
+  // <input type="date"> vacío (no es un valor real, pero parece precargado).
+  // Tapamos ese hint con nuestro propio placeholder hasta que el campo
+  // reciba foco al menos una vez.
+  const [tocadoIngreso, setTocadoIngreso] = useState(false);
+  const [tocadoSalida, setTocadoSalida] = useState(false);
   const [disponibilidad, setDisponibilidad] = useState<Disponibilidad | null>(null);
   const [parcelaSeleccionada, setParcelaSeleccionada] = useState<string | null>(null);
   const [cargandoDisponibilidad, setCargandoDisponibilidad] = useState(false);
@@ -109,27 +211,60 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
     dni: '',
     email: '',
     telefono: '',
-    cantidadAcompanantes: '',
   });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Consulta disponibilidad apenas hay unidad + ambas fechas — sin botón "buscar".
+  // Apenas se elige la unidad, pide sus ítems de precio y reinicia la
+  // selección anterior (categoría/remolque/acompañantes/menores/mayores).
+  useEffect(() => {
+    setCategoria(null);
+    setRemolque(false);
+    setAcompanantes(0);
+    setMenores(0);
+    setMayores(0);
+    setOpcionesPrecio([]);
+    if (!unidad) return;
+    let cancelado = false;
+    fetch(`/api/precios?unidad=${unidad}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelado) return;
+        const opciones: OpcionPrecio[] = data.opciones ?? [];
+        setOpcionesPrecio(opciones);
+        // CABANA tiene un único ítem BASE ("Fijo") sin elección real: se
+        // preselecciona para que el precio se muestre sin pedirle nada al cliente.
+        if (unidad === 'CABANA') {
+          const fijo = opciones.find((o) => o.clave === 'FIJO');
+          if (fijo) setCategoria(fijo.clave);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelado = true;
+    };
+  }, [unidad]);
+
+  // Consulta disponibilidad apenas hay unidad + ambas fechas (y, para
+  // QUINCHOS, categoría) — sin botón "buscar".
   useEffect(() => {
     if (!unidad || !fechaIngreso || !fechaSalida) return;
+    if (unidad === 'QUINCHOS' && !categoria) return;
     let cancelado = false;
     setCargandoDisponibilidad(true);
     setParcelaSeleccionada(null);
     setDisponibilidad(null);
     setError(null);
-    fetch(`/api/disponibilidad?unidad=${unidad}&desde=${fechaIngreso}&hasta=${fechaSalida}`)
+    const params = new URLSearchParams({ unidad, desde: fechaIngreso, hasta: fechaSalida });
+    if (unidad === 'QUINCHOS' && categoria) params.set('categoria', categoria);
+    fetch(`/api/disponibilidad?${params}`)
       .then(async (r) => {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error ?? 'No pudimos consultar la disponibilidad');
         return data;
       })
       .then((data) => {
-        if (!cancelado) setDisponibilidad(data);
+        if (!cancelado) setDisponibilidad(data.disponibilidad);
       })
       .catch((e: Error) => {
         if (!cancelado)
@@ -143,7 +278,14 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
     return () => {
       cancelado = true;
     };
-  }, [unidad, fechaIngreso, fechaSalida]);
+  }, [unidad, fechaIngreso, fechaSalida, categoria]);
+
+  const puedeContinuarDesdeUnidad =
+    !!unidad &&
+    (unidad !== 'MOTORHOME' || !!categoria) &&
+    (unidad !== 'QUINCHOS' || !!categoria) &&
+    (unidad !== 'CAMPING' || menores + mayores > 0) &&
+    (unidad !== 'CABANA' || mayores > 0);
 
   const puedeContinuarDesdeFechas =
     disponibilidad &&
@@ -155,8 +297,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
     datosCliente.nombreCliente.trim() !== '' &&
     datosCliente.dni.trim() !== '' &&
     (modo === 'staff' ||
-      (datosCliente.email.trim() !== '' && datosCliente.telefono.trim() !== '')) &&
-    datosCliente.cantidadAcompanantes >= 1;
+      (datosCliente.email.trim() !== '' && datosCliente.telefono.trim() !== ''));
 
   async function confirmarReserva() {
     setEnviando(true);
@@ -170,6 +311,11 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
           parcelaId: parcelaSeleccionada,
           fechaIngreso,
           fechaSalida,
+          categoria,
+          remolque,
+          cantidadAcompanantes: acompanantes,
+          cantidadMenores: menores,
+          cantidadMayores: mayores,
           ...datosCliente,
         }),
       });
@@ -190,31 +336,123 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
   }
 
   const btnPrimario =
-    'inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primario to-acento text-white px-8 py-4 rounded-pill font-titulo font-bold hover:shadow-hero hover:scale-105 transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:pointer-events-none';
+    'inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primario to-acento text-white px-8 py-4 rounded-pill font-titulo font-bold hover:shadow-hero hover:scale-105 transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100';
   const btnSecundario =
     'inline-flex items-center justify-center gap-2 border-2 border-borde text-texto-suave px-8 py-4 rounded-pill font-titulo font-bold hover:border-primario-claro transition-colors duration-300';
   const input =
-    'w-full border-2 border-borde rounded-card px-5 py-3 font-cuerpo text-texto focus:border-primario focus:outline-none transition-colors';
+    'w-full bg-fondo-alt border-2 border-transparent rounded-card px-5 py-3 font-cuerpo text-texto placeholder:text-texto-suave/60 focus:bg-superficie focus:border-primario focus:outline-none transition-colors';
+  const opcionBase = (activa: boolean) =>
+    `text-left rounded-card p-4 border-2 transition-colors ${
+      activa
+        ? 'border-primario bg-superficie'
+        : 'border-transparent bg-superficie/60 hover:bg-superficie'
+    }`;
+
+  const noches =
+    fechaIngreso && fechaSalida ? calcularNochesLocal(fechaIngreso, fechaSalida) : null;
+  const detalle = noches
+    ? calcularDetalle(opcionesPrecio, { categoria, remolque, acompanantes, menores, mayores }, noches)
+    : [];
+  const total = detalle.length > 0 ? detalle.reduce((acc, d) => acc + d.subtotal, 0) : null;
+  const unidadElegida = UNIDADES.find((u) => u.tipo === unidad);
+
+  const PASOS: { paso: Paso; label: string }[] = [
+    { paso: 'unidad', label: 'Alojamiento' },
+    { paso: 'fechas', label: 'Fechas' },
+    { paso: 'datos', label: 'Tus datos' },
+  ];
+  const indicePaso = PASOS.findIndex((p) => p.paso === paso);
 
   return (
-    <div className="max-w-xl mx-auto bg-superficie rounded-card shadow-elevada p-8 lg:p-10">
-      {paso === 'unidad' && (
-        <section className="flex flex-col gap-6">
-          <h2 className="font-titulo font-bold text-3xl text-negro">¿Qué quieres reservar?</h2>
-          <div className="grid grid-cols-3 gap-3">
-            {UNIDADES.map((u) => (
-              <button
-                key={u.tipo}
-                onClick={() => setUnidad(u.tipo)}
-                className={`rounded-card border-2 py-6 font-titulo font-bold transition-colors ${
-                  unidad === u.tipo
-                    ? 'border-primario bg-superficie-elevada text-primario'
-                    : 'border-borde text-texto-suave hover:border-primario-claro'
+    <div className="max-w-xl mx-auto bg-superficie rounded-card shadow-elevada p-8 lg:p-10 relative overflow-hidden">
+      {/* Acento orgánico decorativo, igual al usado en el resto del sitio */}
+      <div className="absolute -top-16 -right-16 w-48 h-48 bg-primario/5 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute -bottom-20 -left-16 w-48 h-48 bg-acento/5 rounded-full blur-2xl pointer-events-none" />
+
+      {paso !== 'confirmado' && (
+        <div className="flex items-center gap-2 mb-8 relative z-10">
+          {PASOS.map((p, i) => (
+            <div key={p.paso} className="flex items-center gap-2 flex-1 last:flex-none">
+              <div
+                className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center font-titulo font-bold text-sm transition-colors ${
+                  i < indicePaso
+                    ? 'bg-primario text-white'
+                    : i === indicePaso
+                      ? 'bg-gradient-to-r from-primario to-acento text-white'
+                      : 'bg-fondo-alt text-texto-suave'
                 }`}
               >
-                {u.label}
-              </button>
-            ))}
+                {i < indicePaso ? (
+                  <span className="material-symbols-outlined text-[18px]">check</span>
+                ) : (
+                  i + 1
+                )}
+              </div>
+              <span
+                className={`hidden sm:inline font-titulo text-sm font-medium ${
+                  i <= indicePaso ? 'text-negro' : 'text-texto-suave'
+                }`}
+              >
+                {p.label}
+              </span>
+              {i < PASOS.length - 1 && (
+                <div
+                  className={`h-0.5 flex-1 rounded-full ${
+                    i < indicePaso ? 'bg-primario' : 'bg-fondo-alt'
+                  }`}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {paso === 'unidad' && (
+        <section className="flex flex-col gap-6 relative z-10">
+          <h2 className="font-titulo font-bold text-3xl text-negro">¿Qué quieres reservar?</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {UNIDADES.map((u) => {
+              const seleccionada = unidad === u.tipo;
+              return (
+                <button
+                  key={u.tipo}
+                  onClick={() => setUnidad(u.tipo)}
+                  className={`text-left rounded-card p-5 h-full transition-all duration-300 ${
+                    seleccionada
+                      ? 'bg-fondo-alt shadow-suave ring-2 ring-primario/30'
+                      : 'bg-fondo-alt/50 hover:bg-fondo-alt'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div
+                      className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
+                        seleccionada
+                          ? 'bg-gradient-to-r from-primario to-acento text-white'
+                          : 'bg-superficie text-texto-suave'
+                      }`}
+                    >
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ fontVariationSettings: `'FILL' ${seleccionada ? 1 : 0}` }}
+                      >
+                        {u.icono}
+                      </span>
+                    </div>
+                    <span
+                      className={`material-symbols-outlined text-primario transition-opacity ${
+                        seleccionada ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    >
+                      check_circle
+                    </span>
+                  </div>
+                  <h3 className="font-titulo font-bold text-lg text-negro leading-tight">
+                    {u.label}
+                  </h3>
+                  <p className="text-sm text-texto-suave mt-1">{u.descripcion}</p>
+                </button>
+              );
+            })}
           </div>
 
           {unidad && (
@@ -224,63 +462,242 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
             />
           )}
 
-          <button className={btnPrimario} disabled={!unidad} onClick={() => setPaso('fechas')}>
+          {unidad === 'MOTORHOME' && (
+            <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
+              <div className="grid grid-cols-2 gap-3">
+                {opcionesPrecio
+                  .filter((o) => o.tipoCargo === 'BASE')
+                  .map((op) => (
+                    <button
+                      key={op.clave}
+                      type="button"
+                      onClick={() => setCategoria(op.clave)}
+                      className={opcionBase(categoria === op.clave)}
+                    >
+                      <div className="font-titulo font-bold text-negro text-sm">{op.etiqueta}</div>
+                      <div className="text-texto-suave text-xs mt-1">
+                        {formatoMoneda(op.precioPorNoche)} / noche
+                      </div>
+                    </button>
+                  ))}
+              </div>
+              {opcionesPrecio
+                .filter((o) => o.tipoCargo === 'ADICIONAL')
+                .map((op) => (
+                  <label key={op.clave} className="flex items-center gap-2 text-sm text-texto">
+                    <input
+                      type="checkbox"
+                      checked={remolque}
+                      onChange={(e) => setRemolque(e.target.checked)}
+                      className="w-4 h-4 accent-primario"
+                    />
+                    {op.etiqueta} · {formatoMoneda(op.precioPorNoche)} / noche
+                  </label>
+                ))}
+              {opcionesPrecio
+                .filter((o) => o.tipoCargo === 'CANTIDAD' && o.clave === 'ACOMPANANTE')
+                .map((op) => (
+                  <label
+                    key={op.clave}
+                    className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave"
+                  >
+                    {op.etiqueta}
+                    <span className="text-xs text-texto-suave/70 font-normal font-cuerpo">
+                      {formatoMoneda(op.precioPorNoche)} / noche c/u
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={acompanantes}
+                      onChange={(e) => setAcompanantes(Math.max(0, Number(e.target.value)))}
+                      className={input}
+                    />
+                  </label>
+                ))}
+            </div>
+          )}
+
+          {unidad === 'CAMPING' && (
+            <div className="grid grid-cols-2 gap-3 bg-fondo-alt rounded-card p-5">
+              {opcionesPrecio.map((op) => (
+                <label
+                  key={op.clave}
+                  className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave"
+                >
+                  {op.etiqueta}
+                  <span className="text-xs text-texto-suave/70 font-normal font-cuerpo">
+                    {formatoMoneda(op.precioPorNoche)} / noche c/u
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={op.clave === 'MENOR' ? menores : mayores}
+                    onChange={(e) => {
+                      const valor = Math.max(0, Number(e.target.value));
+                      if (op.clave === 'MENOR') setMenores(valor);
+                      else setMayores(valor);
+                    }}
+                    className={input}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+
+          {unidad === 'CABANA' && (
+            <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
+              {opcionesPrecio
+                .filter((o) => o.clave === 'FIJO')
+                .map((op) => (
+                  <div key={op.clave} className="flex items-center justify-between text-sm">
+                    <span className="text-texto-suave">{op.etiqueta}</span>
+                    <span className="font-titulo font-bold text-negro">
+                      {formatoMoneda(op.precioPorNoche)} / noche
+                    </span>
+                  </div>
+                ))}
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
+                  Adultos
+                  <input
+                    type="number"
+                    min={0}
+                    value={mayores}
+                    onChange={(e) => setMayores(Math.max(0, Number(e.target.value)))}
+                    className={input}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
+                  Menores
+                  <input
+                    type="number"
+                    min={0}
+                    value={menores}
+                    onChange={(e) => setMenores(Math.max(0, Number(e.target.value)))}
+                    className={input}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-texto-suave">
+                Precio fijo: no varía según la cantidad de personas.
+              </p>
+            </div>
+          )}
+
+          {unidad === 'QUINCHOS' && (
+            <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
+              <div className="grid grid-cols-2 gap-3">
+                {opcionesPrecio.map((op) => (
+                  <button
+                    key={op.clave}
+                    type="button"
+                    onClick={() => setCategoria(op.clave)}
+                    className={opcionBase(categoria === op.clave)}
+                  >
+                    <div className="font-titulo font-bold text-negro text-sm">{op.etiqueta}</div>
+                    <div className="text-texto-suave text-xs mt-1">
+                      {formatoMoneda(op.precioPorNoche)} / noche
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-texto-suave flex items-center gap-1">
+                <span className="material-symbols-outlined text-[16px]">info</span>
+                La entrada al parque por persona no está incluida.
+              </p>
+            </div>
+          )}
+
+          <button
+            className={btnPrimario}
+            disabled={!puedeContinuarDesdeUnidad}
+            onClick={() => setPaso('fechas')}
+          >
             Continuar
           </button>
         </section>
       )}
 
       {paso === 'fechas' && (
-        <section className="flex flex-col gap-5">
+        <section className="flex flex-col gap-5 relative z-10">
           <h2 className="font-titulo font-bold text-3xl text-negro">Elegí tus fechas</h2>
           <div className="grid grid-cols-2 gap-4">
             <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
               Entrada
-              <input
-                type="date"
-                className={input}
-                value={fechaIngreso}
-                onChange={(e) => setFechaIngreso(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  className={`${input} ${!fechaIngreso && !tocadoIngreso ? '[&::-webkit-datetime-edit]:text-transparent' : ''}`}
+                  value={fechaIngreso}
+                  onFocus={() => setTocadoIngreso(true)}
+                  onChange={(e) => setFechaIngreso(e.target.value)}
+                />
+                {!fechaIngreso && !tocadoIngreso && (
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave/60 font-cuerpo pointer-events-none">
+                    dd/mm/aaaa
+                  </span>
+                )}
+              </div>
             </label>
             <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
               Salida
-              <input
-                type="date"
-                className={input}
-                value={fechaSalida}
-                onChange={(e) => setFechaSalida(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  className={`${input} ${!fechaSalida && !tocadoSalida ? '[&::-webkit-datetime-edit]:text-transparent' : ''}`}
+                  value={fechaSalida}
+                  onFocus={() => setTocadoSalida(true)}
+                  onChange={(e) => setFechaSalida(e.target.value)}
+                />
+                {!fechaSalida && !tocadoSalida && (
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave/60 font-cuerpo pointer-events-none">
+                    dd/mm/aaaa
+                  </span>
+                )}
+              </div>
             </label>
           </div>
 
           {cargandoDisponibilidad && (
-            <p className="text-texto-suave text-sm">Consultando disponibilidad…</p>
+            <p className="text-texto-suave text-sm flex items-center gap-2">
+              <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+              Consultando disponibilidad…
+            </p>
           )}
 
           {error && <p className="text-primario text-sm font-medium">{error}</p>}
 
           {disponibilidad?.tipo === 'cupo' && (
-            <p
-              className={
-                disponibilidad.disponible ? 'text-confirmado font-medium' : 'text-texto-suave'
-              }
+            <div
+              className={`flex items-center gap-2 rounded-card px-4 py-3 font-medium text-sm ${
+                disponibilidad.disponible
+                  ? 'bg-confirmado/10 text-confirmado'
+                  : 'bg-fondo-alt text-texto-suave'
+              }`}
             >
+              <span className="material-symbols-outlined text-[20px]">
+                {disponibilidad.disponible ? 'check_circle' : 'cancel'}
+              </span>
               {disponibilidad.disponible
                 ? 'Hay lugar para estas fechas'
                 : 'Sin disponibilidad para estas fechas'}
-            </p>
+            </div>
           )}
           {disponibilidad?.tipo === 'unica' && (
-            <p
-              className={
-                disponibilidad.disponible ? 'text-confirmado font-medium' : 'text-texto-suave'
-              }
+            <div
+              className={`flex items-center gap-2 rounded-card px-4 py-3 font-medium text-sm ${
+                disponibilidad.disponible
+                  ? 'bg-confirmado/10 text-confirmado'
+                  : 'bg-fondo-alt text-texto-suave'
+              }`}
             >
+              <span className="material-symbols-outlined text-[20px]">
+                {disponibilidad.disponible ? 'check_circle' : 'cancel'}
+              </span>
               {disponibilidad.disponible
                 ? 'La cabaña está disponible'
                 : 'La cabaña no está disponible en estas fechas'}
-            </p>
+            </div>
           )}
           {disponibilidad?.tipo === 'lista' && (
             <div className="flex flex-col gap-2">
@@ -289,21 +706,47 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
                   Sin parcelas disponibles para estas fechas.
                 </p>
               )}
-              {disponibilidad.opciones.map((p: OpcionParcela) => (
-                <button
-                  key={p.id}
-                  onClick={() => setParcelaSeleccionada(p.id)}
-                  className={`text-left rounded-card border-2 px-5 py-3 transition-colors ${
-                    parcelaSeleccionada === p.id
-                      ? 'border-primario bg-superficie-elevada'
-                      : 'border-borde hover:border-primario-claro'
-                  }`}
-                >
-                  <div className="font-titulo font-bold text-negro">{p.nombre}</div>
-                  {p.atributos.length > 0 && (
-                    <div className="text-texto-suave text-sm">{p.atributos.join(' · ')}</div>
-                  )}
-                </button>
+              {disponibilidad.opciones.map((p: OpcionParcela) => {
+                const seleccionada = parcelaSeleccionada === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setParcelaSeleccionada(p.id)}
+                    className={`flex items-center justify-between text-left rounded-card px-5 py-3 transition-all ${
+                      seleccionada
+                        ? 'bg-fondo-alt shadow-suave ring-2 ring-primario/30'
+                        : 'bg-fondo-alt/50 hover:bg-fondo-alt'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-titulo font-bold text-negro">{p.nombre}</div>
+                      {p.atributos.length > 0 && (
+                        <div className="text-texto-suave text-sm">{p.atributos.join(' · ')}</div>
+                      )}
+                    </div>
+                    <span
+                      className={`material-symbols-outlined text-primario transition-opacity ${
+                        seleccionada ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    >
+                      check_circle
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {detalle.length > 0 && (
+            <div className="bg-fondo-alt rounded-card p-5 flex flex-col gap-2 text-sm">
+              {detalle.map((d) => (
+                <div key={d.clave} className="flex justify-between">
+                  <span className="text-texto-suave">
+                    {d.etiqueta}
+                    {d.cantidad > 1 ? ` × ${d.cantidad}` : ''}
+                  </span>
+                  <span className="font-medium text-negro">{formatoMoneda(d.subtotal)}</span>
+                </div>
               ))}
             </div>
           )}
@@ -324,7 +767,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
       )}
 
       {paso === 'datos' && (
-        <section className="flex flex-col gap-4">
+        <section className="flex flex-col gap-4 relative z-10">
           <h2 className="font-titulo font-bold text-3xl text-negro">Tus datos</h2>
           <input
             className={input}
@@ -351,16 +794,48 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
             value={datosCliente.telefono}
             onChange={(e) => setDatosCliente({ ...datosCliente, telefono: e.target.value })}
           />
-          <input
-            className={input}
-            type="number"
-            min={1}
-            placeholder="Cantidad de acompañantes"
-            value={datosCliente.cantidadAcompanantes}
-            onChange={(e) =>
-              setDatosCliente({ ...datosCliente, cantidadAcompanantes: Number(e.target.value) })
-            }
-          />
+
+          {(unidadElegida || noches || detalle.length > 0) && (
+            <div className="bg-fondo-alt rounded-card p-5 flex flex-col gap-2 text-sm">
+              {unidadElegida && (
+                <div className="flex justify-between">
+                  <span className="text-texto-suave">Alojamiento</span>
+                  <span className="font-medium text-negro">{unidadElegida.label}</span>
+                </div>
+              )}
+              {noches && (
+                <div className="flex justify-between">
+                  <span className="text-texto-suave">Noches</span>
+                  <span className="font-medium text-negro">{noches}</span>
+                </div>
+              )}
+              {unidad === 'CABANA' && (mayores > 0 || menores > 0) && (
+                <div className="flex justify-between">
+                  <span className="text-texto-suave">Personas</span>
+                  <span className="font-medium text-negro">
+                    {mayores} adultos, {menores} menores
+                  </span>
+                </div>
+              )}
+              {detalle.map((d) => (
+                <div key={d.clave} className="flex justify-between">
+                  <span className="text-texto-suave">
+                    {d.etiqueta}
+                    {d.cantidad > 1 ? ` × ${d.cantidad}` : ''}
+                  </span>
+                  <span className="font-medium text-negro">{formatoMoneda(d.subtotal)}</span>
+                </div>
+              ))}
+              {total != null && (
+                <div className="flex justify-between items-center pt-2 border-t border-borde">
+                  <span className="font-titulo font-bold text-negro">Total</span>
+                  <span className="font-titulo font-black text-xl text-primario">
+                    {formatoMoneda(total)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           {error && <p className="text-primario text-sm font-medium">{error}</p>}
 
@@ -380,9 +855,14 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
       )}
 
       {paso === 'confirmado' && (
-        <section className="flex flex-col gap-3 text-center py-6">
+        <section className="flex flex-col items-center gap-3 text-center py-6 relative z-10">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primario to-acento text-white flex items-center justify-center mb-2">
+            <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+              check
+            </span>
+          </div>
           <h2 className="font-titulo font-bold text-3xl text-negro">¡Reserva confirmada!</h2>
-          <p className="text-texto-suave">
+          <p className="text-texto-suave max-w-sm">
             Te enviamos los detalles y los datos para transferir a tu email.
           </p>
         </section>

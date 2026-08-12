@@ -11,6 +11,7 @@ export const GET: APIRoute = async ({ url }) => {
   const unidadTipo = url.searchParams.get('unidad');
   const desde = url.searchParams.get('desde');
   const hasta = url.searchParams.get('hasta');
+  const categoria = url.searchParams.get('categoria') ?? undefined;
 
   if (!unidadTipo || !desde || !hasta) {
     return new Response(
@@ -19,11 +20,14 @@ export const GET: APIRoute = async ({ url }) => {
     );
   }
 
-  const resultado = await obtenerDisponibilidad(unidadTipo, desde, hasta);
+  const resultado = await obtenerDisponibilidad(unidadTipo, desde, hasta, categoria);
 
   if ('error' in resultado) {
     return new Response(JSON.stringify({ error: resultado.error }), { status: resultado.status });
   }
 
-  return new Response(JSON.stringify(resultado.disponibilidad), { status: 200 });
+  return new Response(
+    JSON.stringify({ unidad: resultado.unidad, disponibilidad: resultado.disponibilidad }),
+    { status: 200 }
+  );
 };

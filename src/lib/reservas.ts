@@ -84,19 +84,28 @@ export type Disponibilidad =
 
 // Extraído de disponibilidad.ts para que la reserva manual de Staff use
 // exactamente la misma fuente de verdad que el Portal público.
+// "categoria" solo aplica (y es obligatoria) para QUINCHOS: filtra las
+// parcelas a las que pertenecen a esa categoría (chico/grande/especial/
+// compartido) — cada categoría tiene su propio precio y su propio grupo de
+// parcelas numeradas.
 export async function obtenerDisponibilidad(
   unidadTipo: string,
   desde: string,
-  hasta: string
-): Promise<{ error: string; status: number } | { unidad: { id: string; nombre: string; precio_por_noche: number }; disponibilidad: Disponibilidad }> {
+  hasta: string,
+  categoria?: string
+): Promise<{ error: string; status: number } | { unidad: { id: string; nombre: string }; disponibilidad: Disponibilidad }> {
   const { data: unidad, error: errUnidad } = await supabaseAdmin
     .from('unidades')
-    .select('id, tipo, nombre, precio_por_noche, cupo_total, parcelas(id, nombre, atributos, activa)')
+    .select('id, tipo, nombre, cupo_total, parcelas(id, nombre, atributos, activa, opciones_precio(clave))')
     .eq('tipo', unidadTipo)
     .single();
 
   if (errUnidad || !unidad) {
     return { error: 'Unidad no encontrada', status: 404 };
+  }
+
+  if (unidad.tipo === 'QUINCHOS' && !categoria) {
+    return { error: 'Falta la categoría de quincho', status: 400 };
   }
 
   const { data: solapadas, error: errReservas } = await supabaseAdmin
@@ -111,12 +120,17 @@ export async function obtenerDisponibilidad(
     return { error: errReservas.message, status: 500 };
   }
 
-  const unidadInfo = { id: unidad.id, nombre: unidad.nombre, precio_por_noche: unidad.precio_por_noche };
+  const unidadInfo = { id: unidad.id, nombre: unidad.nombre };
 
   if (unidad.tipo === 'MOTORHOME' || unidad.tipo === 'QUINCHOS') {
     const parcelasOcupadasIds = new Set((solapadas ?? []).map((r) => r.parcela_id));
     const disponibles = (unidad.parcelas ?? [])
-      .filter((p: any) => p.activa && !parcelasOcupadasIds.has(p.id))
+      .filter(
+        (p: any) =>
+          p.activa &&
+          !parcelasOcupadasIds.has(p.id) &&
+          (unidad.tipo !== 'QUINCHOS' || p.opciones_precio?.clave === categoria)
+      )
       .map((p: any) => ({ id: p.id, nombre: p.nombre, atributos: p.atributos }));
 
     return { unidad: unidadInfo, disponibilidad: { tipo: 'lista', opciones: disponibles } };
@@ -134,6 +148,73 @@ export async function obtenerDisponibilidad(
   // CABANA: unidad única
   const disponible = (solapadas?.length ?? 0) === 0;
   return { unidad: unidadInfo, disponibilidad: { tipo: 'unica', disponible } };
+}
+
+// ------------------------------------------------------------
+// Precio: cada unidad tiene una lista de "ítems" (opciones_precio) — ver
+// sql/003_precios_itemizados.sql. Único lugar donde se calcula monto_total,
+// usado tanto por el Portal público (reservar.ts) como por la carga manual
+// de Staff (manual.ts) y por el resumen en vivo de BookingWidget.
+// ------------------------------------------------------------
+export interface SeleccionPrecio {
+  categoria?: string; // MOTORHOME: CHICO/GRANDE. QUINCHOS: CHICO/GRANDE/ESPECIAL/COMPARTIDO. CABANA: FIJO.
+  remolque?: boolean; // MOTORHOME
+  acompanantes?: number; // MOTORHOME
+  menores?: number; // CAMPING (cobra) / CABANA (informativo, no se usa acá)
+  mayores?: number; // CAMPING (cobra) / CABANA (informativo, no se usa acá)
+}
+
+export interface ItemPrecio {
+  clave: string;
+  etiqueta: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+}
+
+export async function calcularPrecio(
+  unidadTipo: string,
+  noches: number,
+  seleccion: SeleccionPrecio
+): Promise<{ error: string; status: number } | { montoTotal: number; detalle: ItemPrecio[] }> {
+  const { data: unidad, error: errUnidad } = await supabaseAdmin
+    .from('unidades')
+    .select('id, opciones_precio(clave, etiqueta, tipo_cargo, precio_por_noche, activo)')
+    .eq('tipo', unidadTipo)
+    .single();
+
+  if (errUnidad || !unidad) {
+    return { error: 'Unidad no válida', status: 400 };
+  }
+
+  const opciones = ((unidad as any).opciones_precio ?? []).filter((o: any) => o.activo);
+  const detalle: ItemPrecio[] = [];
+
+  for (const op of opciones) {
+    let cantidad = 0;
+    if (op.tipo_cargo === 'BASE') {
+      cantidad = seleccion.categoria === op.clave ? 1 : 0;
+    } else if (op.tipo_cargo === 'ADICIONAL') {
+      cantidad = op.clave === 'REMOLQUE' && seleccion.remolque ? 1 : 0;
+    } else if (op.tipo_cargo === 'CANTIDAD') {
+      if (op.clave === 'ACOMPANANTE') cantidad = seleccion.acompanantes ?? 0;
+      else if (op.clave === 'MENOR') cantidad = seleccion.menores ?? 0;
+      else if (op.clave === 'MAYOR') cantidad = seleccion.mayores ?? 0;
+    }
+    if (cantidad <= 0) continue;
+
+    const precioUnitario = Number(op.precio_por_noche);
+    detalle.push({
+      clave: op.clave,
+      etiqueta: op.etiqueta,
+      cantidad,
+      precioUnitario,
+      subtotal: cantidad * precioUnitario * noches,
+    });
+  }
+
+  const montoTotal = detalle.reduce((acc, d) => acc + d.subtotal, 0);
+  return { montoTotal, detalle };
 }
 
 // Fecha de "hoy" en huso horario de Puerto Iguazú — evita el off-by-one que
@@ -162,6 +243,9 @@ export interface ReservaResumen {
   estado: EstadoReserva;
   origen: 'WEB' | 'MANUAL';
   cantidadAcompanantes: number;
+  cantidadMenores: number;
+  cantidadMayores: number;
+  detallePrecio: ItemPrecio[];
 }
 
 type FiltroReservas =
@@ -171,7 +255,7 @@ type FiltroReservas =
   | { modo: 'pendientes-pago' };
 
 const SELECT_RESUMEN =
-  'id, nombre_cliente, dni, telefono, email, fecha_ingreso, fecha_salida, monto_total, monto_pagado, fecha_limite_pago, estado, origen, cantidad_acompanantes, unidades(nombre, tipo), parcelas(nombre)';
+  'id, nombre_cliente, dni, telefono, email, fecha_ingreso, fecha_salida, monto_total, monto_pagado, fecha_limite_pago, estado, origen, cantidad_acompanantes, cantidad_menores, cantidad_mayores, detalle_precio, unidades(nombre, tipo), parcelas(nombre)';
 
 function mapearResumen(r: any): ReservaResumen {
   return {
@@ -191,6 +275,9 @@ function mapearResumen(r: any): ReservaResumen {
     estado: r.estado,
     origen: r.origen,
     cantidadAcompanantes: r.cantidad_acompanantes,
+    cantidadMenores: r.cantidad_menores ?? 0,
+    cantidadMayores: r.cantidad_mayores ?? 0,
+    detallePrecio: r.detalle_precio ?? [],
   };
 }
 
