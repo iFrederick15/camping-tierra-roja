@@ -31,6 +31,12 @@ const nav = usuario.rol === 'admin' ? [...navStaff, ...navAdmin] : navStaff;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title} — Panel Tierra Roja</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body class="bg-gray-50 font-cuerpo text-texto antialiased min-h-screen lg:flex">
     <aside class="lg:w-64 lg:shrink-0 bg-superficie border-b lg:border-b-0 lg:border-r border-borde lg:min-h-screen">
@@ -62,7 +68,13 @@ const nav = usuario.rol === 'admin' ? [...navStaff, ...navAdmin] : navStaff;
             {usuario.nombre} · <span class="font-medium">{usuario.rol === 'admin' ? 'Admin' : 'Staff'}</span>
           </span>
           <form method="POST" action="/panel/logout">
-            <button type="submit" class="text-sm text-primario font-medium hover:underline">
+            <button
+              type="submit"
+              class="group flex items-center gap-2 text-sm text-texto-suave font-medium rounded-card px-3 py-2 w-full transition-colors hover:bg-primario/10 hover:text-primario"
+            >
+              <span class="material-symbols-outlined text-[18px] transition-transform group-hover:-translate-x-0.5">
+                logout
+              </span>
               Cerrar sesión
             </button>
           </form>
