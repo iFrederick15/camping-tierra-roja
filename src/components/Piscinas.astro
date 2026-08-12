@@ -2,26 +2,26 @@
 const piscinas = [
   {
     nombre: "Diversión",
-    descripcion: "Un remanso de paz con borde infinito que se pierde en el horizonte selvático.",
+    descripcion: "Piscina principal con cortina de agua bajo la pérgola, reposeras y juegos.",
     icono: "child_care",
     etiqueta: "Diversión Familiar",
-    imagen: "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?w=600&q=80",
+    imagen: "images/piscina-diversion.webp",
     color: "primario",
   },
   {
     nombre: "Familiar",
-    descripcion: "El paraíso de los más chicos. Toboganes y juegos diseñados para la aventura extrema.",
+    descripcion: "Tres toboganes de colores para vivir la mejor aventura acuática en familia.",
     icono: "family_restroom",
     etiqueta: "Aventura Familiar",
-    imagen: "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?w=600&q=80",
+    imagen: "images/piscina-familiar.webp",
     color: "acento",
   },
   {
     nombre: "Relax",
-    descripcion: "Sombra natural y aguas termales. El lugar perfecto para desconectar del mundo exterior.",
+    descripcion: "Cascada de agua y un ambiente especial para desconexión total.",
     icono: "spa",
     etiqueta: "Relax Total",
-    imagen: "https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=600&q=80",
+    imagen: "images/piscina-relax.webp",
     color: "primario",
   },
 ];
@@ -44,11 +44,11 @@ const piscinas = [
       {piscinas.map((piscina) => (
         <article class="bg-superficie rounded-card overflow-hidden group hover:shadow-elevada transition-all duration-500">
           <!-- Imagen -->
-          <div class="aspect-video relative overflow-hidden">
+          <div class="aspect-[8/5] relative overflow-hidden">
             <img
               src={piscina.imagen}
               alt={`Piscina ${piscina.nombre}`}
-              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              class="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
               loading="lazy"
             />
           </div>
