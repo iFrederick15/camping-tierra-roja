@@ -42,8 +42,20 @@ const nav = usuario.rol === 'admin' ? [...navStaff, ...navAdmin] : navStaff;
     <aside class="lg:w-64 lg:shrink-0 bg-superficie border-b lg:border-b-0 lg:border-r border-borde lg:min-h-screen">
       <div class="p-6 flex lg:flex-col justify-between lg:justify-start items-center lg:items-stretch gap-4">
         <a href="/panel">
-          <img src="/images/Logo-Tierra-Roja.png" alt="Logo de camping Tierra Roja" class="h-12 w-auto" />
+          <img src="/images/Logo-Tierra-Roja.png" alt="Logo de camping Tierra Roja" class="h-10 w-auto lg:h-12" />
         </a>
+
+        <!-- Cerrar sesión: en mobile la versión de escritorio queda oculta, así que
+             acá va una versión compacta para que siga siendo posible salir del panel. -->
+        <form method="POST" action="/panel/logout" class="lg:hidden">
+          <button
+            type="submit"
+            aria-label="Cerrar sesión"
+            class="flex items-center justify-center w-10 h-10 rounded-full text-texto-suave hover:bg-primario/10 hover:text-primario transition-colors"
+          >
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+          </button>
+        </form>
 
         <nav class="hidden lg:flex flex-col gap-1 mt-6">
           {

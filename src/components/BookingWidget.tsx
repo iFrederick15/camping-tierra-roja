@@ -764,11 +764,11 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
           )}
 
           <div className="flex gap-3">
-            <button className={btnSecundario} onClick={() => setPaso('unidad')}>
+            <button className={`${btnSecundario} flex-1`} onClick={() => setPaso('unidad')}>
               Volver
             </button>
             <button
-              className={btnPrimario}
+              className={`${btnPrimario} flex-1`}
               disabled={!puedeContinuarDesdeFechas}
               onClick={() => setPaso('datos')}
             >
@@ -854,11 +854,15 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
           {error && <p className="text-primario text-sm font-medium">{error}</p>}
 
           <div className="flex gap-3">
-            <button className={btnSecundario} disabled={enviando} onClick={() => setPaso('fechas')}>
+            <button
+              className={`${btnSecundario} flex-1`}
+              disabled={enviando}
+              onClick={() => setPaso('fechas')}
+            >
               Volver
             </button>
             <button
-              className={btnPrimario}
+              className={`${btnPrimario} flex-1`}
               disabled={!datosCompletos || enviando}
               onClick={confirmarReserva}
             >
