@@ -11,13 +11,14 @@ import {
   calcularFechaLimitePago,
   obtenerConfiguracionPagos,
   calcularPrecio,
+  asignarParcelaMotorhome,
 } from '../../lib/reservas';
 
 export const POST: APIRoute = async ({ request }) => {
   const body = await request.json();
   const {
     unidadTipo,
-    parcelaId, // solo si unidadTipo === 'MOTORHOME' | 'QUINCHOS'
+    parcelaId, // solo QUINCHOS — MOTORHOME se asigna automático (ver más abajo)
     fechaIngreso,
     fechaSalida,
     nombreCliente,
@@ -59,6 +60,21 @@ export const POST: APIRoute = async ({ request }) => {
   }
   const { montoTotal, detalle } = precio;
 
+  // MOTORHOME: el cliente no elige parcela, se asigna automáticamente una
+  // libre del stock. QUINCHOS sigue con la parcela que eligió el cliente.
+  let parcelaAsignada: string | null = null;
+  if (unidadTipo === 'MOTORHOME') {
+    parcelaAsignada = await asignarParcelaMotorhome(unidad.id, fechaIngreso, fechaSalida);
+    if (!parcelaAsignada) {
+      return new Response(
+        JSON.stringify({ error: 'Ya no hay parcelas de motorhome disponibles para esas fechas' }),
+        { status: 409 }
+      );
+    }
+  } else if (unidadTipo === 'QUINCHOS') {
+    parcelaAsignada = parcelaId;
+  }
+
   // Plazo de pago según antelación (ver Documento de Producto §4.2),
   // configurable desde el Panel Admin (tabla configuracion_pagos).
   const configPagos = await obtenerConfiguracionPagos();
@@ -71,7 +87,7 @@ export const POST: APIRoute = async ({ request }) => {
     .from('reservas')
     .insert({
       unidad_id: unidad.id,
-      parcela_id: unidadTipo === 'MOTORHOME' || unidadTipo === 'QUINCHOS' ? parcelaId : null,
+      parcela_id: parcelaAsignada,
       nombre_cliente: nombreCliente,
       dni,
       email,

@@ -122,14 +122,25 @@ export async function obtenerDisponibilidad(
 
   const unidadInfo = { id: unidad.id, nombre: unidad.nombre };
 
-  if (unidad.tipo === 'MOTORHOME' || unidad.tipo === 'QUINCHOS') {
+  // MOTORHOME: el cliente no elige parcela — el sistema asigna una libre
+  // automáticamente al confirmar (ver asignarParcelaMotorhome). Acá solo
+  // importa saber si hay al menos una parcela activa sin solapar.
+  if (unidad.tipo === 'MOTORHOME') {
+    const parcelasOcupadasIds = new Set((solapadas ?? []).map((r) => r.parcela_id));
+    const libres = (unidad.parcelas ?? []).filter(
+      (p: any) => p.activa && !parcelasOcupadasIds.has(p.id)
+    );
+    return {
+      unidad: unidadInfo,
+      disponibilidad: { tipo: 'cupo', disponible: libres.length > 0, cuposLibres: libres.length },
+    };
+  }
+
+  if (unidad.tipo === 'QUINCHOS') {
     const parcelasOcupadasIds = new Set((solapadas ?? []).map((r) => r.parcela_id));
     const disponibles = (unidad.parcelas ?? [])
       .filter(
-        (p: any) =>
-          p.activa &&
-          !parcelasOcupadasIds.has(p.id) &&
-          (unidad.tipo !== 'QUINCHOS' || p.opciones_precio?.clave === categoria)
+        (p: any) => p.activa && !parcelasOcupadasIds.has(p.id) && p.opciones_precio?.clave === categoria
       )
       .map((p: any) => ({ id: p.id, nombre: p.nombre, atributos: p.atributos }));
 
@@ -148,6 +159,39 @@ export async function obtenerDisponibilidad(
   // CABANA: unidad única
   const disponible = (solapadas?.length ?? 0) === 0;
   return { unidad: unidadInfo, disponibilidad: { tipo: 'unica', disponible } };
+}
+
+// Elige una parcela de Motorhome libre para esas fechas (la más baja
+// numerada entre las disponibles) — el cliente ya no elige "Parcela N", el
+// sistema la saca del stock al confirmar. Llamarla recién al confirmar (no
+// al mostrar disponibilidad) para no reservarle una parcela a alguien que
+// todavía está mirando fechas.
+// NOTA: mismo hueco de concurrencia que el resto de las reservas (ver nota
+// en reservar.ts) — dos confirmaciones simultáneas podrían tomar la misma
+// parcela hasta que eso se resuelva con un lock en Postgres.
+export async function asignarParcelaMotorhome(
+  unidadId: string,
+  desde: string,
+  hasta: string
+): Promise<string | null> {
+  const { data: parcelas } = await supabaseAdmin
+    .from('parcelas')
+    .select('id, numero')
+    .eq('unidad_id', unidadId)
+    .eq('activa', true)
+    .order('numero');
+
+  const { data: solapadas } = await supabaseAdmin
+    .from('reservas')
+    .select('parcela_id')
+    .eq('unidad_id', unidadId)
+    .in('estado', ['CONFIRMADA', 'CHECKIN_HECHO'])
+    .lt('fecha_ingreso', hasta)
+    .gt('fecha_salida', desde);
+
+  const ocupadasIds = new Set((solapadas ?? []).map((r) => r.parcela_id));
+  const libre = (parcelas ?? []).find((p) => !ocupadasIds.has(p.id));
+  return libre?.id ?? null;
 }
 
 // ------------------------------------------------------------

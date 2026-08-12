@@ -5,7 +5,7 @@
 // y no exige email/teléfono.
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../../lib/supabase';
-import { calcularNoches, calcularPrecio } from '../../../../lib/reservas';
+import { calcularNoches, calcularPrecio, asignarParcelaMotorhome } from '../../../../lib/reservas';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.usuario) {
@@ -57,11 +57,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
   const { montoTotal, detalle } = precio;
 
+  // MOTORHOME: el cliente no elige parcela, se asigna automáticamente una
+  // libre del stock. QUINCHOS sigue con la parcela que eligió Staff.
+  let parcelaAsignada: string | null = null;
+  if (unidadTipo === 'MOTORHOME') {
+    parcelaAsignada = await asignarParcelaMotorhome(unidad.id, fechaIngreso, fechaSalida);
+    if (!parcelaAsignada) {
+      return new Response(
+        JSON.stringify({ error: 'Ya no hay parcelas de motorhome disponibles para esas fechas' }),
+        { status: 409 }
+      );
+    }
+  } else if (unidadTipo === 'QUINCHOS') {
+    parcelaAsignada = parcelaId;
+  }
+
   const { data: reserva, error: errInsert } = await supabaseAdmin
     .from('reservas')
     .insert({
       unidad_id: unidad.id,
-      parcela_id: unidadTipo === 'MOTORHOME' || unidadTipo === 'QUINCHOS' ? parcelaId : null,
+      parcela_id: parcelaAsignada,
       nombre_cliente: nombreCliente,
       dni,
       email: email || null,

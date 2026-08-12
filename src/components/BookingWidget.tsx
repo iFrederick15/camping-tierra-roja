@@ -608,7 +608,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
               <div className="relative">
                 <input
                   type="date"
-                  className={`${input} ${!fechaIngreso && !tocadoIngreso ? '[&::-webkit-datetime-edit]:text-transparent' : ''}`}
+                  className={`${input} ${!fechaIngreso && !tocadoIngreso ? 'text-transparent' : ''}`}
                   value={fechaIngreso}
                   onFocus={() => setTocadoIngreso(true)}
                   onChange={(e) => setFechaIngreso(e.target.value)}
@@ -625,7 +625,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
               <div className="relative">
                 <input
                   type="date"
-                  className={`${input} ${!fechaSalida && !tocadoSalida ? '[&::-webkit-datetime-edit]:text-transparent' : ''}`}
+                  className={`${input} ${!fechaSalida && !tocadoSalida ? 'text-transparent' : ''}`}
                   value={fechaSalida}
                   onFocus={() => setTocadoSalida(true)}
                   onChange={(e) => setFechaSalida(e.target.value)}
