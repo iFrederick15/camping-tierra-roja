@@ -409,7 +409,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
   const indicePaso = PASOS.findIndex((p) => p.paso === paso);
 
   return (
-    <div className="max-w-xl mx-auto bg-superficie rounded-card shadow-elevada p-8 lg:p-10 relative overflow-hidden">
+    <div className="max-w-xl mx-auto bg-superficie rounded-card shadow-elevada p-5 sm:p-8 lg:p-10 relative overflow-hidden">
       {/* Acento orgánico decorativo, igual al usado en el resto del sitio */}
       <div className="absolute -top-16 -right-16 w-48 h-48 bg-primario/5 rounded-full blur-2xl pointer-events-none" />
       <div className="absolute -bottom-20 -left-16 w-48 h-48 bg-acento/5 rounded-full blur-2xl pointer-events-none" />
@@ -455,7 +455,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
       {paso === 'unidad' && (
         <section className="flex flex-col gap-6 relative z-10">
           <h2 className="font-titulo font-bold text-3xl text-negro">¿Qué quieres reservar?</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {UNIDADES.map((u) => {
               const seleccionada = unidad === u.tipo;
               return (
@@ -509,7 +509,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
 
           {unidad === 'MOTORHOME' && (
             <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {opcionesPrecio
                   .filter((o) => o.tipoCargo === 'BASE')
                   .map((op) => (
@@ -547,7 +547,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
           )}
 
           {unidad === 'CAMPING' && (
-            <div className="grid grid-cols-2 gap-3 bg-fondo-alt rounded-card p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-fondo-alt rounded-card p-5">
               {opcionesPrecio.map((op) => (
                 <Stepper
                   key={op.clave}
@@ -572,7 +572,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
                     </span>
                   </div>
                 ))}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Stepper
                   label="Adultos"
                   value={mayores}
@@ -596,7 +596,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
 
           {unidad === 'QUINCHOS' && (
             <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {opcionesPrecio.map((op) => (
                   <button
                     key={op.clave}
@@ -631,7 +631,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
       {paso === 'fechas' && (
         <section className="flex flex-col gap-5 relative z-10">
           <h2 className="font-titulo font-bold text-3xl text-negro">Elegí tus fechas</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
               Entrada
               <div className="relative">

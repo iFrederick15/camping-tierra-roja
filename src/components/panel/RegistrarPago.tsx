@@ -43,7 +43,7 @@ export default function RegistrarPago({ reservaId }: Props) {
   return (
     <form onSubmit={registrarPago} className="flex flex-col gap-3 bg-superficie-elevada rounded-card p-5">
       <h3 className="font-titulo font-bold text-negro">Registrar pago</h3>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <input
           type="number"
           min={1}

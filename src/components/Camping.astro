@@ -7,7 +7,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
       <!-- Camping Card (principal, 7 cols) -->
       <div
-        class="lg:col-span-7 rounded-card overflow-hidden relative min-h-[520px] flex flex-col justify-end p-8 lg:p-12 group"
+        class="lg:col-span-7 rounded-card overflow-hidden relative min-h-95 lg:min-h-130 flex flex-col justify-end p-6 sm:p-8 lg:p-12 group"
       >
         <img
           src="/images/camping.jpg"
@@ -46,7 +46,7 @@
         class="lg:col-span-5 bg-superficie-elevada rounded-card overflow-hidden flex flex-col shadow-suave"
       >
         <!-- Imagen -->
-        <div class="h-1/2 relative overflow-hidden">
+        <div class="aspect-video lg:aspect-auto lg:h-1/2 relative overflow-hidden">
           <img
             src="/images/motorhome.png"
             alt="Espacio para motorhome"
@@ -55,14 +55,16 @@
           />
         </div>
         <!-- Contenido -->
-        <div class="h-1/2 p-8 lg:p-10 flex flex-col justify-center">
-          <h2 class="font-titulo font-bold text-2xl lg:text-3xl text-negro mb-4">
-            Espacio Motorhome
-          </h2>
-          <p class="text-texto-suave mb-8 leading-relaxed">
-            Conexiones completas, seguridad 24hs y acceso a todas las instalaciones del parque para
-            tu casa rodante.
-          </p>
+        <div class="lg:h-1/2 p-6 sm:p-8 lg:p-10 flex flex-col justify-between gap-6">
+          <div>
+            <h2 class="font-titulo font-bold text-2xl lg:text-3xl text-negro mb-4">
+              Espacio Motorhome
+            </h2>
+            <p class="text-texto-suave leading-relaxed">
+              Conexiones completas, seguridad 24hs y acceso a todas las instalaciones del parque
+              para tu casa rodante.
+            </p>
+          </div>
           <a
             href="/reservas"
             class="w-full border-2 border-primario text-primario px-8 py-4 rounded-pill font-titulo font-bold text-center hover:bg-primario hover:text-white transition-all duration-300"

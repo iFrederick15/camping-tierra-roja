@@ -18,47 +18,47 @@ const navLinks = [
 <nav id="navbar" class="top-0 w-full z-50 bg-white">
   <div class="flex justify-between items-center w-full px-6 lg:px-8 py-4 max-w-7xl mx-auto">
     <!-- Logo -->
-    <a href="/">
+    <a href="/" class="shrink-0">
       <img
         src="/images/Logo-Tierra-Roja.png"
         alt="Logo de camping Tierra Roja"
-        class="h-20 w-auto"
+        class="h-14 w-auto sm:h-16 lg:h-20"
       />
-      <a></a>
-      <!-- Desktop Nav -->
-      <div class="hidden lg:flex gap-8 items-center">
-        {
-          navLinks.map((link) => (
-            <a
-              href={link.href}
-              class:list={[
-                'font-titulo font-medium text-sm tracking-wide transition-colors duration-200',
-                link.active
-                  ? 'text-primario border-b-2 border-primario pb-0.5'
-                  : 'text-texto-suave hover:text-primario',
-              ]}
-            >
-              {link.label}
-            </a>
-          ))
-        }
-      </div>
-
-      <!-- CTA -->
-      <a
-        href="#reservar"
-        class="hidden lg:inline-flex bg-gradient-to-r from-primario to-acento text-white px-7 py-2.5 rounded-pill font-titulo font-bold text-sm tracking-wide hover:shadow-lg hover:scale-105 transition-all duration-200 active:scale-95"
-      >
-        Reservar
-      </a>
-
-      <!-- Mobile menu button -->
-      <button id="menu-toggle" class="lg:hidden flex flex-col gap-1.5 p-2" aria-label="Abrir menú">
-        <span class="w-6 h-0.5 bg-negro rounded-full transition-all duration-300" id="bar1"></span>
-        <span class="w-6 h-0.5 bg-negro rounded-full transition-all duration-300" id="bar2"></span>
-        <span class="w-4 h-0.5 bg-negro rounded-full transition-all duration-300" id="bar3"></span>
-      </button>
     </a>
+
+    <!-- Desktop Nav -->
+    <div class="hidden lg:flex gap-8 items-center">
+      {
+        navLinks.map((link) => (
+          <a
+            href={link.href}
+            class:list={[
+              'font-titulo font-medium text-sm tracking-wide transition-colors duration-200',
+              link.active
+                ? 'text-primario border-b-2 border-primario pb-0.5'
+                : 'text-texto-suave hover:text-primario',
+            ]}
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </div>
+
+    <!-- CTA -->
+    <a
+      href="#reservar"
+      class="hidden lg:inline-flex bg-gradient-to-r from-primario to-acento text-white px-7 py-2.5 rounded-pill font-titulo font-bold text-sm tracking-wide hover:shadow-lg hover:scale-105 transition-all duration-200 active:scale-95"
+    >
+      Reservar
+    </a>
+
+    <!-- Mobile menu button -->
+    <button id="menu-toggle" class="lg:hidden flex flex-col gap-1.5 p-2" aria-label="Abrir menú">
+      <span class="w-6 h-0.5 bg-negro rounded-full transition-all duration-300" id="bar1"></span>
+      <span class="w-6 h-0.5 bg-negro rounded-full transition-all duration-300" id="bar2"></span>
+      <span class="w-4 h-0.5 bg-negro rounded-full transition-all duration-300" id="bar3"></span>
+    </button>
 
     <!-- Mobile Menu -->
     <div
