@@ -75,7 +75,7 @@ for (const p of parcelas ?? []) {
                 >
                   <span class="text-sm text-texto flex-1 min-w-48">{op.etiqueta}</span>
                   <label class="flex flex-col gap-1 text-sm text-texto-suave">
-                    $ por noche
+                    {u.tipo === 'QUINCHOS' ? '$ por día' : '$ por noche'}
                     <input
                       type="number"
                       name="precioPorNoche"

@@ -577,7 +577,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
                   >
                     <div className="font-titulo font-bold text-negro text-sm">{op.etiqueta}</div>
                     <div className="text-texto-suave text-xs mt-1">
-                      {formatoMoneda(op.precioPorNoche)} / noche
+                      {formatoMoneda(op.precioPorNoche)} / día
                     </div>
                   </button>
                 ))}
@@ -786,7 +786,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
               )}
               {noches && (
                 <div className="flex justify-between">
-                  <span className="text-texto-suave">Noches</span>
+                  <span className="text-texto-suave">{unidad === 'QUINCHOS' ? 'Días' : 'Noches'}</span>
                   <span className="font-medium text-negro">{noches}</span>
                 </div>
               )}
