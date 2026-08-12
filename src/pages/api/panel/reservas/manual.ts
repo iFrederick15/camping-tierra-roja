@@ -5,7 +5,12 @@
 // y no exige email/teléfono.
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../../lib/supabase';
-import { calcularNoches, calcularPrecio, asignarParcelaMotorhome } from '../../../../lib/reservas';
+import {
+  calcularNoches,
+  calcularPrecio,
+  asignarParcelaMotorhome,
+  CAPACIDAD_MAXIMA_CABANA,
+} from '../../../../lib/reservas';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.usuario) {
@@ -43,6 +48,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   if (errUnidad || !unidad) {
     return new Response(JSON.stringify({ error: 'Unidad no válida' }), { status: 400 });
+  }
+
+  if (
+    unidadTipo === 'CABANA' &&
+    (cantidadMayores ?? 0) + (cantidadMenores ?? 0) > CAPACIDAD_MAXIMA_CABANA
+  ) {
+    return new Response(
+      JSON.stringify({
+        error: `La cabaña tiene capacidad máxima para ${CAPACIDAD_MAXIMA_CABANA} personas`,
+      }),
+      { status: 400 }
+    );
   }
 
   const noches = calcularNoches(fechaIngreso, fechaSalida);

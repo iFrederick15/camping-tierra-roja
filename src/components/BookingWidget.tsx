@@ -57,8 +57,14 @@ const UNIDADES: { tipo: TipoUnidad; label: string; descripcion: string; icono: s
   },
 ];
 
+const CAPACIDAD_MAXIMA_CABANA = 8;
+
 function formatoMoneda(monto: number): string {
-  return monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+  return monto.toLocaleString('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  });
 }
 
 function calcularNochesLocal(desde: string, hasta: string): number {
@@ -162,6 +168,52 @@ function Carousel({ imagenes, alt }: { imagenes: string[]; alt: string }) {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function Stepper({
+  label,
+  sublabel,
+  value,
+  onChange,
+  min = 0,
+  max = 20,
+}: {
+  label: string;
+  sublabel?: string;
+  value: number;
+  onChange: (valor: number) => void;
+  min?: number;
+  max?: number;
+}) {
+  return (
+    <div className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
+      <span>{label}</span>
+      {sublabel && (
+        <span className="text-xs text-texto-suave/70 font-normal font-cuerpo">{sublabel}</span>
+      )}
+      <div className="flex items-center justify-between gap-3 bg-superficie border-2 border-transparent rounded-card px-2 py-1.5">
+        <button
+          type="button"
+          aria-label={`Restar ${label}`}
+          onClick={() => onChange(Math.max(min, value - 1))}
+          disabled={value <= min}
+          className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center bg-fondo-alt text-negro hover:bg-primario hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+        >
+          <span className="material-symbols-outlined text-[20px]">remove</span>
+        </button>
+        <span className="font-cuerpo font-bold text-negro text-lg tabular-nums">{value}</span>
+        <button
+          type="button"
+          aria-label={`Sumar ${label}`}
+          onClick={() => onChange(Math.min(max, value + 1))}
+          disabled={value >= max}
+          className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center bg-fondo-alt text-negro hover:bg-primario hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+        >
+          <span className="material-symbols-outlined text-[20px]">add</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -280,7 +332,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
     (unidad !== 'MOTORHOME' || !!categoria) &&
     (unidad !== 'QUINCHOS' || !!categoria) &&
     (unidad !== 'CAMPING' || menores + mayores > 0) &&
-    (unidad !== 'CABANA' || mayores > 0);
+    (unidad !== 'CABANA' || (mayores > 0 && mayores + menores <= CAPACIDAD_MAXIMA_CABANA));
 
   const puedeContinuarDesdeFechas =
     disponibilidad &&
@@ -291,8 +343,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
   const datosCompletos =
     datosCliente.nombreCliente.trim() !== '' &&
     datosCliente.dni.trim() !== '' &&
-    (modo === 'staff' ||
-      (datosCliente.email.trim() !== '' && datosCliente.telefono.trim() !== ''));
+    (modo === 'staff' || (datosCliente.email.trim() !== '' && datosCliente.telefono.trim() !== ''));
 
   async function confirmarReserva() {
     setEnviando(true);
@@ -475,52 +526,36 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
                     </button>
                   ))}
               </div>
-              {opcionesPrecio
-                .filter((o) => o.tipoCargo === 'CANTIDAD' && o.clave === 'ACOMPANANTE')
-                .map((op) => (
-                  <label
-                    key={op.clave}
-                    className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave"
-                  >
-                    {op.etiqueta}
-                    <span className="text-xs text-texto-suave/70 font-normal font-cuerpo">
-                      {formatoMoneda(op.precioPorNoche)} / noche c/u
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
+              <div className="border-t border-borde pt-4 flex flex-col gap-3">
+                <p className="flex items-center gap-1.5 text-sm font-titulo font-bold text-negro">
+                  <span className="material-symbols-outlined text-[18px] text-primario">group</span>
+                  Acompañantes
+                </p>
+                {opcionesPrecio
+                  .filter((o) => o.tipoCargo === 'CANTIDAD' && o.clave === 'ACOMPANANTE')
+                  .map((op) => (
+                    <Stepper
+                      key={op.clave}
+                      label={op.etiqueta}
+                      sublabel={`${formatoMoneda(op.precioPorNoche)} / noche c/u`}
                       value={acompanantes}
-                      onChange={(e) => setAcompanantes(Math.max(0, Number(e.target.value)))}
-                      className={input}
+                      onChange={setAcompanantes}
                     />
-                  </label>
-                ))}
+                  ))}
+              </div>
             </div>
           )}
 
           {unidad === 'CAMPING' && (
             <div className="grid grid-cols-2 gap-3 bg-fondo-alt rounded-card p-5">
               {opcionesPrecio.map((op) => (
-                <label
+                <Stepper
                   key={op.clave}
-                  className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave"
-                >
-                  {op.etiqueta}
-                  <span className="text-xs text-texto-suave/70 font-normal font-cuerpo">
-                    {formatoMoneda(op.precioPorNoche)} / noche c/u
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={op.clave === 'MENOR' ? menores : mayores}
-                    onChange={(e) => {
-                      const valor = Math.max(0, Number(e.target.value));
-                      if (op.clave === 'MENOR') setMenores(valor);
-                      else setMayores(valor);
-                    }}
-                    className={input}
-                  />
-                </label>
+                  label={op.etiqueta}
+                  sublabel={`${formatoMoneda(op.precioPorNoche)} / noche c/u`}
+                  value={op.clave === 'MENOR' ? menores : mayores}
+                  onChange={op.clave === 'MENOR' ? setMenores : setMayores}
+                />
               ))}
             </div>
           )}
@@ -538,30 +573,24 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
                   </div>
                 ))}
               <div className="grid grid-cols-2 gap-3">
-                <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
-                  Adultos
-                  <input
-                    type="number"
-                    min={0}
-                    value={mayores}
-                    onChange={(e) => setMayores(Math.max(0, Number(e.target.value)))}
-                    className={input}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
-                  Menores
-                  <input
-                    type="number"
-                    min={0}
-                    value={menores}
-                    onChange={(e) => setMenores(Math.max(0, Number(e.target.value)))}
-                    className={input}
-                  />
-                </label>
+                <Stepper
+                  label="Adultos"
+                  value={mayores}
+                  onChange={setMayores}
+                  max={CAPACIDAD_MAXIMA_CABANA - menores}
+                />
+                <Stepper
+                  label="Menores"
+                  value={menores}
+                  onChange={setMenores}
+                  max={CAPACIDAD_MAXIMA_CABANA - mayores}
+                />
               </div>
-              <p className="text-xs text-texto-suave">
-                Precio fijo: no varía según la cantidad de personas.
-              </p>
+              {mayores + menores >= CAPACIDAD_MAXIMA_CABANA && (
+                <p className="text-xs font-medium text-primario">
+                  Alcanzaste la capacidad máxima de la cabaña ({CAPACIDAD_MAXIMA_CABANA} personas)
+                </p>
+              )}
             </div>
           )}
 
@@ -641,7 +670,9 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
 
           {cargandoDisponibilidad && (
             <p className="text-texto-suave text-sm flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+              <span className="material-symbols-outlined text-[18px] animate-spin">
+                progress_activity
+              </span>
               Consultando disponibilidad…
             </p>
           )}
@@ -786,7 +817,9 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
               )}
               {noches && (
                 <div className="flex justify-between">
-                  <span className="text-texto-suave">{unidad === 'QUINCHOS' ? 'Días' : 'Noches'}</span>
+                  <span className="text-texto-suave">
+                    {unidad === 'QUINCHOS' ? 'Días' : 'Noches'}
+                  </span>
                   <span className="font-medium text-negro">{noches}</span>
                 </div>
               )}
@@ -838,7 +871,10 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
       {paso === 'confirmado' && (
         <section className="flex flex-col items-center gap-3 text-center py-6 relative z-10">
           <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primario to-acento text-white flex items-center justify-center mb-2">
-            <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+            <span
+              className="material-symbols-outlined text-4xl"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
               check
             </span>
           </div>

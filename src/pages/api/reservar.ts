@@ -12,6 +12,7 @@ import {
   obtenerConfiguracionPagos,
   calcularPrecio,
   asignarParcelaMotorhome,
+  CAPACIDAD_MAXIMA_CABANA,
 } from '../../lib/reservas';
 
 export const POST: APIRoute = async ({ request }) => {
@@ -46,6 +47,18 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (errUnidad || !unidad) {
     return new Response(JSON.stringify({ error: 'Unidad no válida' }), { status: 400 });
+  }
+
+  if (
+    unidadTipo === 'CABANA' &&
+    (cantidadMayores ?? 0) + (cantidadMenores ?? 0) > CAPACIDAD_MAXIMA_CABANA
+  ) {
+    return new Response(
+      JSON.stringify({
+        error: `La cabaña tiene capacidad máxima para ${CAPACIDAD_MAXIMA_CABANA} personas`,
+      }),
+      { status: 400 }
+    );
   }
 
   const noches = calcularNoches(fechaIngreso, fechaSalida);

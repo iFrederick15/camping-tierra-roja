@@ -200,6 +200,8 @@ export async function asignarParcelaMotorhome(
 // usado tanto por el Portal público (reservar.ts) como por la carga manual
 // de Staff (manual.ts) y por el resumen en vivo de BookingWidget.
 // ------------------------------------------------------------
+export const CAPACIDAD_MAXIMA_CABANA = 8;
+
 export interface SeleccionPrecio {
   categoria?: string; // MOTORHOME: CHICO/GRANDE. QUINCHOS: CHICO/GRANDE/ESPECIAL/COMPARTIDO. CABANA: FIJO.
   acompanantes?: number; // MOTORHOME
