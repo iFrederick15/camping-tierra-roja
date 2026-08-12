@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 type TipoUnidad = 'CAMPING' | 'MOTORHOME' | 'CABANA' | 'QUINCHOS';
 type Paso = 'unidad' | 'fechas' | 'datos' | 'confirmado';
@@ -224,13 +224,29 @@ interface Props {
   // manda directo al Detalle de la reserva (para check-in/pago) en vez de
   // mostrar el paso "confirmado" genérico del Portal público.
   modo?: 'publico' | 'staff';
+  // Precarga desde el Calendario de ocupación (clic/arrastre en una celda
+  // vacía) — ver /panel/reservas/nueva.astro. categoriaInicial/parcelaInicial
+  // solo aplican a QUINCHOS: es el único tipo donde Staff elige la parcela
+  // exacta (MOTORHOME siempre se asigna automático en el backend).
+  unidadInicial?: TipoUnidad;
+  fechaIngresoInicial?: string;
+  fechaSalidaInicial?: string;
+  categoriaInicial?: string;
+  parcelaInicial?: string;
 }
 
 // Único componente React del sitio — todo lo demás sigue siendo Astro plano.
 // Sin cuenta, sin login: 4 pasos, todo el estado vive acá.
-export default function BookingWidget({ modo = 'publico' }: Props) {
+export default function BookingWidget({
+  modo = 'publico',
+  unidadInicial,
+  fechaIngresoInicial,
+  fechaSalidaInicial,
+  categoriaInicial,
+  parcelaInicial,
+}: Props) {
   const [paso, setPaso] = useState<Paso>('unidad');
-  const [unidad, setUnidad] = useState<TipoUnidad | null>(null);
+  const [unidad, setUnidad] = useState<TipoUnidad | null>(unidadInicial ?? null);
 
   // Ítems de precio de la unidad elegida (ver sql/003_precios_itemizados.sql)
   // y la selección del cliente sobre esos ítems. Se piden apenas se elige la
@@ -242,8 +258,13 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
   const [menores, setMenores] = useState(0); // CAMPING (cobra) / CABANA (informativo)
   const [mayores, setMayores] = useState(0); // CAMPING (cobra) / CABANA (informativo, "adultos")
 
-  const [fechaIngreso, setFechaIngreso] = useState('');
-  const [fechaSalida, setFechaSalida] = useState('');
+  const [fechaIngreso, setFechaIngreso] = useState(fechaIngresoInicial ?? '');
+  const [fechaSalida, setFechaSalida] = useState(fechaSalidaInicial ?? '');
+  // Aplicar la precarga de categoría/parcela una sola vez (al llegar los
+  // datos async correspondientes), no cada vez que cambia `unidad` —
+  // de lo contrario pisaría una elección posterior de Staff.
+  const categoriaInicialAplicada = useRef(false);
+  const parcelaInicialAplicada = useRef(false);
   // Safari muestra la fecha de hoy en gris como "hint" nativo de un
   // <input type="date"> vacío (no es un valor real, pero parece precargado).
   // Tapamos ese hint con nuestro propio placeholder hasta que el campo
@@ -279,9 +300,12 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
         if (cancelado) return;
         const opciones: OpcionPrecio[] = data.opciones ?? [];
         setOpcionesPrecio(opciones);
-        // CABANA tiene un único ítem BASE ("Fijo") sin elección real: se
-        // preselecciona para que el precio se muestre sin pedirle nada al cliente.
-        if (unidad === 'CABANA') {
+        if (!categoriaInicialAplicada.current && categoriaInicial && unidad === unidadInicial) {
+          categoriaInicialAplicada.current = true;
+          setCategoria(categoriaInicial);
+        } else if (unidad === 'CABANA') {
+          // CABANA tiene un único ítem BASE ("Fijo") sin elección real: se
+          // preselecciona para que el precio se muestre sin pedirle nada al cliente.
           const fijo = opciones.find((o) => o.clave === 'FIJO');
           if (fijo) setCategoria(fijo.clave);
         }
@@ -311,7 +335,17 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
         return data;
       })
       .then((data) => {
-        if (!cancelado) setDisponibilidad(data.disponibilidad);
+        if (cancelado) return;
+        setDisponibilidad(data.disponibilidad);
+        if (
+          !parcelaInicialAplicada.current &&
+          parcelaInicial &&
+          data.disponibilidad?.tipo === 'lista' &&
+          data.disponibilidad.opciones.some((o: OpcionParcela) => o.id === parcelaInicial)
+        ) {
+          parcelaInicialAplicada.current = true;
+          setParcelaSeleccionada(parcelaInicial);
+        }
       })
       .catch((e: Error) => {
         if (!cancelado)

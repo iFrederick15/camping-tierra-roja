@@ -1,0 +1,410 @@
+---
+import PanelLayout from '../../../layouts/PanelLayout.astro';
+import { supabaseAdmin } from '../../../lib/supabase';
+import { hoyISO, calcularEstadoPago, type TipoUnidad } from '../../../lib/reservas';
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+const ETIQUETAS_TIPO: Record<TipoUnidad, string> = {
+  CABANA: 'Cabaña',
+  CAMPING: 'Camping',
+  MOTORHOME: 'Motorhome',
+  QUINCHOS: 'Quinchos',
+};
+const ORDEN_TIPOS: TipoUnidad[] = ['CAMPING', 'MOTORHOME', 'CABANA', 'QUINCHOS'];
+
+// Mes visible: querystring ?mes=YYYY-MM, default al mes actual (huso horario
+// de Puerto Iguazú, igual que hoyISO()) — evita el off-by-one de usar la
+// fecha UTC del server cerca de medianoche/fin de mes.
+const mesParam = Astro.url.searchParams.get('mes');
+const mesValido = mesParam && /^\d{4}-\d{2}$/.test(mesParam) ? mesParam : hoyISO().slice(0, 7);
+const [anioStr, mesStr] = mesValido.split('-');
+const anio = Number(anioStr);
+const mesNum = Number(mesStr) - 1; // 0-indexado, como Date
+
+const inicioMes = `${anio}-${pad(mesNum + 1)}-01`;
+const primerDiaSiguiente = new Date(anio, mesNum + 1, 1);
+const finMes = `${primerDiaSiguiente.getFullYear()}-${pad(primerDiaSiguiente.getMonth() + 1)}-01`;
+const diasEnMes = new Date(anio, mesNum + 1, 0).getDate();
+const nombreMes = new Date(anio, mesNum, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+
+const mesAnteriorDate = new Date(anio, mesNum - 1, 1);
+const mesAnterior = `${mesAnteriorDate.getFullYear()}-${pad(mesAnteriorDate.getMonth() + 1)}`;
+const mesSiguienteStr = `${primerDiaSiguiente.getFullYear()}-${pad(primerDiaSiguiente.getMonth() + 1)}`;
+
+const hoy = hoyISO();
+const esMesActual = hoy.slice(0, 7) === mesValido;
+const hoyDia = esMesActual ? Number(hoy.slice(8, 10)) : null;
+
+// Por defecto el tablero arranca en el día de hoy (lo que ya pasó no aporta
+// para decidir dónde meter una reserva nueva) pero el usuario puede pedir
+// ?completo=1 para volver a ver los días anteriores del mes actual. En
+// meses pasados/futuros siempre se ve el mes completo.
+const completoParam = Astro.url.searchParams.get('completo') === '1';
+const diaInicioVisible = esMesActual && !completoParam ? (hoyDia ?? 1) : 1;
+const inicioVisible = `${anio}-${pad(mesNum + 1)}-${pad(diaInicioVisible)}`;
+
+const dias = Array.from({ length: diasEnMes - diaInicioVisible + 1 }, (_, i) => {
+  const dia = diaInicioVisible + i;
+  const fecha = new Date(anio, mesNum, dia);
+  return { dia, diaSemana: fecha.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', '') };
+});
+
+// Tipo de item visible: querystring ?tipo=CABANA|CAMPING|MOTORHOME|QUINCHOS,
+// default al primero de la lista.
+const tipoParam = Astro.url.searchParams.get('tipo');
+const tipoSeleccionado = ORDEN_TIPOS.includes(tipoParam as TipoUnidad) ? (tipoParam as TipoUnidad) : ORDEN_TIPOS[0];
+
+const { data: unidadSel } = await supabaseAdmin
+  .from('unidades')
+  .select('id, nombre, cupo_total')
+  .eq('tipo', tipoSeleccionado)
+  .single();
+
+interface ReservaFila {
+  id: string;
+  nombreCliente: string;
+  fechaIngreso: string;
+  fechaSalida: string;
+  estado: string;
+  montoTotal: number;
+  montoPagado: number;
+  parcelaId: string | null;
+}
+
+let reservasDelMes: ReservaFila[] = [];
+if (unidadSel) {
+  const { data: reservasData } = await supabaseAdmin
+    .from('reservas')
+    .select('id, nombre_cliente, fecha_ingreso, fecha_salida, estado, monto_total, monto_pagado, parcela_id')
+    .eq('unidad_id', unidadSel.id)
+    .lt('fecha_ingreso', finMes)
+    .gt('fecha_salida', inicioMes)
+    .neq('estado', 'CANCELADA');
+
+  reservasDelMes = (reservasData ?? []).map((r) => ({
+    id: r.id,
+    nombreCliente: r.nombre_cliente,
+    fechaIngreso: r.fecha_ingreso,
+    fechaSalida: r.fecha_salida,
+    estado: r.estado,
+    montoTotal: Number(r.monto_total),
+    montoPagado: Number(r.monto_pagado),
+    parcelaId: r.parcela_id,
+  }));
+}
+
+// Filas del tablero: para MOTORHOME/QUINCHOS cada fila es una parcela física
+// real (así la ocupación se ve en el lugar exacto donde quedó asignada). Para
+// CAMPING, que no tiene identidad física por reserva, se empaquetan las
+// reservas en "carriles" sin superposición hasta llenar el cupo_total. Para
+// CABANA, unidad única, una sola fila.
+interface Fila {
+  etiqueta: string;
+  reservas: ReservaFila[];
+  // Solo QUINCHOS: la parcela y su categoría de precio (opciones_precio.clave)
+  // permiten precargar la reserva nueva con el lugar exacto que se clickeó —
+  // ver obtenerDisponibilidad() en lib/reservas.ts, que filtra parcelas de
+  // QUINCHOS por esa categoría. MOTORHOME no la necesita: la parcela siempre
+  // se asigna automática en el backend (asignarParcelaMotorhome), nunca la
+  // elige quien carga la reserva.
+  parcelaId?: string;
+  categoria?: string;
+}
+
+let filas: Fila[] = [];
+
+if (tipoSeleccionado === 'MOTORHOME' || tipoSeleccionado === 'QUINCHOS') {
+  const { data: parcelasData } = await supabaseAdmin
+    .from('parcelas')
+    .select('id, numero, nombre, opciones_precio(clave)')
+    .eq('unidad_id', unidadSel?.id ?? '')
+    .order('numero');
+
+  const idsConocidos = new Set((parcelasData ?? []).map((p) => p.id));
+  const sinAsignar = reservasDelMes.filter((r) => !r.parcelaId || !idsConocidos.has(r.parcelaId));
+
+  filas = (parcelasData ?? []).map((p: any) => ({
+    etiqueta: p.nombre,
+    reservas: reservasDelMes.filter((r) => r.parcelaId === p.id),
+    parcelaId: p.id,
+    categoria: p.opciones_precio?.clave,
+  }));
+
+  if (sinAsignar.length > 0) {
+    filas.unshift({ etiqueta: 'Sin lugar', reservas: sinAsignar });
+  }
+} else if (tipoSeleccionado === 'CAMPING') {
+  const ordenadas = [...reservasDelMes].sort((a, b) => a.fechaIngreso.localeCompare(b.fechaIngreso));
+  const finPorCarril: string[] = [];
+  const carriles: ReservaFila[][] = [];
+  for (const r of ordenadas) {
+    let idx = finPorCarril.findIndex((fin) => fin <= r.fechaIngreso);
+    if (idx === -1) {
+      idx = finPorCarril.length;
+      carriles.push([]);
+    }
+    finPorCarril[idx] = r.fechaSalida;
+    carriles[idx].push(r);
+  }
+  filas = carriles.map((reservas, i) => ({ etiqueta: `Lugar ${i + 1}`, reservas }));
+
+  const capacidad = unidadSel?.cupo_total ?? 0;
+  while (filas.length < capacidad) {
+    filas.push({ etiqueta: `Lugar ${filas.length + 1}`, reservas: [] });
+  }
+} else {
+  filas = [{ etiqueta: unidadSel?.nombre ?? 'Cabaña', reservas: reservasDelMes }];
+}
+
+type EstadoVisual = 'RESERVA' | 'CHECKIN' | 'ADEUDADO' | 'CHECKOUT';
+
+function estadoVisual(r: ReservaFila): EstadoVisual {
+  if (r.estado === 'CHECKOUT_HECHO') return 'CHECKOUT';
+  if (calcularEstadoPago(r.montoTotal, r.montoPagado) !== 'PAGADO') return 'ADEUDADO';
+  return r.estado === 'CHECKIN_HECHO' ? 'CHECKIN' : 'RESERVA';
+}
+
+const ESTILO_VISUAL: Record<EstadoVisual, { label: string; className: string }> = {
+  RESERVA: { label: 'Reserva', className: 'bg-sky-600' },
+  CHECKIN: { label: 'Checkin', className: 'bg-confirmado' },
+  ADEUDADO: { label: 'Adeudado', className: 'bg-advertencia' },
+  CHECKOUT: { label: 'Checkout', className: 'bg-texto-suave' },
+};
+
+// Convierte las reservas (no superpuestas) de una fila en una secuencia de
+// segmentos que cubre el mes completo: barras de varios días para cada
+// reserva (colspan) y celdas sueltas de 1 día para los huecos vacíos — así
+// el "hoy" se puede resaltar celda por celda.
+interface Segmento {
+  colspan: number;
+  inicioDia: number;
+  reserva?: ReservaFila;
+}
+
+function construirSegmentos(reservas: ReservaFila[]): Segmento[] {
+  const ordenadas = [...reservas].sort((a, b) => a.fechaIngreso.localeCompare(b.fechaIngreso));
+  const segmentos: Segmento[] = [];
+  let cursor = diaInicioVisible;
+  for (const r of ordenadas) {
+    const inicioDia = r.fechaIngreso < inicioVisible ? diaInicioVisible : Number(r.fechaIngreso.slice(8, 10));
+    const finDiaExclusivo = r.fechaSalida >= finMes ? diasEnMes + 1 : Number(r.fechaSalida.slice(8, 10));
+    while (cursor < inicioDia) {
+      segmentos.push({ colspan: 1, inicioDia: cursor });
+      cursor++;
+    }
+    if (finDiaExclusivo <= cursor) continue;
+    segmentos.push({ colspan: finDiaExclusivo - cursor, inicioDia: cursor, reserva: r });
+    cursor = finDiaExclusivo;
+  }
+  while (cursor <= diasEnMes) {
+    segmentos.push({ colspan: 1, inicioDia: cursor });
+    cursor++;
+  }
+  return segmentos;
+}
+
+const filasConSegmentos = filas.map((fila) => ({ ...fila, segmentos: construirSegmentos(fila.reservas) }));
+---
+
+<PanelLayout title="Calendario de ocupación" activo="calendario">
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+    <h1 class="font-titulo font-bold text-3xl text-negro capitalize">{nombreMes}</h1>
+    <div class="flex gap-2">
+      {
+        esMesActual && !completoParam && diaInicioVisible > 1 && (
+          <a
+            href={`/panel/admin/calendario?mes=${mesValido}&tipo=${tipoSeleccionado}&completo=1`}
+            class="px-4 py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-sm hover:bg-superficie-elevada transition-colors"
+          >
+            ← Ver días anteriores
+          </a>
+        )
+      }
+      <a
+        href={`/panel/admin/calendario?mes=${mesAnterior}&tipo=${tipoSeleccionado}`}
+        class="px-4 py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-sm hover:bg-superficie-elevada transition-colors"
+      >
+        ← Mes anterior
+      </a>
+      <a
+        href={`/panel/admin/calendario?tipo=${tipoSeleccionado}`}
+        class="px-4 py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-sm hover:bg-superficie-elevada transition-colors"
+      >
+        Hoy
+      </a>
+      <a
+        href={`/panel/admin/calendario?mes=${mesSiguienteStr}&tipo=${tipoSeleccionado}`}
+        class="px-4 py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-sm hover:bg-superficie-elevada transition-colors"
+      >
+        Mes siguiente →
+      </a>
+    </div>
+  </div>
+
+  <div class="flex gap-2 mb-4 border-b-2 border-borde">
+    {
+      ORDEN_TIPOS.map((tipo) => (
+        <a
+          href={`/panel/admin/calendario?mes=${mesValido}&tipo=${tipo}`}
+          class:list={[
+            'px-4 py-2 font-titulo font-medium text-sm -mb-0.5 border-b-2 transition-colors',
+            tipo === tipoSeleccionado
+              ? 'border-primario text-primario'
+              : 'border-transparent text-texto-suave hover:text-primario',
+          ]}
+        >
+          {ETIQUETAS_TIPO[tipo]}
+        </a>
+      ))
+    }
+  </div>
+
+  <div class="flex items-center gap-4 text-sm text-texto-suave mb-6">
+    {
+      (Object.keys(ESTILO_VISUAL) as EstadoVisual[]).map((clave) => (
+        <span class="flex items-center gap-1.5">
+          <span class:list={['w-3 h-3 rounded-full inline-block', ESTILO_VISUAL[clave].className]} />
+          {ESTILO_VISUAL[clave].label}
+        </span>
+      ))
+    }
+  </div>
+
+  <div class="bg-superficie rounded-card border-2 border-borde overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="border-collapse w-full select-none">
+        <thead>
+          <tr>
+            <th class="sticky left-0 z-10 bg-superficie-elevada border-b-2 border-r-2 border-borde w-36 min-w-36 p-2 text-left text-xs font-titulo font-medium text-texto-suave">
+              {ETIQUETAS_TIPO[tipoSeleccionado]}
+            </th>
+            {
+              dias.map((d) => (
+                <th
+                  class:list={[
+                    'border-b-2 border-l border-borde w-12 min-w-12 py-1.5 text-xs font-titulo font-medium capitalize',
+                    d.dia === hoyDia ? 'bg-amber-100 text-negro' : 'text-texto-suave',
+                  ]}
+                >
+                  <div>{d.diaSemana}</div>
+                  <div class="text-sm">{d.dia}</div>
+                </th>
+              ))
+            }
+          </tr>
+        </thead>
+        <tbody>
+          {
+            filasConSegmentos.map((fila) => (
+              <tr data-parcela-id={fila.parcelaId ?? ''} data-categoria={fila.categoria ?? ''}>
+                <td class="sticky left-0 z-10 bg-superficie border-b border-r-2 border-borde w-36 min-w-36 px-2 py-1.5 text-sm font-titulo font-medium text-texto whitespace-nowrap overflow-hidden text-ellipsis">
+                  {fila.etiqueta}
+                </td>
+                {fila.segmentos.map((seg) =>
+                  seg.reserva ? (
+                    <td colspan={seg.colspan} class="border-b border-l border-borde p-0">
+                      <a
+                        href={`/panel/reservas/${seg.reserva.id}`}
+                        class:list={[
+                          'flex items-center h-9 px-2 text-xs font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis hover:brightness-110 transition-[filter]',
+                          ESTILO_VISUAL[estadoVisual(seg.reserva)].className,
+                        ]}
+                        title={`${seg.reserva.nombreCliente} · ${ESTILO_VISUAL[estadoVisual(seg.reserva)].label}`}
+                      >
+                        {seg.reserva.nombreCliente}
+                      </a>
+                    </td>
+                  ) : (
+                    <td
+                      class:list={[
+                        'celda-libre border-b border-l border-borde w-12 min-w-12 h-9 cursor-pointer hover:bg-primario/10 transition-colors',
+                        seg.inicioDia === hoyDia ? 'bg-amber-50' : '',
+                      ]}
+                      data-fecha={`${anio}-${pad(mesNum + 1)}-${pad(seg.inicioDia)}`}
+                      title="Clic o arrastrá para crear una reserva en estas fechas"
+                    />
+                  )
+                )}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script define:vars={{ tipoSeleccionado }}>
+    // Clic (o arrastre) sobre celdas vacías de una misma fila → nueva
+    // reserva precargada con esas fechas. El arrastre solo tiene sentido
+    // dentro de una fila (un mismo lugar), así que se ignora si el mouse
+    // sale de la fila donde empezó.
+    let arrastrando = false;
+    let filaActiva = null;
+    let fechaInicio = null;
+
+    function limpiarSeleccion() {
+      document.querySelectorAll('.celda-preseleccion').forEach((c) => {
+        c.classList.remove('celda-preseleccion', 'bg-primario/20');
+      });
+    }
+
+    function marcarRango(fila, fechaA, fechaB) {
+      limpiarSeleccion();
+      const desde = fechaA < fechaB ? fechaA : fechaB;
+      const hasta = fechaA < fechaB ? fechaB : fechaA;
+      fila.querySelectorAll('.celda-libre').forEach((c) => {
+        const f = c.dataset.fecha;
+        if (f >= desde && f <= hasta) c.classList.add('celda-preseleccion', 'bg-primario/20');
+      });
+    }
+
+    function irANuevaReserva(fila, fechaA, fechaB) {
+      const desde = fechaA < fechaB ? fechaA : fechaB;
+      const ultimoDia = fechaA < fechaB ? fechaB : fechaA;
+      // "hasta" es la fecha de salida (exclusiva, como en toda la app): un
+      // solo día seleccionado equivale a una noche.
+      const hastaDate = new Date(`${ultimoDia}T00:00:00`);
+      hastaDate.setDate(hastaDate.getDate() + 1);
+      const hasta = hastaDate.toISOString().slice(0, 10);
+
+      const params = new URLSearchParams({ tipo: tipoSeleccionado, desde, hasta });
+      const parcela = fila.dataset.parcelaId;
+      const categoria = fila.dataset.categoria;
+      if (tipoSeleccionado === 'QUINCHOS' && parcela && categoria) {
+        params.set('parcela', parcela);
+        params.set('categoria', categoria);
+      }
+      window.location.href = `/panel/reservas/nueva?${params}`;
+    }
+
+    document.querySelectorAll('.celda-libre').forEach((celda) => {
+      celda.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        arrastrando = true;
+        filaActiva = celda.closest('tr');
+        fechaInicio = celda.dataset.fecha ?? null;
+        if (filaActiva && fechaInicio) marcarRango(filaActiva, fechaInicio, fechaInicio);
+      });
+      celda.addEventListener('mouseenter', () => {
+        if (!arrastrando || !filaActiva || !fechaInicio) return;
+        if (celda.closest('tr') !== filaActiva) return;
+        marcarRango(filaActiva, fechaInicio, celda.dataset.fecha ?? fechaInicio);
+      });
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!arrastrando || !filaActiva || !fechaInicio) {
+        arrastrando = false;
+        return;
+      }
+      arrastrando = false;
+      const seleccionadas = Array.from(filaActiva.querySelectorAll('.celda-preseleccion'))
+        .map((c) => c.dataset.fecha)
+        .filter(Boolean)
+        .sort();
+      const fechaFin = seleccionadas[seleccionadas.length - 1] ?? fechaInicio;
+      irANuevaReserva(filaActiva, fechaInicio, fechaFin);
+    });
+  </script>
+</PanelLayout>

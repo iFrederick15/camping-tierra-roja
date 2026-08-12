@@ -1,9 +1,24 @@
 ---
 import PanelLayout from '../../../layouts/PanelLayout.astro';
 import BookingWidget from '../../../components/BookingWidget';
+
+// Precarga desde el Calendario de ocupación (clic/arrastre en una celda
+// vacía): /panel/reservas/nueva?tipo=X&desde=Y&hasta=Z[&parcela=P&categoria=C]
+const params = Astro.url.searchParams;
+const TIPOS_VALIDOS = ['CAMPING', 'MOTORHOME', 'CABANA', 'QUINCHOS'];
+const tipoParam = params.get('tipo');
+
+// Solo se arman con claves que tienen un valor real: pasarle `undefined`
+// explícito a un island client:load es innecesario y evitable.
+const precarga: Record<string, string> = {};
+if (TIPOS_VALIDOS.includes(tipoParam ?? '')) precarga.unidadInicial = tipoParam!;
+if (params.get('desde')) precarga.fechaIngresoInicial = params.get('desde')!;
+if (params.get('hasta')) precarga.fechaSalidaInicial = params.get('hasta')!;
+if (params.get('parcela')) precarga.parcelaInicial = params.get('parcela')!;
+if (params.get('categoria')) precarga.categoriaInicial = params.get('categoria')!;
 ---
 
 <PanelLayout title="Nueva reserva" activo="nueva">
   <h1 class="font-titulo font-bold text-3xl text-negro mb-8">Nueva reserva manual</h1>
-  <BookingWidget modo="staff" client:load />
+  <BookingWidget modo="staff" {...precarga} client:load />
 </PanelLayout>
