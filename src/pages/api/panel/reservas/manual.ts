@@ -24,7 +24,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     telefono,
     cantidadAcompanantes,
     categoria,
-    remolque,
     cantidadMenores,
     cantidadMayores,
   } = body;
@@ -49,7 +48,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const noches = calcularNoches(fechaIngreso, fechaSalida);
   const precio = await calcularPrecio(unidadTipo, noches, {
     categoria,
-    remolque,
     acompanantes: cantidadAcompanantes,
     menores: cantidadMenores,
     mayores: cantidadMayores,
@@ -70,7 +68,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
       telefono: telefono || null,
       cantidad_acompanantes: cantidadAcompanantes ?? 0,
       categoria_seleccionada: categoria ?? null,
-      remolque: Boolean(remolque),
       cantidad_menores: cantidadMenores ?? 0,
       cantidad_mayores: cantidadMayores ?? 0,
       detalle_precio: detalle,

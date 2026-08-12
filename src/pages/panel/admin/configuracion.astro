@@ -11,6 +11,7 @@ const { data: unidades } = await supabaseAdmin
 const { data: opcionesPrecio } = await supabaseAdmin
   .from('opciones_precio')
   .select('id, clave, etiqueta, tipo_cargo, precio_por_noche, unidad_id')
+  .eq('activo', true)
   .order('orden');
 
 const { data: parcelas } = await supabaseAdmin

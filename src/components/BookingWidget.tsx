@@ -74,7 +74,6 @@ function calcularDetalle(
   opciones: OpcionPrecio[],
   seleccion: {
     categoria: string | null;
-    remolque: boolean;
     acompanantes: number;
     menores: number;
     mayores: number;
@@ -86,8 +85,6 @@ function calcularDetalle(
     let cantidad = 0;
     if (op.tipoCargo === 'BASE') {
       cantidad = seleccion.categoria === op.clave ? 1 : 0;
-    } else if (op.tipoCargo === 'ADICIONAL') {
-      cantidad = op.clave === 'REMOLQUE' && seleccion.remolque ? 1 : 0;
     } else if (op.tipoCargo === 'CANTIDAD') {
       if (op.clave === 'ACOMPANANTE') cantidad = seleccion.acompanantes;
       else if (op.clave === 'MENOR') cantidad = seleccion.menores;
@@ -189,7 +186,6 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
   // poder consultar disponibilidad (cada categoría tiene sus propias parcelas).
   const [opcionesPrecio, setOpcionesPrecio] = useState<OpcionPrecio[]>([]);
   const [categoria, setCategoria] = useState<string | null>(null);
-  const [remolque, setRemolque] = useState(false);
   const [acompanantes, setAcompanantes] = useState(0); // MOTORHOME
   const [menores, setMenores] = useState(0); // CAMPING (cobra) / CABANA (informativo)
   const [mayores, setMayores] = useState(0); // CAMPING (cobra) / CABANA (informativo, "adultos")
@@ -216,10 +212,9 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   // Apenas se elige la unidad, pide sus ítems de precio y reinicia la
-  // selección anterior (categoría/remolque/acompañantes/menores/mayores).
+  // selección anterior (categoría/acompañantes/menores/mayores).
   useEffect(() => {
     setCategoria(null);
-    setRemolque(false);
     setAcompanantes(0);
     setMenores(0);
     setMayores(0);
@@ -312,7 +307,6 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
           fechaIngreso,
           fechaSalida,
           categoria,
-          remolque,
           cantidadAcompanantes: acompanantes,
           cantidadMenores: menores,
           cantidadMayores: mayores,
@@ -351,7 +345,7 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
   const noches =
     fechaIngreso && fechaSalida ? calcularNochesLocal(fechaIngreso, fechaSalida) : null;
   const detalle = noches
-    ? calcularDetalle(opcionesPrecio, { categoria, remolque, acompanantes, menores, mayores }, noches)
+    ? calcularDetalle(opcionesPrecio, { categoria, acompanantes, menores, mayores }, noches)
     : [];
   const total = detalle.length > 0 ? detalle.reduce((acc, d) => acc + d.subtotal, 0) : null;
   const unidadElegida = UNIDADES.find((u) => u.tipo === unidad);
@@ -481,19 +475,6 @@ export default function BookingWidget({ modo = 'publico' }: Props) {
                     </button>
                   ))}
               </div>
-              {opcionesPrecio
-                .filter((o) => o.tipoCargo === 'ADICIONAL')
-                .map((op) => (
-                  <label key={op.clave} className="flex items-center gap-2 text-sm text-texto">
-                    <input
-                      type="checkbox"
-                      checked={remolque}
-                      onChange={(e) => setRemolque(e.target.checked)}
-                      className="w-4 h-4 accent-primario"
-                    />
-                    {op.etiqueta} · {formatoMoneda(op.precioPorNoche)} / noche
-                  </label>
-                ))}
               {opcionesPrecio
                 .filter((o) => o.tipoCargo === 'CANTIDAD' && o.clave === 'ACOMPANANTE')
                 .map((op) => (

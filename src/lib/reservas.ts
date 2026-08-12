@@ -158,7 +158,6 @@ export async function obtenerDisponibilidad(
 // ------------------------------------------------------------
 export interface SeleccionPrecio {
   categoria?: string; // MOTORHOME: CHICO/GRANDE. QUINCHOS: CHICO/GRANDE/ESPECIAL/COMPARTIDO. CABANA: FIJO.
-  remolque?: boolean; // MOTORHOME
   acompanantes?: number; // MOTORHOME
   menores?: number; // CAMPING (cobra) / CABANA (informativo, no se usa acá)
   mayores?: number; // CAMPING (cobra) / CABANA (informativo, no se usa acá)
@@ -194,8 +193,6 @@ export async function calcularPrecio(
     let cantidad = 0;
     if (op.tipo_cargo === 'BASE') {
       cantidad = seleccion.categoria === op.clave ? 1 : 0;
-    } else if (op.tipo_cargo === 'ADICIONAL') {
-      cantidad = op.clave === 'REMOLQUE' && seleccion.remolque ? 1 : 0;
     } else if (op.tipo_cargo === 'CANTIDAD') {
       if (op.clave === 'ACOMPANANTE') cantidad = seleccion.acompanantes ?? 0;
       else if (op.clave === 'MENOR') cantidad = seleccion.menores ?? 0;
