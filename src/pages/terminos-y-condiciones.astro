@@ -1,0 +1,241 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+
+const actualizado = '15 de agosto de 2026';
+
+const secciones = [
+  { id: 'aceptacion', label: '1. Aceptación de los términos' },
+  { id: 'objeto', label: '2. Objeto del servicio' },
+  { id: 'reserva', label: '3. Proceso de reserva' },
+  { id: 'precios', label: '4. Precios y forma de pago' },
+  { id: 'plazo-pago', label: '5. Plazo de pago y cancelación automática' },
+  { id: 'cancelaciones', label: '6. Cancelaciones y modificaciones' },
+  { id: 'estadia', label: '7. Check-in, check-out y normas de convivencia' },
+  { id: 'admision', label: '8. Derecho de admisión y responsabilidad' },
+  { id: 'propiedad', label: '9. Propiedad intelectual' },
+  { id: 'cambios', label: '10. Cambios a estos términos' },
+  { id: 'ley', label: '11. Ley aplicable y jurisdicción' },
+  { id: 'contacto', label: '12. Contacto' },
+];
+---
+
+<Layout
+  title="Términos y Condiciones — Tierra Roja"
+  description="Condiciones de uso del sitio y del proceso de reserva de Camping Tierra Roja: precios, forma de pago, plazos y cancelaciones."
+>
+  <!-- Encabezado -->
+  <section class="max-w-7xl mx-auto px-6 pt-12 pb-10 md:pt-16 md:pb-14 text-center md:text-left">
+    <p class="font-titulo font-bold text-sm tracking-widest uppercase text-primario mb-4">
+      Legal
+    </p>
+    <h1
+      class="font-titulo font-extrabold text-4xl md:text-6xl text-texto mb-5 tracking-tight leading-tight"
+    >
+      Términos y <span class="text-primario italic">Condiciones</span>
+    </h1>
+    <p class="text-texto-suave text-lg max-w-2xl mx-auto md:mx-0 leading-relaxed">
+      Antes de reservar tu estadía en Tierra Roja, te pedimos que leas estas condiciones. Acá
+      explicamos cómo funciona el proceso de reserva, los precios, los plazos de pago y las
+      políticas de cancelación.
+    </p>
+    <p class="text-texto-suave text-sm mt-5">
+      Última actualización: <span class="font-semibold text-texto">{actualizado}</span>
+    </p>
+  </section>
+
+  <!-- Contenido -->
+  <section class="max-w-7xl mx-auto px-6 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <!-- Índice -->
+    <nav class="lg:col-span-4 lg:sticky lg:top-28 order-2 lg:order-1">
+      <div class="bg-superficie p-6 md:p-8 rounded-xl shadow-(--shadow-elevada) border border-borde/10">
+        <h2 class="font-titulo font-bold text-lg text-texto mb-4">En esta página</h2>
+        <ul class="space-y-2.5">
+          {
+            secciones.map((s) => (
+              <li>
+                <a
+                  href={`#${s.id}`}
+                  class="text-texto-suave text-sm hover:text-primario transition-colors"
+                >
+                  {s.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="mt-6 pt-6 border-t border-borde/60">
+          <p class="text-texto-suave text-xs leading-relaxed">
+            ¿Tenés dudas sobre estos términos? Escribinos a{' '}
+            <a href="mailto:hola@tierraroja.com.ar" class="text-primario font-semibold">
+              hola@tierraroja.com.ar
+            </a>
+          </p>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Texto legal -->
+    <div
+      class="lg:col-span-8 order-1 lg:order-2 bg-superficie p-8 md:p-12 rounded-xl shadow-(--shadow-elevada) border border-borde/10 space-y-12"
+    >
+      <div id="aceptacion" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">1. Aceptación de los términos</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Estos Términos y Condiciones regulan el uso del sitio{' '}
+          <a href="https://tierraroja.com.ar" class="text-primario font-semibold"
+            >tierraroja.com.ar</a
+          > y el proceso de reserva de estadías en{' '}
+          <strong class="text-texto">Tierra Roja – Camping y Parque Acuático</strong>. Al
+          navegar el sitio o completar una reserva, aceptás estas condiciones en su totalidad.
+        </p>
+        <p class="text-texto-suave leading-relaxed">
+          Si no estás de acuerdo con alguna de estas condiciones, te pedimos que no completes el
+          proceso de reserva y nos contactes antes para resolver tus dudas.
+        </p>
+      </div>
+
+      <div id="objeto" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">2. Objeto del servicio</h2>
+        <p class="text-texto-suave leading-relaxed">
+          A través del sitio ofrecemos la reserva de estadías en nuestras distintas unidades:
+          camping, motorhome, quinchos y cabañas, ubicadas en Barrio Los Yerbales 2000 Ha, Puerto
+          Iguazú, Misiones. La disponibilidad y los precios mostrados corresponden a las fechas
+          consultadas y pueden variar según la temporada.
+        </p>
+      </div>
+
+      <div id="reserva" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">3. Proceso de reserva</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Para reservar no es necesario crear una cuenta. Elegís las fechas y la unidad, completás
+          tus datos de contacto y confirmamos la disponibilidad en el momento. La reserva queda en
+          estado <strong class="text-texto">confirmada</strong> apenas se genera, pero su
+          validez definitiva depende de que se acredite el pago dentro del plazo indicado en la
+          sección siguiente.
+        </p>
+      </div>
+
+      <div id="precios" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">4. Precios y forma de pago</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Los precios se calculan según la unidad elegida, la cantidad de noches y, en el caso de
+          quinchos, la categoría seleccionada. El pago se realiza exclusivamente por{' '}
+          <strong class="text-texto">transferencia bancaria</strong>: no operamos con tarjetas
+          ni almacenamos datos de medios de pago. Una vez enviado el comprobante, nuestro equipo
+          verifica la acreditación de forma manual.
+        </p>
+      </div>
+
+      <div id="plazo-pago" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">
+          5. Plazo de pago y cancelación automática
+        </h2>
+        <p class="text-texto-suave leading-relaxed">
+          Toda reserva tiene un plazo límite para transferir el pago, informado por email al
+          momento de confirmarla. Ese plazo es más amplio cuanto mayor sea la anticipación con la
+          que reservás, y se acorta para reservas de último momento cercanas a la fecha de
+          ingreso.
+        </p>
+        <p class="text-texto-suave leading-relaxed">
+          Si el plazo vence sin que se acredite el pago total, la reserva se{' '}
+          <strong class="text-texto">cancela automáticamente</strong> y la disponibilidad se
+          libera, sin necesidad de aviso previo adicional.
+        </p>
+      </div>
+
+      <div id="cancelaciones" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">6. Cancelaciones y modificaciones</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Si ya efectuaste el pago y necesitás modificar o cancelar tu reserva, escribinos por
+          WhatsApp o a{' '}
+          <a href="mailto:hola@tierraroja.com.ar" class="text-primario font-semibold"
+            >hola@tierraroja.com.ar</a
+          >. Estos cambios se resuelven de forma directa con nuestro equipo, evaluando cada caso
+          según la anticipación y la disponibilidad.
+        </p>
+      </div>
+
+      <div id="estadia" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">
+          7. Check-in, check-out y normas de convivencia
+        </h2>
+        <p class="text-texto-suave leading-relaxed">
+          Al ingresar al predio deberás acreditar tu identidad con DNI, cédula o pasaporte. Una
+          estadía comprende desde el día de ingreso hasta las 10:00 hs. del día siguiente. El uso
+          de las instalaciones, los horarios de descanso y demás normas de convivencia están
+          detallados en nuestras{' '}
+          <a href="/normas-del-parque" class="text-primario font-semibold"
+            >Normas del Parque</a
+          >, que forman parte integral de estos Términos y Condiciones.
+        </p>
+      </div>
+
+      <div id="admision" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">
+          8. Derecho de admisión y responsabilidad
+        </h2>
+        <p class="text-texto-suave leading-relaxed">
+          El complejo se reserva el Derecho de Admisión y podrá negar el ingreso o invitar a
+          retirarse a quienes incumplan las normas del reglamento o representen un peligro o una
+          molestia para otros visitantes. Camping Tierra Roja no cuenta con servicio médico
+          propio, aunque dispone de un botiquín de primeros auxilios para atender eventualidades
+          durante la estadía.
+        </p>
+      </div>
+
+      <div id="propiedad" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">9. Propiedad intelectual</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Los textos, imágenes, logo y demás contenidos del sitio pertenecen a Tierra Roja o se
+          utilizan con la autorización correspondiente. Queda prohibida su reproducción total o
+          parcial sin nuestro consentimiento previo por escrito.
+        </p>
+      </div>
+
+      <div id="cambios" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">10. Cambios a estos términos</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Podemos actualizar estos Términos y Condiciones ocasionalmente para reflejar cambios en
+          el sitio, en nuestros servicios o en la normativa vigente. La fecha de la última
+          actualización figura al inicio de esta página.
+        </p>
+      </div>
+
+      <div id="ley" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">11. Ley aplicable y jurisdicción</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Estos Términos y Condiciones se rigen por las leyes de la República Argentina. Ante
+          cualquier controversia, las partes se someten a la jurisdicción de los tribunales
+          ordinarios de la Provincia de Misiones, con renuncia a cualquier otro fuero que pudiera
+          corresponder.
+        </p>
+      </div>
+
+      <div id="contacto" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">12. Contacto</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Si tenés preguntas sobre estos Términos y Condiciones o sobre tu reserva, escribinos:
+        </p>
+        <div class="flex flex-col gap-3 pt-2">
+          <div class="flex items-center gap-3">
+            <div class="bg-primario/10 p-2.5 rounded-lg text-primario">
+              <span class="material-symbols-outlined text-lg">mail</span>
+            </div>
+            <a href="mailto:hola@tierraroja.com.ar" class="text-texto font-semibold hover:text-primario transition-colors">
+              hola@tierraroja.com.ar
+            </a>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="bg-primario/10 p-2.5 rounded-lg text-primario">
+              <span class="material-symbols-outlined text-lg">location_on</span>
+            </div>
+            <span class="text-texto font-semibold">
+              Barrio Los Yerbales 2000 Ha, Puerto Iguazú, Misiones
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

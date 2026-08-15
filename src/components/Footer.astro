@@ -8,7 +8,7 @@ const explorar = [
 
 const info = [
   { label: 'Normas del Parque', href: '/normas-del-parque' },
-  { label: 'Términos y Condiciones', href: '#' },
+  { label: 'Términos y Condiciones', href: '/terminos-y-condiciones' },
   { label: 'Política de Privacidad', href: '/politica-de-privacidad' },
 ];
 ---
@@ -22,7 +22,7 @@ const info = [
         <img
           src="/images/Logo-Tierra-Roja.png"
           alt="Logo de camping Tierra Roja"
-          class="h-20 w-auto"
+          class="h-28 w-auto mb-5"
         />
         <p class="text-texto-suave text-sm leading-relaxed mb-6">
           Tu portal a la majestuosidad de la selva paranaense. Experiencias auténticas, sustentables
@@ -35,21 +35,27 @@ const info = [
             class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
             aria-label="Instagram"
           >
-            <span class="material-symbols-outlined text-lg">photo_camera</span>
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+              <path d="M12 2c-2.716 0-3.056.012-4.123.06-1.064.049-1.791.218-2.427.465a4.9 4.9 0 0 0-1.772 1.153A4.9 4.9 0 0 0 2.525 5.45c-.247.636-.416 1.363-.465 2.427C2.012 8.944 2 9.284 2 12s.012 3.056.06 4.123c.049 1.064.218 1.791.465 2.427a4.9 4.9 0 0 0 1.153 1.772 4.9 4.9 0 0 0 1.772 1.153c.636.247 1.363.416 2.427.465C8.944 21.988 9.284 22 12 22s3.056-.012 4.123-.06c1.064-.049 1.791-.218 2.427-.465a4.9 4.9 0 0 0 1.772-1.153 4.9 4.9 0 0 0 1.153-1.772c.247-.636.416-1.363.465-2.427.048-1.067.06-1.407.06-4.123s-.012-3.056-.06-4.123c-.049-1.064-.218-1.791-.465-2.427a4.9 4.9 0 0 0-1.153-1.772A4.9 4.9 0 0 0 18.55 2.525c-.636-.247-1.363-.416-2.427-.465C15.056 2.012 14.716 2 12 2Zm0 1.802c2.67 0 2.986.01 4.04.059.976.044 1.505.207 1.858.344.467.181.8.399 1.15.748.35.35.567.683.748 1.15.137.353.3.882.344 1.858.048 1.054.059 1.37.059 4.04s-.01 2.986-.059 4.04c-.044.976-.207 1.505-.344 1.858a3.1 3.1 0 0 1-.748 1.15 3.1 3.1 0 0 1-1.15.748c-.353.137-.882.3-1.858.344-1.054.048-1.37.059-4.04.059s-2.986-.01-4.04-.059c-.976-.044-1.505-.207-1.858-.344a3.1 3.1 0 0 1-1.15-.748 3.1 3.1 0 0 1-.748-1.15c-.137-.353-.3-.882-.344-1.858-.048-1.054-.059-1.37-.059-4.04s.01-2.986.059-4.04c.044-.976.207-1.505.344-1.858.181-.467.399-.8.748-1.15.35-.35.683-.567 1.15-.748.353-.137.882-.3 1.858-.344 1.054-.048 1.37-.059 4.04-.059ZM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.25a3.25 3.25 0 1 1 0-6.5 3.25 3.25 0 0 1 0 6.5Zm5.2-8.65a1.17 1.17 0 1 0 0-2.34 1.17 1.17 0 0 0 0 2.34Z"/>
+            </svg>
           </a>
           <a
             href="#"
             class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
             aria-label="Facebook"
           >
-            <span class="material-symbols-outlined text-lg">share</span>
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+              <path d="M22 12.061C22 6.505 17.523 2 12 2S2 6.505 2 12.061c0 5.022 3.657 9.184 8.438 9.939v-7.03H7.898v-2.909h2.54V9.845c0-2.522 1.492-3.915 3.777-3.915 1.094 0 2.238.196 2.238.196v2.475h-1.26c-1.243 0-1.63.775-1.63 1.57v1.89h2.773l-.443 2.909h-2.33V22c4.78-.755 8.437-4.917 8.437-9.939Z"/>
+            </svg>
           </a>
           <a
-            href="https://wa.me/5403757000000"
+            href="#"
             class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
-            aria-label="WhatsApp"
+            aria-label="TikTok"
           >
-            <span class="material-symbols-outlined text-lg">chat</span>
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+              <path d="M16.6 5.82c-.7-.77-1.09-1.77-1.09-2.82h-3.05v13.63c0 1.5-1.22 2.72-2.72 2.72a2.72 2.72 0 0 1-2.72-2.72 2.72 2.72 0 0 1 2.72-2.72c.28 0 .55.04.8.12V10.9a5.9 5.9 0 0 0-.8-.06 5.77 5.77 0 0 0-5.77 5.77A5.77 5.77 0 0 0 9.74 22.4a5.77 5.77 0 0 0 5.77-5.77V9.02a8.75 8.75 0 0 0 5.12 1.64V7.61a5.68 5.68 0 0 1-3.03-1.79Z"/>
+            </svg>
           </a>
         </div>
       </div>
@@ -100,16 +106,30 @@ const info = [
           <h4 class="font-titulo font-bold text-negro text-sm uppercase tracking-wider mb-5">
             Contacto
           </h4>
-          <p class="text-texto-suave text-sm mb-3 leading-relaxed">
-            Barrio Los Yerbales 2000 Ha<br />
-            Puerto Iguazú, Misiones
-          </p>
+          <a
+            href="https://wa.me/5403757000000"
+            class="flex items-center gap-2 mb-3 text-primario font-titulo font-bold text-sm hover:text-acento transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 shrink-0">
+              <path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.45 1.27 4.9L2 22l5.25-1.28A9.94 9.94 0 0 0 12.04 22c5.52 0 10-4.48 10-10s-4.48-10-10-10Zm5.84 14.24c-.25.7-1.24 1.28-2.03 1.45-.54.11-1.25.2-3.64-.78-2.94-1.21-4.85-4.2-5-4.4-.14-.19-1.2-1.6-1.2-3.05s.75-2.16 1.02-2.46c.25-.28.55-.35.73-.35.18 0 .37 0 .53.01.17.01.4-.06.62.48.25.6.83 2.08.9 2.23.07.15.12.33.02.53-.1.2-.15.32-.3.5-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.3.76 1.26 1.64 2.04 1.13 1 2.08 1.32 2.38 1.47.3.15.47.13.65-.08.18-.2.76-.88.96-1.18.2-.3.4-.25.68-.15.28.1 1.76.83 2.06.98.3.15.5.23.57.35.07.13.07.72-.18 1.42Z"/>
+            </svg>
+            +54 3757 00-0000
+          </a>
           <a
             href="mailto:hola@tierraroja.com.ar"
-            class="text-primario font-titulo font-bold text-sm hover:text-acento transition-colors"
+            class="flex items-center gap-2 mb-3 text-primario font-titulo font-bold text-sm hover:text-acento transition-colors"
           >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 shrink-0">
+              <path d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6Zm2.2.2 7.36 5.6a.7.7 0 0 0 .88 0l7.36-5.6A.2.2 0 0 0 19.66 6H4.34a.2.2 0 0 0-.14.2ZM4 8.16V18h16V8.16l-6.85 5.22a2.7 2.7 0 0 1-3.3 0L4 8.16Z"/>
+            </svg>
             hola@tierraroja.com.ar
           </a>
+          <p class="flex items-start gap-2 text-texto-suave text-sm leading-relaxed">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 shrink-0 mt-0.5">
+              <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/>
+            </svg>
+            <span>Barrio Los Yerbales 2000 Ha<br />Puerto Iguazú, Misiones</span>
+          </p>
         </div>
       </div>
     </div>
