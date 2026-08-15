@@ -1,0 +1,174 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+
+const secciones = [
+  { id: 'admision', label: '1. Admisión y derecho de ingreso' },
+  { id: 'documentacion', label: '2. Documentación requerida' },
+  { id: 'estadia', label: '3. Qué es una estadía' },
+  { id: 'ingresos-nocturnos', label: '4. Ingresos entre las 00:00 y las 06:00 hs' },
+  { id: 'descanso', label: '5. Horario de descanso' },
+  { id: 'fuego', label: '6. Fuego y seguridad' },
+  { id: 'sanitarios', label: '7. Baños y duchas' },
+  { id: 'mascotas', label: '8. Mascotas' },
+  { id: 'reclamos', label: '9. Libro de reclamos y sugerencias' },
+  { id: 'emergencias', label: '10. Primeros auxilios' },
+];
+---
+
+<Layout
+  title="Normas del Parque — Tierra Roja"
+  description="Reglamento del Camping Tierra Roja: admisión, documentación, horarios de descanso, uso del fuego, mascotas y demás normas de convivencia."
+>
+  <!-- Encabezado -->
+  <section class="max-w-7xl mx-auto px-6 pt-12 pb-10 md:pt-16 md:pb-14 text-center md:text-left">
+    <p class="font-titulo font-bold text-sm tracking-widest uppercase text-primario mb-4">Legal</p>
+    <h1
+      class="font-titulo font-extrabold text-4xl md:text-6xl text-texto mb-5 tracking-tight leading-tight"
+    >
+      Normas del <span class="text-primario italic">Parque</span>
+    </h1>
+    <p class="text-texto-suave text-lg max-w-2xl mx-auto md:mx-0 leading-relaxed">
+      En Camping Tierra Roja nos importa tu bienestar y el de todos nuestros visitantes, por eso
+      contamos con un reglamento claro que promueve la convivencia, el respeto y el disfrute seguro.
+      Te pedimos que lo leas antes de tu llegada.
+    </p>
+  </section>
+
+  <!-- Contenido -->
+  <section class="max-w-7xl mx-auto px-6 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <!-- Índice -->
+    <nav class="lg:col-span-4 lg:sticky lg:top-28 order-2 lg:order-1">
+      <div
+        class="bg-superficie p-6 md:p-8 rounded-xl shadow-(--shadow-elevada) border border-borde/10"
+      >
+        <h2 class="font-titulo font-bold text-lg text-texto mb-4">En esta página</h2>
+        <ul class="space-y-2.5">
+          {
+            secciones.map((s) => (
+              <li>
+                <a
+                  href={`#${s.id}`}
+                  class="text-texto-suave text-sm hover:text-primario transition-colors"
+                >
+                  {s.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="mt-6 pt-6 border-t border-borde/60">
+          <p class="text-texto-suave text-xs leading-relaxed">
+            ¿Tenés alguna consulta sobre el reglamento? Escribinos a{' '}
+            <a href="mailto:hola@tierraroja.com.ar" class="text-primario font-semibold">
+              hola@tierraroja.com.ar
+            </a>
+          </p>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Texto del reglamento -->
+    <div
+      class="lg:col-span-8 order-1 lg:order-2 bg-superficie p-8 md:p-12 rounded-xl shadow-(--shadow-elevada) border border-borde/10 space-y-12"
+    >
+      <div id="admision" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">1. Admisión y derecho de ingreso</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Tendrán permitido el ingreso todas las personas, sin distinción de nacionalidad, raza,
+          color de piel, género, idioma, origen o religión, acreditando su identidad con DNI, cédula
+          o pasaporte.
+        </p>
+        <p class="text-texto-suave leading-relaxed">
+          El complejo se reserva el <strong class="text-texto">Derecho de Admisión</strong> y podrá invitar
+          a retirarse a quienes incumplan las normas del reglamento, así como negar el acceso a personas
+          que representen un peligro o una molestia para otros acampantes.
+        </p>
+      </div>
+
+      <div id="documentacion" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">2. Documentación requerida</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Al ingresar deberás acreditar tu identidad con DNI, cédula o pasaporte, y declarar la
+          cantidad de acompañantes, los vehículos y las fechas de tu estadía.
+        </p>
+      </div>
+
+      <div id="estadia" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">3. Qué es una estadía</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Se considera una <strong class="text-texto">estadía</strong> al período comprendido entre el
+          día de ingreso y las 10:00 hs. del día siguiente.
+        </p>
+      </div>
+
+      <div id="ingresos-nocturnos" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">
+          4. Ingresos entre las 00:00 y las 06:00 hs
+        </h2>
+        <p class="text-texto-suave leading-relaxed">
+          Los ingresos realizados entre las 00:00 hs. y las 06:00 hs. abonan media (½) estadía,
+          válida hasta las 10:00 hs. de ese mismo día.
+        </p>
+      </div>
+
+      <div id="descanso" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">5. Horario de descanso</h2>
+        <p class="text-texto-suave leading-relaxed">
+          El período de descanso comprende desde las 00:00 hs. hasta las 07:00 hs. del día
+          siguiente. Te pedimos respetar el silencio durante ese horario para el bienestar de todos
+          los acampantes. Los padres o adultos responsables son los responsables de la conducta de
+          los menores a su cargo durante toda la estadía.
+        </p>
+      </div>
+
+      <div id="fuego" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">6. Fuego y seguridad</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Está terminantemente prohibido hacer fuego fuera de los lugares habilitados para tal fin.
+          Asimismo, no se permite el ingreso al camping de personas bajo el efecto de alcohol o
+          estupefacientes.
+        </p>
+      </div>
+
+      <div id="sanitarios" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">7. Baños y duchas</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Está prohibido hacer deposiciones en las duchas y arrojar papel u otros elementos de
+          higiene en los inodoros. Por favor, utilizá los cestos de residuos dispuestos para ese fin
+          y ayudanos a mantener las instalaciones sanitarias en buen estado para todos.
+        </p>
+      </div>
+
+      <div id="mascotas" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">8. Mascotas</h2>
+        <p class="text-texto-suave leading-relaxed">
+          Se aceptan mascotas, siempre y cuando se mantenga la limpieza del predio. Los dueños son
+          responsables de recoger y disponer correctamente los residuos de sus mascotas.
+        </p>
+      </div>
+
+      <div id="reclamos" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">
+          9. Libro de reclamos y sugerencias
+        </h2>
+        <p class="text-texto-suave leading-relaxed">
+          El camping cuenta con un Libro de Reclamos y/o Sugerencias a disposición de los visitantes
+          que deseen dejar asentada alguna inquietud o comentario sobre su estadía.
+        </p>
+      </div>
+
+      <div id="emergencias" class="scroll-mt-28 space-y-4">
+        <h2 class="font-titulo font-bold text-2xl text-texto">10. Primeros auxilios</h2>
+        <p class="text-texto-suave leading-relaxed">
+          El camping no cuenta con servicio médico, pero dispone de un botiquín de primeros auxilios
+          para atender cualquier eventualidad durante tu estadía.
+        </p>
+        <p class="text-texto-suave leading-relaxed pt-2">
+          El ingreso al predio implica la aceptación de la totalidad de este reglamento. Camping
+          Tierra Roja opera durante todo el año.
+        </p>
+      </div>
+    </div>
+  </section>
+</Layout>
