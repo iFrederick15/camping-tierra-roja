@@ -140,43 +140,26 @@
 <!-- Map Section -->
 <section class="max-w-7xl mx-auto px-6 mt-20">
   <div class="bg-fondo p-4 rounded-xl">
-    <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-8 px-4 py-6">
+    <div
+      class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-6 mb-8 px-4 py-6"
+    >
       <div>
-        <h2 class="font-titulo font-extrabold text-3xl">Encuéntranos en el mapa</h2>
+        <h2 class="font-titulo font-extrabold text-3xl mb-5">Encuéntranos en el mapa</h2>
         <p class="text-texto-suave">
           Ubicado a tan solo 20 minutos de las majestuosas Cataratas del Iguazú.
         </p>
       </div>
-      <div class="flex gap-4">
-        <div
-          class="bg-fondo-alt px-6 py-3 rounded-full text-sm font-semibold flex items-center gap-2"
-        >
-          <span class="material-symbols-outlined text-primario">schedule</span>
-          <b>Para pasar el día:</b> 9:00hs - 19:00hs <br />
-          <b>Camping & Motorhome:</b> 24hs.
-        </div>
-      </div>
-    </div>
-    <div class="w-full h-72 sm:h-96 lg:h-[500px] rounded-lg overflow-hidden bg-fondo-alt relative">
-      <!-- Representational Map Image since we cannot use live JS Maps -->
-      <img
-        class="w-full h-full object-cover grayscale"
-        data-alt="abstract satellite view map of a river delta meeting dense tropical forest in muted earthy tones with a red location pin"
-        data-location="Puerto Iguazú, Argentina"
-        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgLyVz9Mx69Eqj1wPAYg7GVQuHVSL0heNR0QSp1IQPm9ewD_33L3bqy_gnarkI4OXX-3tszygUdemxKvt_XnfZfDV_T1oYEXu4CIxK83v1D2Aa9EWL4Gp2ghUM-Fd36dN84qgSEG_RUhpJdj_G8zkpGWERxZGO0RZMTyMbnLq14kTnM0scMBvR7f3mDiVHgIo7ldD7yRTFuc7d9Ey-9NW-xQtoYURT4Fy_-2OASuBy10d8qNHdLbg21YYKhMYepp7jTeUpUzunE9IT"
-      />
-      <div class="absolute inset-0 flex items-center justify-center">
-        <div class="bg-superficie p-6 rounded-lg shadow-2xl flex items-center gap-4 animate-pulse">
-          <div class="bg-primario p-4 rounded-full text-white">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;"
-              >location_on</span
-            >
-          </div>
-          <div>
-            <p class="font-titulo font-black text-primario">Tierra Roja Iguazú</p>
-            <p class="text-xs text-texto-suave">Entrance Main Gate</p>
-          </div>
-        </div>
+
+      <div
+        class="w-full h-72 sm:h-96 lg:h-[500px] rounded-lg overflow-hidden bg-fondo-alt relative"
+      >
+        <iframe
+          class="w-full h-full border-0"
+          src="https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Acu%C3%A1tico,-25.6381084,-54.5744466&hl=es&z=15&output=embed"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          title="Ubicación de Tierra Roja Iguazú en el mapa"></iframe>
+        <div class="absolute top-4 left-4 pointer-events-none"></div>
       </div>
     </div>
   </div>
