@@ -44,13 +44,51 @@ const navLinks = [
       }
     </div>
 
-    <!-- CTA -->
-    <a
-      href="/reservar"
-      class="inline-flex bg-gradient-to-r from-primario to-acento text-white px-5 py-2 text-xs sm:px-7 sm:py-2.5 sm:text-sm rounded-pill font-titulo font-bold tracking-wide hover:shadow-lg hover:scale-105 transition-all duration-200 active:scale-95"
-    >
-      Reservar
-    </a>
+    <div class="flex items-center gap-2">
+      <!-- CTA -->
+      <a
+        href="/reservar"
+        class="inline-flex items-center justify-center min-h-11 bg-gradient-to-r from-primario to-acento text-white px-5 text-xs sm:px-7 sm:py-2.5 sm:text-sm rounded-pill font-titulo font-bold tracking-wide hover:shadow-lg hover:scale-105 transition-all duration-200 active:scale-95"
+      >
+        Reservar
+      </a>
+
+      <!-- Mobile menu toggle: por debajo de "lg" el único acceso a Galería y
+      Contacto era este botón — antes no existía y esas páginas quedaban
+      inalcanzables desde el celular. -->
+      <button
+        id="navbar-toggle"
+        type="button"
+        class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full text-texto hover:bg-fondo-alt transition-colors"
+        aria-expanded="false"
+        aria-controls="navbar-mobile-menu"
+        aria-label="Abrir menú"
+      >
+        <span class="material-symbols-outlined text-3xl" aria-hidden="true">menu</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile menu panel -->
+  <div
+    id="navbar-mobile-menu"
+    class="hidden lg:hidden flex-col gap-1 px-6 pb-6 pt-2 bg-white border-t border-borde/60"
+  >
+    {
+      navLinks.map((link) => (
+        <a
+          href={link.href}
+          class:list={[
+            'font-titulo font-medium text-base tracking-wide py-3 px-3 rounded-lg transition-colors duration-200',
+            link.active
+              ? 'text-primario bg-primario/5'
+              : 'text-texto-suave hover:text-primario hover:bg-fondo-alt',
+          ]}
+        >
+          {link.label}
+        </a>
+      ))
+    }
   </div>
 
   <script is:inline>
@@ -62,6 +100,46 @@ const navLinks = [
       } else {
         navbar.classList.remove('bg-superficie/90', 'backdrop-blur-xl', 'shadow-sm');
       }
+    });
+
+    // Menú mobile
+    const toggle = document.getElementById('navbar-toggle');
+    const menu = document.getElementById('navbar-mobile-menu');
+    const toggleIcon = toggle.querySelector('.material-symbols-outlined');
+
+    function cerrarMenu() {
+      menu.classList.add('hidden');
+      menu.classList.remove('flex');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Abrir menú');
+      toggleIcon.textContent = 'menu';
+      document.body.style.overflow = '';
+    }
+
+    function abrirMenu() {
+      menu.classList.remove('hidden');
+      menu.classList.add('flex');
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-label', 'Cerrar menú');
+      toggleIcon.textContent = 'close';
+      document.body.style.overflow = 'hidden';
+    }
+
+    toggle.addEventListener('click', () => {
+      const abierto = toggle.getAttribute('aria-expanded') === 'true';
+      if (abierto) cerrarMenu();
+      else abrirMenu();
+    });
+
+    menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', cerrarMenu));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') cerrarMenu();
+    });
+
+    // Si el usuario agranda la ventana a desktop con el menú abierto, cerrarlo.
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 1024) cerrarMenu();
     });
   </script>
 </nav>

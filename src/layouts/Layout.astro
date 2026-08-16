@@ -6,12 +6,63 @@ import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
+  image?: string;
 }
 
 const {
   title = 'Tierra Roja | Camping y Parque Acuático - Puerto Iguazú',
   description = 'Camping y parque acuático en Puerto Iguazú, Misiones. Piscinas, cabañas, parcelas de camping y espacio motorhome en plena selva misionera.',
+  image = '/images/tierra-roja-drone.jpg',
 } = Astro.props;
+
+// El dominio de marca vive en un solo lugar (astro.config.mjs → site) para
+// que canonical, Open Graph y el JSON-LD de más abajo no puedan desincronizarse.
+const sitioUrl = (Astro.site ?? new URL('https://tierraroja.com.ar')).origin;
+const canonicalURL = new URL(Astro.url.pathname, sitioUrl);
+const imagenSocial = new URL(image, sitioUrl);
+
+// Datos estructurados (schema.org) para resultados enriquecidos en Google y
+// Google Maps: dirección, geolocalización, teléfono y redes ya se muestran
+// en el sitio (Footer, Contacto, Normas del Parque); acá solo se estructuran.
+const schemaNegocio = {
+  '@context': 'https://schema.org',
+  '@type': 'Campground',
+  '@id': `${sitioUrl}/#negocio`,
+  name: 'Tierra Roja - Camping y Parque Acuático',
+  description:
+    'Camping y parque acuático en Puerto Iguazú, Misiones. Piscinas, cabañas, parcelas de camping y espacio motorhome en plena selva misionera.',
+  url: sitioUrl,
+  image: `${sitioUrl}/images/tierra-roja-drone.jpg`,
+  telephone: '+54 3757 31-7593',
+  email: 'tierrarojaiguazu@gmail.com',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'Barrio Los Yerbales 2000 Ha',
+    addressLocality: 'Puerto Iguazú',
+    addressRegion: 'Misiones',
+    addressCountry: 'AR',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: -25.6381084,
+    longitude: -54.5744466,
+  },
+  checkoutTime: '10:00:00',
+  petsAllowed: true,
+  sameAs: [
+    'https://www.instagram.com/tierraroja_iguazu',
+    'https://www.facebook.com/tierrarojaiguazu',
+    'https://www.tiktok.com/@tierraroja_iguazu',
+  ],
+  amenityFeature: [
+    { '@type': 'LocationFeatureSpecification', name: 'Piscinas', value: true },
+    { '@type': 'LocationFeatureSpecification', name: 'Parcelas de camping', value: true },
+    { '@type': 'LocationFeatureSpecification', name: 'Espacio para motorhome', value: true },
+    { '@type': 'LocationFeatureSpecification', name: 'Cabaña', value: true },
+    { '@type': 'LocationFeatureSpecification', name: 'Quinchos con parrilla', value: true },
+    { '@type': 'LocationFeatureSpecification', name: 'Wi-Fi', value: true },
+  ],
+};
 ---
 
 <!doctype html>
@@ -22,6 +73,24 @@ const {
     <meta name="description" content={description} />
     <title>{title}</title>
     <link rel="icon" type="image/png" href="/images/favicon-tierra-roja.png" />
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- Open Graph (WhatsApp, Instagram, Facebook) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tierra Roja" />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={imagenSocial} />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imagenSocial} />
+
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(schemaNegocio)} />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

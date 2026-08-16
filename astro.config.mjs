@@ -2,13 +2,25 @@ import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import vercel from '@astrojs/vercel';
 import react from '@astrojs/react';
+import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   output: 'server',
   adapter: vercel(),
+  // Dominio de marca (ver política de privacidad / términos) — actualizar
+  // acá el día que se defina el dominio final con/sin "www" en Vercel.
+  site: 'https://tierraroja.com.ar',
   // React solo se usa para el widget de reserva (/reservar). El resto del
   // sitio sigue siendo Astro + JS simple, sin cambios.
-  integrations: [react()],
+  integrations: [
+    react(),
+    sitemap({
+      // El panel administrativo y las rutas de API no son contenido público:
+      // no deben aparecer en el sitemap (ya están protegidas por auth en
+      // middleware.ts, esto además evita que Google intente indexarlas).
+      filter: (page) => !page.includes('/panel') && !page.includes('/api/'),
+    }),
+  ],
   vite: {
     plugins: [tailwindcss()],
   },
