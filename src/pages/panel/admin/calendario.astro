@@ -26,7 +26,10 @@ const inicioMes = `${anio}-${pad(mesNum + 1)}-01`;
 const primerDiaSiguiente = new Date(anio, mesNum + 1, 1);
 const finMes = `${primerDiaSiguiente.getFullYear()}-${pad(primerDiaSiguiente.getMonth() + 1)}-01`;
 const diasEnMes = new Date(anio, mesNum + 1, 0).getDate();
-const nombreMes = new Date(anio, mesNum, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+const nombreMes = new Date(anio, mesNum, 1).toLocaleDateString('es-AR', {
+  month: 'long',
+  year: 'numeric',
+});
 
 const mesAnteriorDate = new Date(anio, mesNum - 1, 1);
 const mesAnterior = `${mesAnteriorDate.getFullYear()}-${pad(mesAnteriorDate.getMonth() + 1)}`;
@@ -47,13 +50,18 @@ const inicioVisible = `${anio}-${pad(mesNum + 1)}-${pad(diaInicioVisible)}`;
 const dias = Array.from({ length: diasEnMes - diaInicioVisible + 1 }, (_, i) => {
   const dia = diaInicioVisible + i;
   const fecha = new Date(anio, mesNum, dia);
-  return { dia, diaSemana: fecha.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', '') };
+  return {
+    dia,
+    diaSemana: fecha.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', ''),
+  };
 });
 
 // Tipo de item visible: querystring ?tipo=CABANA|CAMPING|MOTORHOME|QUINCHOS,
 // default al primero de la lista.
 const tipoParam = Astro.url.searchParams.get('tipo');
-const tipoSeleccionado = ORDEN_TIPOS.includes(tipoParam as TipoUnidad) ? (tipoParam as TipoUnidad) : ORDEN_TIPOS[0];
+const tipoSeleccionado = ORDEN_TIPOS.includes(tipoParam as TipoUnidad)
+  ? (tipoParam as TipoUnidad)
+  : ORDEN_TIPOS[0];
 
 const { data: unidadSel } = await supabaseAdmin
   .from('unidades')
@@ -76,7 +84,9 @@ let reservasDelMes: ReservaFila[] = [];
 if (unidadSel) {
   const { data: reservasData } = await supabaseAdmin
     .from('reservas')
-    .select('id, nombre_cliente, fecha_ingreso, fecha_salida, estado, monto_total, monto_pagado, parcela_id')
+    .select(
+      'id, nombre_cliente, fecha_ingreso, fecha_salida, estado, monto_total, monto_pagado, parcela_id'
+    )
     .eq('unidad_id', unidadSel.id)
     .lt('fecha_ingreso', finMes)
     .gt('fecha_salida', inicioMes)
@@ -135,7 +145,9 @@ if (tipoSeleccionado === 'MOTORHOME' || tipoSeleccionado === 'QUINCHOS') {
     filas.unshift({ etiqueta: 'Sin lugar', reservas: sinAsignar });
   }
 } else if (tipoSeleccionado === 'CAMPING') {
-  const ordenadas = [...reservasDelMes].sort((a, b) => a.fechaIngreso.localeCompare(b.fechaIngreso));
+  const ordenadas = [...reservasDelMes].sort((a, b) =>
+    a.fechaIngreso.localeCompare(b.fechaIngreso)
+  );
   const finPorCarril: string[] = [];
   const carriles: ReservaFila[][] = [];
   for (const r of ordenadas) {
@@ -187,8 +199,10 @@ function construirSegmentos(reservas: ReservaFila[]): Segmento[] {
   const segmentos: Segmento[] = [];
   let cursor = diaInicioVisible;
   for (const r of ordenadas) {
-    const inicioDia = r.fechaIngreso < inicioVisible ? diaInicioVisible : Number(r.fechaIngreso.slice(8, 10));
-    const finDiaExclusivo = r.fechaSalida >= finMes ? diasEnMes + 1 : Number(r.fechaSalida.slice(8, 10));
+    const inicioDia =
+      r.fechaIngreso < inicioVisible ? diaInicioVisible : Number(r.fechaIngreso.slice(8, 10));
+    const finDiaExclusivo =
+      r.fechaSalida >= finMes ? diasEnMes + 1 : Number(r.fechaSalida.slice(8, 10));
     while (cursor < inicioDia) {
       segmentos.push({ colspan: 1, inicioDia: cursor });
       cursor++;
@@ -204,40 +218,46 @@ function construirSegmentos(reservas: ReservaFila[]): Segmento[] {
   return segmentos;
 }
 
-const filasConSegmentos = filas.map((fila) => ({ ...fila, segmentos: construirSegmentos(fila.reservas) }));
+const filasConSegmentos = filas.map((fila) => ({
+  ...fila,
+  segmentos: construirSegmentos(fila.reservas),
+}));
 ---
 
 <PanelLayout title="Calendario de ocupación" activo="calendario">
   <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
     <h1 class="font-titulo font-bold text-3xl text-negro capitalize">{nombreMes}</h1>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       {
         esMesActual && !completoParam && diaInicioVisible > 1 && (
           <a
             href={`/panel/admin/calendario?mes=${mesValido}&tipo=${tipoSeleccionado}&completo=1`}
-            class="px-4 py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-sm hover:bg-superficie-elevada transition-colors"
+            class="shrink-0 whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-xs sm:text-sm hover:bg-superficie-elevada transition-colors"
           >
-            ← Ver días anteriores
+            <span class="sm:hidden">← Días ant.</span>
+            <span class="hidden sm:inline">← Ver días anteriores</span>
           </a>
         )
       }
       <a
         href={`/panel/admin/calendario?mes=${mesAnterior}&tipo=${tipoSeleccionado}`}
-        class="px-4 py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-sm hover:bg-superficie-elevada transition-colors"
+        class="shrink-0 whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-xs sm:text-sm hover:bg-superficie-elevada transition-colors"
       >
-        ← Mes anterior
+        <span class="sm:hidden">← Mes Ant.</span>
+        <span class="hidden sm:inline">← Mes anterior</span>
       </a>
       <a
         href={`/panel/admin/calendario?tipo=${tipoSeleccionado}`}
-        class="px-4 py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-sm hover:bg-superficie-elevada transition-colors"
+        class="shrink-0 whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-xs sm:text-sm hover:bg-superficie-elevada transition-colors"
       >
         Hoy
       </a>
       <a
         href={`/panel/admin/calendario?mes=${mesSiguienteStr}&tipo=${tipoSeleccionado}`}
-        class="px-4 py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-sm hover:bg-superficie-elevada transition-colors"
+        class="shrink-0 whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-xs sm:text-sm hover:bg-superficie-elevada transition-colors"
       >
-        Mes siguiente →
+        <span class="sm:hidden">Mes Sig. →</span>
+        <span class="hidden sm:inline">Mes siguiente →</span>
       </a>
     </div>
   </div>
@@ -264,7 +284,9 @@ const filasConSegmentos = filas.map((fila) => ({ ...fila, segmentos: construirSe
     {
       (Object.keys(ESTILO_VISUAL) as EstadoVisual[]).map((clave) => (
         <span class="flex items-center gap-1.5">
-          <span class:list={['w-3 h-3 rounded-full inline-block', ESTILO_VISUAL[clave].className]} />
+          <span
+            class:list={['w-3 h-3 rounded-full inline-block', ESTILO_VISUAL[clave].className]}
+          />
           {ESTILO_VISUAL[clave].label}
         </span>
       ))
@@ -272,18 +294,20 @@ const filasConSegmentos = filas.map((fila) => ({ ...fila, segmentos: construirSe
   </div>
 
   <div class="bg-superficie rounded-card border-2 border-borde overflow-hidden">
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto pl-2">
       <table class="border-collapse w-full select-none">
         <thead>
           <tr>
-            <th class="sticky left-0 z-10 bg-superficie-elevada border-b-2 border-r-2 border-borde w-36 min-w-36 p-2 text-left text-xs font-titulo font-medium text-texto-suave">
+            <th
+              class="sticky left-0 z-10 bg-superficie-elevada border-b-2 border-r-2 border-borde w-36 min-w-36 p-2 text-left text-xs font-titulo font-medium text-texto-suave"
+            >
               {ETIQUETAS_TIPO[tipoSeleccionado]}
             </th>
             {
               dias.map((d) => (
                 <th
                   class:list={[
-                    'border-b-2 border-l border-borde w-12 min-w-12 py-1.5 text-xs font-titulo font-medium capitalize',
+                    'border-b-2 border-l border-borde w-[60px] min-w-[60px] py-1.5 text-xs font-titulo font-medium capitalize whitespace-nowrap',
                     d.dia === hoyDia ? 'bg-amber-100 text-negro' : 'text-texto-suave',
                   ]}
                 >
@@ -318,7 +342,7 @@ const filasConSegmentos = filas.map((fila) => ({ ...fila, segmentos: construirSe
                   ) : (
                     <td
                       class:list={[
-                        'celda-libre border-b border-l border-borde w-12 min-w-12 h-9 cursor-pointer hover:bg-primario/10 transition-colors',
+                        'celda-libre border-b border-l border-borde w-[60px] min-w-[60px] h-9 cursor-pointer hover:bg-primario/10 transition-colors',
                         seg.inicioDia === hoyDia ? 'bg-amber-50' : '',
                       ]}
                       data-fecha={`${anio}-${pad(mesNum + 1)}-${pad(seg.inicioDia)}`}

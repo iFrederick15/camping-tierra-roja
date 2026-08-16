@@ -16,7 +16,7 @@ const { data: opcionesPrecio } = await supabaseAdmin
 
 const { data: parcelas } = await supabaseAdmin
   .from('parcelas')
-  .select('id, numero, nombre, atributos, activa, unidades(tipo, nombre)')
+  .select('id, numero, nombre, activa, unidades(tipo, nombre)')
   .order('numero');
 
 const opcionesPorUnidad = new Map<string, any[]>();
@@ -100,7 +100,7 @@ for (const p of parcelas ?? []) {
   </section>
 
   <section class="mb-10">
-    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Parcelas y atributos</h2>
+    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Parcelas</h2>
     <div class="flex flex-col gap-6">
       {
         Array.from(parcelasPorUnidad.entries()).map(([nombreUnidad, lista]) => (
@@ -109,16 +109,7 @@ for (const p of parcelas ?? []) {
             <div class="flex flex-col gap-2">
               {lista.map((p: any) => (
                 <form class="form-parcela flex flex-wrap items-end gap-3 rounded-card border-2 border-borde px-5 py-3 bg-superficie" data-id={p.id}>
-                  <span class="font-titulo font-medium text-negro w-24">{p.nombre}</span>
-                  <label class="flex flex-col gap-1 text-sm text-texto-suave flex-1 min-w-48">
-                    Atributos (separados por coma)
-                    <input
-                      type="text"
-                      name="atributos"
-                      value={(p.atributos ?? []).join(', ')}
-                      class="border-2 border-borde rounded-card px-3 py-2 focus:border-primario focus:outline-none"
-                    />
-                  </label>
+                  <span class="font-titulo font-medium text-negro flex-1 min-w-48">{p.nombre}</span>
                   <label class="flex items-center gap-2 text-sm text-texto-suave">
                     <input type="checkbox" name="activa" checked={p.activa} />
                     Activa
@@ -218,13 +209,9 @@ for (const p of parcelas ?? []) {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         const fd = new FormData(form);
-        const atributos = String(fd.get('atributos') ?? '')
-          .split(',')
-          .map((a) => a.trim())
-          .filter(Boolean);
         guardar(
           '/api/panel/admin/parcelas',
-          { id: form.dataset.id, atributos, activa: fd.get('activa') === 'on' },
+          { id: form.dataset.id, activa: fd.get('activa') === 'on' },
           form.querySelector('.msg')!
         );
       });
