@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useDniScanner } from '../hooks/useDniScanner';
 
 type TipoUnidad = 'CAMPING' | 'MOTORHOME' | 'CABANA' | 'QUINCHOS';
 type Paso = 'unidad' | 'fechas' | 'datos' | 'confirmado';
@@ -283,6 +284,55 @@ export default function BookingWidget({
   });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Feedback del escaneo de DNI por pistola lectora (ver useDniScanner más
+  // abajo). 'ok' es un highlight verde breve; 'baja-confianza' se queda
+  // visible hasta que el recepcionista edite el campo, porque pide
+  // verificar contra el documento físico antes de guardar.
+  const [scanEstado, setScanEstado] = useState<'idle' | 'ok' | 'baja-confianza' | 'error'>('idle');
+  const scanHighlightTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const manejarScanDni = useCallback((resultado: {
+    nombre: string;
+    apellido: string;
+    dni: string;
+    confianza: 'alta' | 'baja';
+  }) => {
+    setDatosCliente((prev) => ({
+      ...prev,
+      nombreCliente: `${resultado.nombre} ${resultado.apellido}`.trim(),
+      dni: resultado.dni,
+    }));
+    setScanEstado(resultado.confianza === 'alta' ? 'ok' : 'baja-confianza');
+    if (scanHighlightTimeout.current) clearTimeout(scanHighlightTimeout.current);
+    if (resultado.confianza === 'alta') {
+      scanHighlightTimeout.current = setTimeout(() => {
+        setScanEstado((actual) => (actual === 'ok' ? 'idle' : actual));
+      }, 2500);
+    }
+  }, []);
+
+  const manejarErrorScanDni = useCallback(() => {
+    setScanEstado('error');
+    if (scanHighlightTimeout.current) clearTimeout(scanHighlightTimeout.current);
+    scanHighlightTimeout.current = setTimeout(() => {
+      setScanEstado((actual) => (actual === 'error' ? 'idle' : actual));
+    }, 4000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (scanHighlightTimeout.current) clearTimeout(scanHighlightTimeout.current);
+    };
+  }, []);
+
+  // Solo escucha en el panel de Staff y mientras el formulario de datos del
+  // cliente está visible — no debe interferir con otras pantallas/pasos.
+  useDniScanner({
+    activo: modo === 'staff' && paso === 'datos',
+    onScan: manejarScanDni,
+    onError: manejarErrorScanDni,
+  });
 
   // Apenas se elige la unidad, pide sus ítems de precio y reinicia la
   // selección anterior (categoría/acompañantes/menores/mayores).
@@ -815,17 +865,47 @@ export default function BookingWidget({
       {paso === 'datos' && (
         <section className="flex flex-col gap-4 relative z-10">
           <h2 className="font-titulo font-bold text-3xl text-negro">Tus datos</h2>
+          {modo === 'staff' && scanEstado === 'baja-confianza' && (
+            <p className="flex items-center gap-1.5 text-sm font-medium text-advertencia bg-advertencia/10 rounded-card px-4 py-3">
+              <span className="material-symbols-outlined text-[18px]">warning</span>
+              Verificá nombre, apellido y DNI contra el documento físico antes de guardar.
+            </p>
+          )}
+          {modo === 'staff' && scanEstado === 'error' && (
+            <p className="flex items-center gap-1.5 text-sm font-medium text-texto-suave bg-fondo-alt rounded-card px-4 py-3">
+              <span className="material-symbols-outlined text-[18px]">info</span>
+              No se pudo leer el DNI, complete los datos manualmente.
+            </p>
+          )}
           <input
-            className={input}
+            className={`${input} ${
+              scanEstado === 'ok'
+                ? 'border-confirmado'
+                : scanEstado === 'baja-confianza'
+                  ? 'border-advertencia'
+                  : ''
+            }`}
             placeholder="Nombre y apellido"
             value={datosCliente.nombreCliente}
-            onChange={(e) => setDatosCliente({ ...datosCliente, nombreCliente: e.target.value })}
+            onChange={(e) => {
+              setScanEstado('idle');
+              setDatosCliente({ ...datosCliente, nombreCliente: e.target.value });
+            }}
           />
           <input
-            className={input}
+            className={`${input} ${
+              scanEstado === 'ok'
+                ? 'border-confirmado'
+                : scanEstado === 'baja-confianza'
+                  ? 'border-advertencia'
+                  : ''
+            }`}
             placeholder="DNI"
             value={datosCliente.dni}
-            onChange={(e) => setDatosCliente({ ...datosCliente, dni: e.target.value })}
+            onChange={(e) => {
+              setScanEstado('idle');
+              setDatosCliente({ ...datosCliente, dni: e.target.value });
+            }}
           />
           <input
             className={input}
