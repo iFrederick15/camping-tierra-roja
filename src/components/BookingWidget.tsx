@@ -263,6 +263,20 @@ export default function BookingWidget({
     contenedorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [paso]);
 
+  // Al elegir la unidad, baja automáticamente hasta las fotos y las
+  // opciones (acompañantes/categoría/etc.) para que el cliente no tenga
+  // que scrollear manualmente para verlas.
+  const detalleUnidadRef = useRef<HTMLDivElement>(null);
+  const primerRenderUnidad = useRef(true);
+  useEffect(() => {
+    if (primerRenderUnidad.current) {
+      primerRenderUnidad.current = false;
+      return;
+    }
+    if (!unidad) return;
+    detalleUnidadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [unidad]);
+
   // Ítems de precio de la unidad elegida (ver sql/003_precios_itemizados.sql)
   // y la selección del cliente sobre esos ítems. Se piden apenas se elige la
   // unidad — antes de fechas, porque QUINCHOS necesita la categoría para
@@ -602,13 +616,13 @@ export default function BookingWidget({
           </div>
 
           {unidad && (
-            <Carousel
-              imagenes={IMAGENES_UNIDAD[unidad]}
-              alt={UNIDADES.find((u) => u.tipo === unidad)?.label ?? ''}
-            />
-          )}
+            <div ref={detalleUnidadRef} className="flex flex-col gap-6 scroll-mt-6">
+              <Carousel
+                imagenes={IMAGENES_UNIDAD[unidad]}
+                alt={UNIDADES.find((u) => u.tipo === unidad)?.label ?? ''}
+              />
 
-          {unidad === 'MOTORHOME' && (
+              {unidad === 'MOTORHOME' && (
             <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {opcionesPrecio
@@ -716,6 +730,8 @@ export default function BookingWidget({
                 <span className="material-symbols-outlined text-[16px]">info</span>
                 La entrada al parque por persona no está incluida.
               </p>
+            </div>
+          )}
             </div>
           )}
 
