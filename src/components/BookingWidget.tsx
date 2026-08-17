@@ -249,6 +249,20 @@ export default function BookingWidget({
   const [paso, setPaso] = useState<Paso>('unidad');
   const [unidad, setUnidad] = useState<TipoUnidad | null>(unidadInicial ?? null);
 
+  // El widget no cambia de ruta al avanzar de paso (todo vive en este mismo
+  // componente), así que el navegador no resetea el scroll solo. Sin esto,
+  // en mobile el usuario queda viendo el footer de la página y tiene que
+  // scrollear para encontrar el paso siguiente.
+  const contenedorRef = useRef<HTMLDivElement>(null);
+  const primerRender = useRef(true);
+  useEffect(() => {
+    if (primerRender.current) {
+      primerRender.current = false;
+      return;
+    }
+    contenedorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [paso]);
+
   // Ítems de precio de la unidad elegida (ver sql/003_precios_itemizados.sql)
   // y la selección del cliente sobre esos ítems. Se piden apenas se elige la
   // unidad — antes de fechas, porque QUINCHOS necesita la categoría para
@@ -493,7 +507,10 @@ export default function BookingWidget({
   const indicePaso = PASOS.findIndex((p) => p.paso === paso);
 
   return (
-    <div className="max-w-xl mx-auto bg-superficie rounded-card shadow-elevada p-5 sm:p-8 lg:p-10 relative overflow-hidden">
+    <div
+      ref={contenedorRef}
+      className="max-w-xl mx-auto bg-superficie rounded-card shadow-elevada p-5 sm:p-8 lg:p-10 relative overflow-hidden"
+    >
       {/* Acento orgánico decorativo, igual al usado en el resto del sitio */}
       <div className="absolute -top-16 -right-16 w-48 h-48 bg-primario/5 rounded-full blur-2xl pointer-events-none" />
       <div className="absolute -bottom-20 -left-16 w-48 h-48 bg-acento/5 rounded-full blur-2xl pointer-events-none" />
@@ -716,7 +733,7 @@ export default function BookingWidget({
         <section className="flex flex-col gap-5 relative z-10">
           <h2 className="font-titulo font-bold text-3xl text-negro">Elegí tus fechas</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
+            <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave min-w-0">
               Entrada
               <div className="relative">
                 <input
@@ -733,7 +750,7 @@ export default function BookingWidget({
                 )}
               </div>
             </label>
-            <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
+            <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave min-w-0">
               Salida
               <div className="relative">
                 <input
