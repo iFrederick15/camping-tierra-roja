@@ -109,10 +109,6 @@ function calcularDetalle(
       if (op.clave === 'ACOMPANANTE') cantidad = seleccion.acompanantes;
       else if (op.clave === 'MENOR') cantidad = seleccion.menores;
       else if (op.clave === 'MAYOR') cantidad = seleccion.mayores;
-    } else if (op.tipoCargo === 'ADICIONAL') {
-      // PERSONAS_BASE (MOTORHOME): las 2 primeras personas se cobran aparte
-      // de la parcela, siempre que haya una categoría (parcela) elegida.
-      if (op.clave === 'PERSONAS_BASE') cantidad = seleccion.categoria ? 1 : 0;
     }
     if (cantidad <= 0) continue;
     detalle.push({
@@ -674,25 +670,12 @@ export default function BookingWidget({
                         </button>
                       ))}
                   </div>
-                  {opcionesPrecio
-                    .filter((o) => o.tipoCargo === 'ADICIONAL' && o.clave === 'PERSONAS_BASE')
-                    .map((op) => (
-                      <div
-                        key={op.clave}
-                        className="flex items-center justify-between text-sm border-t border-borde pt-4"
-                      >
-                        <span className="text-texto-suave">{op.etiqueta}</span>
-                        <span className="font-titulo font-bold text-negro">
-                          {formatoMoneda(op.precioPorNoche)} / noche
-                        </span>
-                      </div>
-                    ))}
                   <div className="border-t border-borde pt-4 flex flex-col gap-3">
                     <p className="flex items-center gap-1.5 text-sm font-titulo font-bold text-negro">
                       <span className="material-symbols-outlined text-[18px] text-primario">
                         group
                       </span>
-                      Acompañantes adicionales
+                      Acompañantes
                     </p>
                     {opcionesPrecio
                       .filter((o) => o.tipoCargo === 'CANTIDAD' && o.clave === 'ACOMPANANTE')
@@ -858,14 +841,14 @@ export default function BookingWidget({
             </p>
           )}
 
-          {error && <p className="text-primario text-sm font-medium">{error}</p>}
+          {error && <p className="text-[#DC2626] text-sm font-medium">{error}</p>}
 
           {disponibilidad?.tipo === 'cupo' && (
             <div
               className={`flex items-center gap-2 rounded-card px-4 py-3 font-medium text-sm ${
                 disponibilidad.disponible
                   ? 'bg-confirmado/10 text-confirmado'
-                  : 'bg-fondo-alt text-texto-suave'
+                  : 'bg-fondo-alt text-[#DC2626]'
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">
@@ -881,7 +864,7 @@ export default function BookingWidget({
               className={`flex items-center gap-2 rounded-card px-4 py-3 font-medium text-sm ${
                 disponibilidad.disponible
                   ? 'bg-confirmado/10 text-confirmado'
-                  : 'bg-fondo-alt text-texto-suave'
+                  : 'bg-fondo-alt text-[#DC2626]'
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">
@@ -895,7 +878,7 @@ export default function BookingWidget({
           {disponibilidad?.tipo === 'lista' && (
             <div className="flex flex-col gap-2">
               {disponibilidad.opciones.length === 0 && (
-                <p className="text-texto-suave text-sm">
+                <p className="text-[#DC2626] text-sm">
                   Sin parcelas disponibles para estas fechas.
                 </p>
               )}
@@ -1054,7 +1037,7 @@ export default function BookingWidget({
             </div>
           )}
 
-          {error && <p className="text-primario text-sm font-medium">{error}</p>}
+          {error && <p className="text-[#DC2626] text-sm font-medium">{error}</p>}
 
           <div className="flex gap-3">
             <button

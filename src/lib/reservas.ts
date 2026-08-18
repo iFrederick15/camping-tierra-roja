@@ -243,10 +243,6 @@ export async function calcularPrecio(
       if (op.clave === 'ACOMPANANTE') cantidad = seleccion.acompanantes ?? 0;
       else if (op.clave === 'MENOR') cantidad = seleccion.menores ?? 0;
       else if (op.clave === 'MAYOR') cantidad = seleccion.mayores ?? 0;
-    } else if (op.tipo_cargo === 'ADICIONAL') {
-      // PERSONAS_BASE (MOTORHOME): las 2 primeras personas se cobran aparte
-      // de la parcela, siempre que haya una categoría (parcela) elegida.
-      if (op.clave === 'PERSONAS_BASE') cantidad = seleccion.categoria ? 1 : 0;
     }
     if (cantidad <= 0) continue;
 

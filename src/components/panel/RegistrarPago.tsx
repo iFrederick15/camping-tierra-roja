@@ -67,7 +67,7 @@ export default function RegistrarPago({ reservaId }: Props) {
         value={nota}
         onChange={(e) => setNota(e.target.value)}
       />
-      {error && <p className="text-primario text-sm font-medium">{error}</p>}
+      {error && <p className="text-[#DC2626] text-sm font-medium">{error}</p>}
       {exito && <p className="text-confirmado text-sm font-medium">Pago registrado.</p>}
       <button
         type="submit"
