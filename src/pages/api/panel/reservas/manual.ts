@@ -9,6 +9,7 @@ import {
   calcularNoches,
   calcularPrecio,
   asignarParcelaMotorhome,
+  diaSiguiente,
   CAPACIDAD_MAXIMA_CABANA,
 } from '../../../../lib/reservas';
 
@@ -36,6 +37,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!nombreCliente || !dni || !fechaIngreso || !fechaSalida) {
     return new Response(
       JSON.stringify({ error: 'Nombre, DNI y fechas son obligatorios' }),
+      { status: 400 }
+    );
+  }
+
+  // Los quinchos se reservan por un solo día.
+  if (unidadTipo === 'QUINCHOS' && fechaSalida !== diaSiguiente(fechaIngreso)) {
+    return new Response(
+      JSON.stringify({ error: 'Los quinchos se reservan por un solo día' }),
       { status: 400 }
     );
   }

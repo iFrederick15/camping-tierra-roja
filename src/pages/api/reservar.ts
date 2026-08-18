@@ -13,6 +13,7 @@ import {
   calcularPrecio,
   asignarParcelaMotorhome,
   hoyISO,
+  diaSiguiente,
   CAPACIDAD_MAXIMA_CABANA,
 } from '../../lib/reservas';
 
@@ -47,6 +48,16 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: 'Las fechas de la reserva no son válidas' }), {
       status: 400,
     });
+  }
+
+  // Los quinchos se reservan por un solo día (esto ya se filtra en el date
+  // picker, que solo pide una fecha, pero se repite acá porque el picker se
+  // puede saltear pegándole directo a la API).
+  if (unidadTipo === 'QUINCHOS' && fechaSalida !== diaSiguiente(fechaIngreso)) {
+    return new Response(
+      JSON.stringify({ error: 'Los quinchos se reservan por un solo día' }),
+      { status: 400 }
+    );
   }
 
   const { data: unidad, error: errUnidad } = await supabaseAdmin

@@ -243,6 +243,10 @@ export async function calcularPrecio(
       if (op.clave === 'ACOMPANANTE') cantidad = seleccion.acompanantes ?? 0;
       else if (op.clave === 'MENOR') cantidad = seleccion.menores ?? 0;
       else if (op.clave === 'MAYOR') cantidad = seleccion.mayores ?? 0;
+    } else if (op.tipo_cargo === 'ADICIONAL') {
+      // PERSONAS_BASE (MOTORHOME): las 2 primeras personas se cobran aparte
+      // de la parcela, siempre que haya una categoría (parcela) elegida.
+      if (op.clave === 'PERSONAS_BASE') cantidad = seleccion.categoria ? 1 : 0;
     }
     if (cantidad <= 0) continue;
 
@@ -265,6 +269,14 @@ export async function calcularPrecio(
 // medianoche, algo crítico para decidir qué reserva es "de hoy".
 export function hoyISO(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+}
+
+// Espejo de diaSiguiente() en BookingWidget.tsx — usado para validar que un
+// quincho (que se reserva por un solo día) tenga fecha_salida = día
+// siguiente a fecha_ingreso.
+export function diaSiguiente(fechaISO: string): string {
+  const [y, m, d] = fechaISO.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
 }
 
 export type EstadoReserva = 'CONFIRMADA' | 'CHECKIN_HECHO' | 'CHECKOUT_HECHO' | 'CANCELADA';

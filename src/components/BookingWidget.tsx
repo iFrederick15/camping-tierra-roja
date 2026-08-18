@@ -109,6 +109,10 @@ function calcularDetalle(
       if (op.clave === 'ACOMPANANTE') cantidad = seleccion.acompanantes;
       else if (op.clave === 'MENOR') cantidad = seleccion.menores;
       else if (op.clave === 'MAYOR') cantidad = seleccion.mayores;
+    } else if (op.tipoCargo === 'ADICIONAL') {
+      // PERSONAS_BASE (MOTORHOME): las 2 primeras personas se cobran aparte
+      // de la parcela, siempre que haya una categoría (parcela) elegida.
+      if (op.clave === 'PERSONAS_BASE') cantidad = seleccion.categoria ? 1 : 0;
     }
     if (cantidad <= 0) continue;
     detalle.push({
@@ -301,7 +305,19 @@ export default function BookingWidget({
   const [mayores, setMayores] = useState(0); // CAMPING (cobra) / CABANA (informativo, "adultos")
 
   const [fechaIngreso, setFechaIngreso] = useState(fechaIngresoInicial ?? '');
-  const [fechaSalida, setFechaSalida] = useState(fechaSalidaInicial ?? '');
+  const [fechaSalida, setFechaSalida] = useState(
+    unidadInicial === 'QUINCHOS' && fechaIngresoInicial
+      ? diaSiguiente(fechaIngresoInicial)
+      : (fechaSalidaInicial ?? '')
+  );
+  // QUINCHOS se reserva por un solo día: el cliente elige una única fecha y
+  // fechaSalida se deriva automáticamente (día siguiente) para reusar el
+  // mismo modelo de rango [ingreso, salida) que el resto de las unidades.
+  useEffect(() => {
+    if (unidad === 'QUINCHOS' && fechaIngreso) {
+      setFechaSalida(diaSiguiente(fechaIngreso));
+    }
+  }, [unidad, fechaIngreso]);
   // Aplicar la precarga de categoría/parcela una sola vez (al llegar los
   // datos async correspondientes), no cada vez que cambia `unidad` —
   // de lo contrario pisaría una elección posterior de Staff.
@@ -333,25 +349,23 @@ export default function BookingWidget({
   const [scanEstado, setScanEstado] = useState<'idle' | 'ok' | 'baja-confianza' | 'error'>('idle');
   const scanHighlightTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const manejarScanDni = useCallback((resultado: {
-    nombre: string;
-    apellido: string;
-    dni: string;
-    confianza: 'alta' | 'baja';
-  }) => {
-    setDatosCliente((prev) => ({
-      ...prev,
-      nombreCliente: `${resultado.nombre} ${resultado.apellido}`.trim(),
-      dni: resultado.dni,
-    }));
-    setScanEstado(resultado.confianza === 'alta' ? 'ok' : 'baja-confianza');
-    if (scanHighlightTimeout.current) clearTimeout(scanHighlightTimeout.current);
-    if (resultado.confianza === 'alta') {
-      scanHighlightTimeout.current = setTimeout(() => {
-        setScanEstado((actual) => (actual === 'ok' ? 'idle' : actual));
-      }, 2500);
-    }
-  }, []);
+  const manejarScanDni = useCallback(
+    (resultado: { nombre: string; apellido: string; dni: string; confianza: 'alta' | 'baja' }) => {
+      setDatosCliente((prev) => ({
+        ...prev,
+        nombreCliente: `${resultado.nombre} ${resultado.apellido}`.trim(),
+        dni: resultado.dni,
+      }));
+      setScanEstado(resultado.confianza === 'alta' ? 'ok' : 'baja-confianza');
+      if (scanHighlightTimeout.current) clearTimeout(scanHighlightTimeout.current);
+      if (resultado.confianza === 'alta') {
+        scanHighlightTimeout.current = setTimeout(() => {
+          setScanEstado((actual) => (actual === 'ok' ? 'idle' : actual));
+        }, 2500);
+      }
+    },
+    []
+  );
 
   const manejarErrorScanDni = useCallback(() => {
     setScanEstado('error');
@@ -456,8 +470,7 @@ export default function BookingWidget({
     !!unidad &&
     (unidad !== 'MOTORHOME' || !!categoria) &&
     (unidad !== 'QUINCHOS' || !!categoria) &&
-    (unidad !== 'CAMPING' || menores + mayores > 0) &&
-    (unidad !== 'CABANA' || (mayores > 0 && mayores + menores <= CAPACIDAD_MAXIMA_CABANA));
+    (unidad !== 'CAMPING' || menores + mayores > 0);
 
   // Staff puede cargar reservas manuales con fechas pasadas (ej. registrar
   // una estadía ya ocurrida); el portal público no.
@@ -641,115 +654,119 @@ export default function BookingWidget({
               />
 
               {unidad === 'MOTORHOME' && (
-            <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {opcionesPrecio
-                  .filter((o) => o.tipoCargo === 'BASE')
-                  .map((op) => (
-                    <button
-                      key={op.clave}
-                      type="button"
-                      onClick={() => setCategoria(op.clave)}
-                      className={opcionBase(categoria === op.clave)}
-                    >
-                      <div className="font-titulo font-bold text-negro text-sm">{op.etiqueta}</div>
-                      <div className="text-texto-suave text-xs mt-1">
-                        {formatoMoneda(op.precioPorNoche)} / noche
+                <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {opcionesPrecio
+                      .filter((o) => o.tipoCargo === 'BASE')
+                      .map((op) => (
+                        <button
+                          key={op.clave}
+                          type="button"
+                          onClick={() => setCategoria(op.clave)}
+                          className={opcionBase(categoria === op.clave)}
+                        >
+                          <div className="font-titulo font-bold text-negro text-sm">
+                            {op.etiqueta}
+                          </div>
+                          <div className="text-texto-suave text-xs mt-1">
+                            {formatoMoneda(op.precioPorNoche)} / noche
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                  {opcionesPrecio
+                    .filter((o) => o.tipoCargo === 'ADICIONAL' && o.clave === 'PERSONAS_BASE')
+                    .map((op) => (
+                      <div
+                        key={op.clave}
+                        className="flex items-center justify-between text-sm border-t border-borde pt-4"
+                      >
+                        <span className="text-texto-suave">{op.etiqueta}</span>
+                        <span className="font-titulo font-bold text-negro">
+                          {formatoMoneda(op.precioPorNoche)} / noche
+                        </span>
                       </div>
-                    </button>
-                  ))}
-              </div>
-              <div className="border-t border-borde pt-4 flex flex-col gap-3">
-                <p className="flex items-center gap-1.5 text-sm font-titulo font-bold text-negro">
-                  <span className="material-symbols-outlined text-[18px] text-primario">group</span>
-                  Acompañantes
-                </p>
-                {opcionesPrecio
-                  .filter((o) => o.tipoCargo === 'CANTIDAD' && o.clave === 'ACOMPANANTE')
-                  .map((op) => (
+                    ))}
+                  <div className="border-t border-borde pt-4 flex flex-col gap-3">
+                    <p className="flex items-center gap-1.5 text-sm font-titulo font-bold text-negro">
+                      <span className="material-symbols-outlined text-[18px] text-primario">
+                        group
+                      </span>
+                      Acompañantes adicionales
+                    </p>
+                    {opcionesPrecio
+                      .filter((o) => o.tipoCargo === 'CANTIDAD' && o.clave === 'ACOMPANANTE')
+                      .map((op) => (
+                        <Stepper
+                          key={op.clave}
+                          label={op.etiqueta}
+                          sublabel={`${formatoMoneda(op.precioPorNoche)} / noche c/u`}
+                          value={acompanantes}
+                          onChange={setAcompanantes}
+                        />
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {unidad === 'CAMPING' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-fondo-alt rounded-card p-5">
+                  {opcionesPrecio.map((op) => (
                     <Stepper
                       key={op.clave}
                       label={op.etiqueta}
                       sublabel={`${formatoMoneda(op.precioPorNoche)} / noche c/u`}
-                      value={acompanantes}
-                      onChange={setAcompanantes}
+                      value={op.clave === 'MENOR' ? menores : mayores}
+                      onChange={op.clave === 'MENOR' ? setMenores : setMayores}
                     />
                   ))}
-              </div>
-            </div>
-          )}
-
-          {unidad === 'CAMPING' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-fondo-alt rounded-card p-5">
-              {opcionesPrecio.map((op) => (
-                <Stepper
-                  key={op.clave}
-                  label={op.etiqueta}
-                  sublabel={`${formatoMoneda(op.precioPorNoche)} / noche c/u`}
-                  value={op.clave === 'MENOR' ? menores : mayores}
-                  onChange={op.clave === 'MENOR' ? setMenores : setMayores}
-                />
-              ))}
-            </div>
-          )}
-
-          {unidad === 'CABANA' && (
-            <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
-              {opcionesPrecio
-                .filter((o) => o.clave === 'FIJO')
-                .map((op) => (
-                  <div key={op.clave} className="flex items-center justify-between text-sm">
-                    <span className="text-texto-suave">{op.etiqueta}</span>
-                    <span className="font-titulo font-bold text-negro">
-                      {formatoMoneda(op.precioPorNoche)} / noche
-                    </span>
-                  </div>
-                ))}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Stepper
-                  label="Adultos"
-                  value={mayores}
-                  onChange={setMayores}
-                  max={CAPACIDAD_MAXIMA_CABANA - menores}
-                />
-                <Stepper
-                  label="Menores"
-                  value={menores}
-                  onChange={setMenores}
-                  max={CAPACIDAD_MAXIMA_CABANA - mayores}
-                />
-              </div>
-              {mayores + menores >= CAPACIDAD_MAXIMA_CABANA && (
-                <p className="text-xs font-medium text-primario">
-                  Alcanzaste la capacidad máxima de la cabaña ({CAPACIDAD_MAXIMA_CABANA} personas)
-                </p>
+                </div>
               )}
-            </div>
-          )}
 
-          {unidad === 'QUINCHOS' && (
-            <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {opcionesPrecio.map((op) => (
-                  <button
-                    key={op.clave}
-                    type="button"
-                    onClick={() => setCategoria(op.clave)}
-                    className={opcionBase(categoria === op.clave)}
-                  >
-                    <div className="font-titulo font-bold text-negro text-sm">{op.etiqueta}</div>
-                    <div className="text-texto-suave text-xs mt-1">
-                      {formatoMoneda(op.precioPorNoche)} / día
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-texto-suave flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">info</span>
-                La entrada al parque por persona no está incluida.
-              </p>
-            </div>
-          )}
+              {unidad === 'CABANA' && (
+                <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
+                  {opcionesPrecio
+                    .filter((o) => o.clave === 'FIJO')
+                    .map((op) => (
+                      <div key={op.clave} className="flex items-center justify-between text-sm">
+                        <span className="text-texto-suave">{op.etiqueta}</span>
+                        <span className="font-titulo font-bold text-negro">
+                          {formatoMoneda(op.precioPorNoche)} / noche
+                        </span>
+                      </div>
+                    ))}
+                  <p className="text-xs text-texto-suave flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[16px]">info</span>
+                    Capacidad máxima {CAPACIDAD_MAXIMA_CABANA} personas.
+                  </p>
+                </div>
+              )}
+
+              {unidad === 'QUINCHOS' && (
+                <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {opcionesPrecio.map((op) => (
+                      <button
+                        key={op.clave}
+                        type="button"
+                        onClick={() => setCategoria(op.clave)}
+                        className={opcionBase(categoria === op.clave)}
+                      >
+                        <div className="font-titulo font-bold text-negro text-sm">
+                          {op.etiqueta}
+                        </div>
+                        <div className="text-texto-suave text-xs mt-1">
+                          {formatoMoneda(op.precioPorNoche)} / día
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-texto-suave flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[16px]">info</span>
+                    La entrada al parque por persona no está incluida.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -765,10 +782,12 @@ export default function BookingWidget({
 
       {paso === 'fechas' && (
         <section className="flex flex-col gap-5 relative z-10">
-          <h2 className="font-titulo font-bold text-3xl text-negro">Elegí tus fechas</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <h2 className="font-titulo font-bold text-3xl text-negro">
+            {unidad === 'QUINCHOS' ? 'Elegí el día' : 'Elegí tus fechas'}
+          </h2>
+          {unidad === 'QUINCHOS' ? (
             <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave min-w-0">
-              Entrada
+              Fecha
               <div className="relative">
                 <input
                   type="date"
@@ -776,11 +795,7 @@ export default function BookingWidget({
                   value={fechaIngreso}
                   min={minEntrada}
                   onFocus={() => setTocadoIngreso(true)}
-                  onChange={(e) => {
-                    const valor = e.target.value;
-                    setFechaIngreso(valor);
-                    if (fechaSalida && fechaSalida <= valor) setFechaSalida('');
-                  }}
+                  onChange={(e) => setFechaIngreso(e.target.value)}
                 />
                 {!fechaIngreso && !tocadoIngreso && (
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave/60 font-cuerpo pointer-events-none">
@@ -789,25 +804,50 @@ export default function BookingWidget({
                 )}
               </div>
             </label>
-            <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave min-w-0">
-              Salida
-              <div className="relative">
-                <input
-                  type="date"
-                  className={`${input} ${!fechaSalida && !tocadoSalida ? 'text-transparent' : ''}`}
-                  value={fechaSalida}
-                  min={minSalida}
-                  onFocus={() => setTocadoSalida(true)}
-                  onChange={(e) => setFechaSalida(e.target.value)}
-                />
-                {!fechaSalida && !tocadoSalida && (
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave/60 font-cuerpo pointer-events-none">
-                    dd/mm/aaaa
-                  </span>
-                )}
-              </div>
-            </label>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave min-w-0">
+                Entrada
+                <div className="relative">
+                  <input
+                    type="date"
+                    className={`${input} ${!fechaIngreso && !tocadoIngreso ? 'text-transparent' : ''}`}
+                    value={fechaIngreso}
+                    min={minEntrada}
+                    onFocus={() => setTocadoIngreso(true)}
+                    onChange={(e) => {
+                      const valor = e.target.value;
+                      setFechaIngreso(valor);
+                      if (fechaSalida && fechaSalida <= valor) setFechaSalida('');
+                    }}
+                  />
+                  {!fechaIngreso && !tocadoIngreso && (
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave/60 font-cuerpo pointer-events-none">
+                      dd/mm/aaaa
+                    </span>
+                  )}
+                </div>
+              </label>
+              <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave min-w-0">
+                Salida
+                <div className="relative">
+                  <input
+                    type="date"
+                    className={`${input} ${!fechaSalida && !tocadoSalida ? 'text-transparent' : ''}`}
+                    value={fechaSalida}
+                    min={minSalida}
+                    onFocus={() => setTocadoSalida(true)}
+                    onChange={(e) => setFechaSalida(e.target.value)}
+                  />
+                  {!fechaSalida && !tocadoSalida && (
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave/60 font-cuerpo pointer-events-none">
+                      dd/mm/aaaa
+                    </span>
+                  )}
+                </div>
+              </label>
+            </div>
+          )}
 
           {cargandoDisponibilidad && (
             <p className="text-texto-suave text-sm flex items-center gap-2">
@@ -957,7 +997,7 @@ export default function BookingWidget({
                   ? 'border-advertencia'
                   : ''
             }`}
-            placeholder="DNI"
+            placeholder="DNI o PASAPORTE"
             value={datosCliente.dni}
             onChange={(e) => {
               setScanEstado('idle');
@@ -992,14 +1032,6 @@ export default function BookingWidget({
                     {unidad === 'QUINCHOS' ? 'Días' : 'Noches'}
                   </span>
                   <span className="font-medium text-negro">{noches}</span>
-                </div>
-              )}
-              {unidad === 'CABANA' && (mayores > 0 || menores > 0) && (
-                <div className="flex justify-between">
-                  <span className="text-texto-suave">Personas</span>
-                  <span className="font-medium text-negro">
-                    {mayores} adultos, {menores} menores
-                  </span>
                 </div>
               )}
               {detalle.map((d) => (
