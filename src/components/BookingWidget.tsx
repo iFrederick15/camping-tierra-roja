@@ -982,7 +982,7 @@ export default function BookingWidget({
                   ? 'border-advertencia'
                   : ''
             }`}
-            placeholder="Nombre y apellido"
+            placeholder="Nombre y Apellido"
             value={datosCliente.nombreCliente}
             onChange={(e) => {
               setScanEstado('idle');
