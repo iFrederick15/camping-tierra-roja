@@ -12,6 +12,7 @@ import {
   obtenerConfiguracionPagos,
   calcularPrecio,
   asignarParcelaMotorhome,
+  hoyISO,
   CAPACIDAD_MAXIMA_CABANA,
 } from '../../lib/reservas';
 
@@ -37,6 +38,15 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({ error: 'Email y teléfono son obligatorios para reservar online' }),
       { status: 400 }
     );
+  }
+
+  // El portal público no permite reservar fechas pasadas ni con la salida
+  // antes o igual a la entrada; esto ya se filtra en el date picker pero se
+  // repite acá porque el picker se puede saltear pegándole directo a la API.
+  if (!fechaIngreso || !fechaSalida || fechaIngreso < hoyISO() || fechaSalida <= fechaIngreso) {
+    return new Response(JSON.stringify({ error: 'Las fechas de la reserva no son válidas' }), {
+      status: 400,
+    });
   }
 
   const { data: unidad, error: errUnidad } = await supabaseAdmin

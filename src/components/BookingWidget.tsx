@@ -74,6 +74,19 @@ function calcularNochesLocal(desde: string, hasta: string): number {
   return Math.max(1, Math.round((salida.getTime() - ingreso.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
+// Fecha de "hoy" en huso horario de Puerto Iguazú, para no dejar elegir
+// fechas pasadas en el portal público. Duplica hoyISO() de
+// src/lib/reservas.ts porque ese módulo importa supabaseAdmin y no puede
+// bundlearse en el cliente.
+function hoyISOLocal(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+}
+
+function diaSiguiente(fechaISO: string): string {
+  const [y, m, d] = fechaISO.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+}
+
 // Espejo de calcularPrecio() en src/lib/reservas.ts — el servidor recalcula
 // todo al confirmar, esto es solo para mostrar el total en vivo sin pedirlo
 // de nuevo por red.
@@ -446,6 +459,11 @@ export default function BookingWidget({
     (unidad !== 'CAMPING' || menores + mayores > 0) &&
     (unidad !== 'CABANA' || (mayores > 0 && mayores + menores <= CAPACIDAD_MAXIMA_CABANA));
 
+  // Staff puede cargar reservas manuales con fechas pasadas (ej. registrar
+  // una estadía ya ocurrida); el portal público no.
+  const minEntrada = modo === 'publico' ? hoyISOLocal() : undefined;
+  const minSalida = fechaIngreso ? diaSiguiente(fechaIngreso) : minEntrada;
+
   const puedeContinuarDesdeFechas =
     disponibilidad &&
     ((disponibilidad.tipo === 'cupo' && disponibilidad.disponible) ||
@@ -756,8 +774,13 @@ export default function BookingWidget({
                   type="date"
                   className={`${input} ${!fechaIngreso && !tocadoIngreso ? 'text-transparent' : ''}`}
                   value={fechaIngreso}
+                  min={minEntrada}
                   onFocus={() => setTocadoIngreso(true)}
-                  onChange={(e) => setFechaIngreso(e.target.value)}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    setFechaIngreso(valor);
+                    if (fechaSalida && fechaSalida <= valor) setFechaSalida('');
+                  }}
                 />
                 {!fechaIngreso && !tocadoIngreso && (
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave/60 font-cuerpo pointer-events-none">
@@ -773,6 +796,7 @@ export default function BookingWidget({
                   type="date"
                   className={`${input} ${!fechaSalida && !tocadoSalida ? 'text-transparent' : ''}`}
                   value={fechaSalida}
+                  min={minSalida}
                   onFocus={() => setTocadoSalida(true)}
                   onChange={(e) => setFechaSalida(e.target.value)}
                 />
