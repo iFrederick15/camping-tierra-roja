@@ -997,7 +997,7 @@ export default function BookingWidget({
                   ? 'border-advertencia'
                   : ''
             }`}
-            placeholder="DNI o PASAPORTE"
+            placeholder="DNI o Pasaporte"
             value={datosCliente.dni}
             onChange={(e) => {
               setScanEstado('idle');
