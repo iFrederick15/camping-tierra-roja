@@ -689,6 +689,10 @@ export default function BookingWidget({
                         />
                       ))}
                   </div>
+                  <p className="text-xs text-texto-suave flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[16px]">info</span>
+                    El valor incluye 2 personas.
+                  </p>
                 </div>
               )}
 
