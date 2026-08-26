@@ -479,10 +479,12 @@ export default function BookingWidget({
       (disponibilidad.tipo === 'unica' && disponibilidad.disponible) ||
       (disponibilidad.tipo === 'lista' && parcelaSeleccionada));
 
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datosCliente.email.trim());
+
   const datosCompletos =
     datosCliente.nombreCliente.trim() !== '' &&
     datosCliente.dni.trim() !== '' &&
-    (modo === 'staff' || (datosCliente.email.trim() !== '' && datosCliente.telefono.trim() !== ''));
+    (modo === 'staff' || (emailValido && datosCliente.telefono.trim() !== ''));
 
   async function confirmarReserva() {
     setEnviando(true);
@@ -1001,8 +1003,12 @@ export default function BookingWidget({
           <input
             className={input}
             placeholder={modo === 'staff' ? 'Teléfono (opcional)' : 'Teléfono'}
+            type="tel"
+            inputMode="numeric"
             value={datosCliente.telefono}
-            onChange={(e) => setDatosCliente({ ...datosCliente, telefono: e.target.value })}
+            onChange={(e) =>
+              setDatosCliente({ ...datosCliente, telefono: e.target.value.replace(/\D/g, '') })
+            }
           />
 
           {(unidadElegida || noches || detalle.length > 0) && (
@@ -1063,10 +1069,10 @@ export default function BookingWidget({
       )}
 
       {paso === 'confirmado' && (
-        <section className="flex flex-col items-center gap-3 text-center py-6 relative z-10">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primario to-acento text-white flex items-center justify-center mb-2">
+        <section className="flex flex-col items-center gap-3 text-center my-15 relative z-10">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primario to-acento text-white flex items-center justify-center mb-2 mt-10">
             <span
-              className="material-symbols-outlined text-4xl"
+              className="material-symbols-outlined text-4xl leading-none flex items-center justify-center"
               style={{ fontVariationSettings: "'FILL' 1" }}
             >
               check
