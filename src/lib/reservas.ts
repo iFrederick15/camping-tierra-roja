@@ -318,7 +318,6 @@ export interface ReservaResumen {
   parcelaId: string | null;
   categoriaSeleccionada: string | null;
   datosVehiculo: string | null;
-  comoNosConocio: string | null;
 }
 
 type FiltroReservas =
@@ -328,7 +327,7 @@ type FiltroReservas =
   | { modo: 'pendientes-pago' };
 
 const SELECT_RESUMEN =
-  'id, nombre_cliente, dni, telefono, email, fecha_ingreso, fecha_salida, monto_total, monto_pagado, fecha_limite_pago, estado, origen, cantidad_acompanantes, cantidad_menores, cantidad_mayores, detalle_precio, parcela_id, categoria_seleccionada, datos_vehiculo, como_nos_conocio, unidades(nombre, tipo), parcelas(nombre)';
+  'id, nombre_cliente, dni, telefono, email, fecha_ingreso, fecha_salida, monto_total, monto_pagado, fecha_limite_pago, estado, origen, cantidad_acompanantes, cantidad_menores, cantidad_mayores, detalle_precio, parcela_id, categoria_seleccionada, datos_vehiculo, unidades(nombre, tipo), parcelas(nombre)';
 
 function mapearResumen(r: any): ReservaResumen {
   return {
@@ -354,7 +353,6 @@ function mapearResumen(r: any): ReservaResumen {
     parcelaId: r.parcela_id ?? null,
     categoriaSeleccionada: r.categoria_seleccionada ?? null,
     datosVehiculo: r.datos_vehiculo ?? null,
-    comoNosConocio: r.como_nos_conocio ?? null,
   };
 }
 

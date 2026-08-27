@@ -20,7 +20,7 @@ const facturadoDelMes = (pagosMes ?? []).reduce((acc, p) => acc + Number(p.monto
 
 const { data: reservasMes } = await supabaseAdmin
   .from('reservas')
-  .select('fecha_ingreso, fecha_salida, como_nos_conocio, estado')
+  .select('fecha_ingreso, fecha_salida, estado')
   .gte('fecha_ingreso', inicioMes.slice(0, 10))
   .lt('fecha_ingreso', inicioMesSiguiente.slice(0, 10))
   .neq('estado', 'CANCELADA');
@@ -30,12 +30,6 @@ const nochesOcupadas = (reservasMes ?? []).reduce(
   (acc, r) => acc + calcularNoches(r.fecha_ingreso, r.fecha_salida),
   0
 );
-
-const conteoOrigen = new Map<string, number>();
-for (const r of reservasMes ?? []) {
-  const clave = r.como_nos_conocio?.trim() || 'Sin dato';
-  conteoOrigen.set(clave, (conteoOrigen.get(clave) ?? 0) + 1);
-}
 ---
 
 <PanelLayout title="Reportes" activo="reportes">
@@ -73,20 +67,6 @@ for (const r of reservasMes ?? []) {
       <div class="flex-1 px-6 py-4">
         <span class="text-texto-suave text-sm">Reservas totales</span>
         <p class="font-titulo font-bold text-[26px] text-negro">{reservasTotales}</p>
-      </div>
-    </div>
-
-    <div class="max-w-md">
-      <h2 class="font-titulo font-bold text-base text-negro mb-3">Cómo nos conoció</h2>
-      <div class="bg-superficie rounded-card border-2 border-borde py-1">
-        {
-          Array.from(conteoOrigen.entries()).map(([origen, cantidad]) => (
-            <div class="flex items-center justify-between px-5 py-2.5 border-t border-fondo-alt first:border-t-0">
-              <span class="text-texto text-sm">{origen}</span>
-              <span class="text-texto-suave font-titulo font-bold text-sm">{cantidad}</span>
-            </div>
-          ))
-        }
       </div>
     </div>
   </div>
