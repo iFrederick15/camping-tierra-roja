@@ -217,8 +217,7 @@ export default function EditarReserva(props: Props) {
       (disponibilidad.tipo === 'unica' && disponibilidad.disponible) ||
       (disponibilidad.tipo === 'lista' && !!parcela));
 
-  const excedeCabana =
-    unidad === 'CABANA' && menores + mayores > CAPACIDAD_MAXIMA_CABANA;
+  const excedeCabana = unidad === 'CABANA' && menores + mayores > CAPACIDAD_MAXIMA_CABANA;
 
   const puedeGuardar =
     !enviando &&
@@ -267,7 +266,7 @@ export default function EditarReserva(props: Props) {
     return (
       <button
         onClick={() => setAbierto(true)}
-        className="inline-flex items-center gap-2 border-2 border-borde rounded-pill px-5 py-2.5 font-titulo font-bold text-texto-suave hover:border-primario-claro transition-colors"
+        className="inline-flex items-center gap-2 border-2 border-primario rounded-pill px-5 py-2.5 font-titulo font-bold text-texto-suave hover:bg-primario-claro transition-colors"
       >
         Editar reserva
       </button>
@@ -389,15 +388,21 @@ export default function EditarReserva(props: Props) {
       {cargandoDisp && <p className="text-texto-suave text-sm">Consultando disponibilidad…</p>}
 
       {disponibilidad?.tipo === 'cupo' && (
-        <p className={`text-sm font-medium ${disponibilidad.disponible ? 'text-confirmado' : 'text-primario'}`}>
+        <p
+          className={`text-sm font-medium ${disponibilidad.disponible ? 'text-confirmado' : 'text-primario'}`}
+        >
           {disponibilidad.disponible
             ? `Hay lugar para estas fechas (${disponibilidad.cuposLibres} libre/s)`
             : 'Sin disponibilidad para estas fechas'}
         </p>
       )}
       {disponibilidad?.tipo === 'unica' && (
-        <p className={`text-sm font-medium ${disponibilidad.disponible ? 'text-confirmado' : 'text-primario'}`}>
-          {disponibilidad.disponible ? 'Disponible para estas fechas' : 'No disponible en estas fechas'}
+        <p
+          className={`text-sm font-medium ${disponibilidad.disponible ? 'text-confirmado' : 'text-primario'}`}
+        >
+          {disponibilidad.disponible
+            ? 'Disponible para estas fechas'
+            : 'No disponible en estas fechas'}
         </p>
       )}
       {disponibilidad?.tipo === 'lista' && (
@@ -430,7 +435,11 @@ export default function EditarReserva(props: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-borde">
         <label className={labelCls}>
           Nombre del cliente
-          <input className={inputCls} value={nombreCliente} onChange={(e) => setNombreCliente(e.target.value)} />
+          <input
+            className={inputCls}
+            value={nombreCliente}
+            onChange={(e) => setNombreCliente(e.target.value)}
+          />
         </label>
         <label className={labelCls}>
           DNI o Pasaporte
@@ -438,7 +447,12 @@ export default function EditarReserva(props: Props) {
         </label>
         <label className={labelCls}>
           Email
-          <input className={inputCls} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input
+            className={inputCls}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </label>
         <label className={labelCls}>
           Teléfono
