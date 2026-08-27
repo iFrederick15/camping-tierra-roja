@@ -7,6 +7,8 @@ dist
 
 # Informe de auditoría: enumera rutas internas y vulnerabilidades — no commitear
 auditoria-seguridad.md
+auditoria-seo.md
+cambios-espanol-neutro.md
 
 # Archivos residuales de sincronización (iCloud/Dropbox) y de macOS
 * 2.*
