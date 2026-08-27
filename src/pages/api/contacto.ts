@@ -4,10 +4,19 @@
 
 import type { APIRoute } from 'astro';
 import { enviarEmailContacto } from '../../lib/email';
+import { consumir, ipDe } from '../../lib/rate-limit';
 
 const MAX_LARGO = 5000;
 
 export const POST: APIRoute = async ({ request }) => {
+  const limite = consumir(`contacto:${ipDe(request)}`, 5, 60 * 60 * 1000);
+  if (!limite.permitido) {
+    return new Response(
+      JSON.stringify({ error: 'Demasiados mensajes seguidos. Prueba de nuevo en un rato.' }),
+      { status: 429, headers: { 'Retry-After': String(limite.reintentarEnSegundos) } }
+    );
+  }
+
   let datos: Record<string, unknown>;
 
   const contentType = request.headers.get('content-type') ?? '';

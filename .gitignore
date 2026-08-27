@@ -1,8 +1,12 @@
 node_modules
 .env
+.env.*
 .astro
 dist
 .vercel
+
+# Informe de auditoría: enumera rutas internas y vulnerabilidades — no commitear
+auditoria-seguridad.md
 
 # Archivos residuales de sincronización (iCloud/Dropbox) y de macOS
 * 2.*

@@ -6,6 +6,8 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../lib/supabase';
 import { enviarEmailConfirmacion } from '../../lib/email';
+import { validarDatosCliente } from '../../lib/validacion';
+import { consumir, ipDe } from '../../lib/rate-limit';
 import {
   calcularNoches,
   calcularFechaLimitePago,
@@ -18,6 +20,14 @@ import {
 } from '../../lib/reservas';
 
 export const POST: APIRoute = async ({ request }) => {
+  const limite = consumir(`reservar:${ipDe(request)}`, 8, 60 * 60 * 1000);
+  if (!limite.permitido) {
+    return new Response(
+      JSON.stringify({ error: 'Demasiados intentos de reserva. Prueba de nuevo en un rato.' }),
+      { status: 429, headers: { 'Retry-After': String(limite.reintentarEnSegundos) } }
+    );
+  }
+
   const body = await request.json();
   const {
     unidadTipo,
@@ -39,6 +49,14 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({ error: 'Email y teléfono son obligatorios para reservar online' }),
       { status: 400 }
     );
+  }
+
+  const errorDatos = validarDatosCliente(body, {
+    emailObligatorio: true,
+    telefonoObligatorio: true,
+  });
+  if (errorDatos) {
+    return new Response(JSON.stringify({ error: errorDatos }), { status: 400 });
   }
 
   // El portal público no permite reservar fechas pasadas ni con la salida
@@ -142,7 +160,8 @@ export const POST: APIRoute = async ({ request }) => {
     .single();
 
   if (errInsert || !reserva) {
-    return new Response(JSON.stringify({ error: errInsert?.message ?? 'No se pudo crear la reserva' }), {
+    console.error('POST /api/reservar — error insertando reserva:', errInsert);
+    return new Response(JSON.stringify({ error: 'No se pudo crear la reserva' }), {
       status: 500,
     });
   }

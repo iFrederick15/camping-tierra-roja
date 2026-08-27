@@ -38,7 +38,8 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     .eq('id', id);
 
   if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    console.error('POST /api/panel/reservas/[id]/checkin:', error);
+    return new Response(JSON.stringify({ error: 'No se pudo hacer el check-in' }), { status: 500 });
   }
   return new Response(JSON.stringify({ ok: true }), { status: 200 });
 };

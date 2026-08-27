@@ -64,7 +64,10 @@ export async function obtenerConfiguracionPagos(): Promise<ConfiguracionPagos> {
   return data ?? { horas_plazo_largo: 48, horas_plazo_corto: 6, dias_umbral_anticipacion: 3 };
 }
 
-export function calcularFechaLimitePago(fechaIngreso: string | Date, config: ConfiguracionPagos): Date {
+export function calcularFechaLimitePago(
+  fechaIngreso: string | Date,
+  config: ConfiguracionPagos
+): Date {
   const ahora = new Date();
   const ingreso = new Date(fechaIngreso);
   const diasAnticipacion = (ingreso.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24);
@@ -96,10 +99,15 @@ export async function obtenerDisponibilidad(
   // Al editar una reserva, se la excluye del cálculo para que no colisione
   // consigo misma (sus propias fechas ya "ocupan" la unidad/parcela).
   excluirReservaId?: string
-): Promise<{ error: string; status: number } | { unidad: { id: string; nombre: string }; disponibilidad: Disponibilidad }> {
+): Promise<
+  | { error: string; status: number }
+  | { unidad: { id: string; nombre: string }; disponibilidad: Disponibilidad }
+> {
   const { data: unidad, error: errUnidad } = await supabaseAdmin
     .from('unidades')
-    .select('id, tipo, nombre, cupo_total, parcelas(id, nombre, atributos, activa, opciones_precio(clave))')
+    .select(
+      'id, tipo, nombre, cupo_total, parcelas(id, nombre, atributos, activa, opciones_precio(clave))'
+    )
     .eq('tipo', unidadTipo)
     .single();
 
@@ -122,7 +130,8 @@ export async function obtenerDisponibilidad(
   const { data: solapadas, error: errReservas } = await queryReservas;
 
   if (errReservas) {
-    return { error: errReservas.message, status: 500 };
+    console.error('obtenerDisponibilidad — error consultando reservas:', errReservas);
+    return { error: 'No se pudo calcular la disponibilidad', status: 500 };
   }
 
   const unidadInfo = { id: unidad.id, nombre: unidad.nombre };
@@ -145,7 +154,8 @@ export async function obtenerDisponibilidad(
     const parcelasOcupadasIds = new Set((solapadas ?? []).map((r) => r.parcela_id));
     const disponibles = (unidad.parcelas ?? [])
       .filter(
-        (p: any) => p.activa && !parcelasOcupadasIds.has(p.id) && p.opciones_precio?.clave === categoria
+        (p: any) =>
+          p.activa && !parcelasOcupadasIds.has(p.id) && p.opciones_precio?.clave === categoria
       )
       .map((p: any) => ({ id: p.id, nombre: p.nombre, atributos: p.atributos }));
 
@@ -368,7 +378,14 @@ export async function listarReservas(filtro: FiltroReservas): Promise<ReservaRes
   } else if (filtro.modo === 'salidas-hoy') {
     query = query.eq('fecha_salida', hoy).eq('estado', 'CHECKIN_HECHO');
   } else if (filtro.modo === 'buscar') {
-    const termino = filtro.q.replace(/[,%]/g, '').trim();
+    // Allowlist estricta: solo letras (incl. acentos/ñ), números y espacios.
+    // Evita que caracteres con significado en el filtro PostgREST
+    // (`, . ( ) * :`) alteren la semántica de la consulta `.or(...)`.
+    const termino = filtro.q
+      .normalize('NFC')
+      .replace(/[^\p{L}\p{N} ]/gu, '')
+      .trim()
+      .slice(0, 60);
     if (!termino) return [];
     query = query
       .or(`nombre_cliente.ilike.%${termino}%,dni.ilike.%${termino}%`)
@@ -389,6 +406,137 @@ export async function listarReservas(filtro: FiltroReservas): Promise<ReservaRes
     filas = filas.filter((r) => calcularEstadoPago(r.montoTotal, r.montoPagado) !== 'PAGADO');
   }
   return filas;
+}
+
+// ------------------------------------------------------------
+// Reporte mensual — usado por la página /panel/admin/reportes (números en
+// pantalla) y por /api/panel/admin/reportes (descarga Excel). Mismo cálculo
+// para las dos, para que lo que se ve coincida con lo que se descarga.
+// El "mes" se interpreta en huso horario de Puerto Iguazú.
+// ------------------------------------------------------------
+export interface FilaReservaReporte {
+  fechaIngreso: string;
+  fechaSalida: string;
+  noches: number;
+  nombreCliente: string;
+  dni: string;
+  telefono: string | null;
+  email: string | null;
+  unidadNombre: string;
+  parcelaNombre: string | null;
+  estado: EstadoReserva;
+  origen: 'WEB' | 'MANUAL';
+  montoTotal: number;
+  montoPagado: number;
+  estadoPago: string;
+  creadaEn: string;
+}
+
+export interface FilaPagoReporte {
+  fecha: string;
+  nombreCliente: string;
+  metodo: string;
+  monto: number;
+  registradoPor: string | null;
+  nota: string | null;
+}
+
+export interface ReporteMensual {
+  mes: string; // YYYY-MM
+  nombreMes: string;
+  facturadoDelMes: number;
+  nochesOcupadas: number;
+  reservasTotales: number;
+  reservas: FilaReservaReporte[];
+  pagos: FilaPagoReporte[];
+}
+
+const ETIQUETA_ESTADO_PAGO: Record<EstadoPago, string> = {
+  NO_PAGADO: 'No pagado',
+  PARCIAL: 'Parcial',
+  PAGADO: 'Pagado',
+};
+
+// Normaliza cualquier entrada a YYYY-MM válido; si no lo es, usa el mes actual.
+export function mesValido(mes: string | null | undefined): string {
+  return mes && /^\d{4}-\d{2}$/.test(mes) ? mes : hoyISO().slice(0, 7);
+}
+
+export async function obtenerReporteMensual(
+  mesEntrada: string | null | undefined
+): Promise<ReporteMensual> {
+  const mes = mesValido(mesEntrada);
+  const [anio, mesNum] = mes.split('-').map(Number);
+  const inicioDia = `${mes}-01`;
+  const finDia = new Date(Date.UTC(anio, mesNum, 1)).toISOString().slice(0, 10);
+  const inicioTs = new Date(Date.UTC(anio, mesNum - 1, 1)).toISOString();
+  const finTs = new Date(Date.UTC(anio, mesNum, 1)).toISOString();
+  const nombreMes = new Date(anio, mesNum - 1, 1).toLocaleDateString('es-AR', {
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const [{ data: pagosData }, { data: reservasData }] = await Promise.all([
+    supabaseAdmin
+      .from('pagos')
+      .select('creado_en, monto, metodo, nota, registrado_por, reservas(nombre_cliente)')
+      .gte('creado_en', inicioTs)
+      .lt('creado_en', finTs)
+      .order('creado_en', { ascending: true }),
+    supabaseAdmin
+      .from('reservas')
+      .select(
+        'fecha_ingreso, fecha_salida, nombre_cliente, dni, telefono, email, monto_total, monto_pagado, estado, origen, creado_en, unidades(nombre), parcelas(nombre)'
+      )
+      .gte('fecha_ingreso', inicioDia)
+      .lt('fecha_ingreso', finDia)
+      .order('fecha_ingreso', { ascending: true }),
+  ]);
+
+  const pagos: FilaPagoReporte[] = (pagosData ?? []).map((p: any) => ({
+    fecha: p.creado_en,
+    nombreCliente: p.reservas?.nombre_cliente ?? '',
+    metodo: p.metodo,
+    monto: Number(p.monto),
+    registradoPor: p.registrado_por,
+    nota: p.nota,
+  }));
+
+  const reservas: FilaReservaReporte[] = (reservasData ?? []).map((r: any) => {
+    const montoTotal = Number(r.monto_total);
+    const montoPagado = Number(r.monto_pagado);
+    return {
+      fechaIngreso: r.fecha_ingreso,
+      fechaSalida: r.fecha_salida,
+      noches: calcularNoches(r.fecha_ingreso, r.fecha_salida),
+      nombreCliente: r.nombre_cliente,
+      dni: r.dni,
+      telefono: r.telefono,
+      email: r.email,
+      unidadNombre: r.unidades?.nombre ?? '',
+      parcelaNombre: r.parcelas?.nombre ?? null,
+      estado: r.estado,
+      origen: r.origen,
+      montoTotal,
+      montoPagado,
+      estadoPago: ETIQUETA_ESTADO_PAGO[calcularEstadoPago(montoTotal, montoPagado)],
+      creadaEn: r.creado_en,
+    };
+  });
+
+  // Los totales en pantalla excluyen las canceladas (igual que la Vista
+  // operativa); el detalle sí las lista, marcadas como CANCELADA.
+  const noCanceladas = reservas.filter((r) => r.estado !== 'CANCELADA');
+
+  return {
+    mes,
+    nombreMes,
+    facturadoDelMes: pagos.reduce((acc, p) => acc + p.monto, 0),
+    nochesOcupadas: noCanceladas.reduce((acc, r) => acc + r.noches, 0),
+    reservasTotales: noCanceladas.length,
+    reservas,
+    pagos,
+  };
 }
 
 // Detalle de una reserva puntual — Detalle/Check-in/Check-out.

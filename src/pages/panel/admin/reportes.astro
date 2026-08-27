@@ -1,35 +1,16 @@
 ---
-// P2 — solo si sobra tiempo, sin gráficos ni exportables (Documento de
-// Producto §5.3). Números simples, calculados server-side.
+// Números simples del mes (Documento de Producto §5.3), calculados
+// server-side, más la descarga del reporte completo en Excel. El cálculo
+// vive en lib/reservas (obtenerReporteMensual), compartido con la ruta
+// /api/panel/admin/reportes que arma el .xlsx.
 import PanelLayout from '../../../layouts/PanelLayout.astro';
-import { supabaseAdmin } from '../../../lib/supabase';
-import { calcularNoches } from '../../../lib/reservas';
+import { obtenerReporteMensual, mesValido, hoyISO } from '../../../lib/reservas';
 
-const ahora = new Date();
-const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString();
-const inicioMesSiguiente = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1).toISOString();
-const nombreMes = ahora.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+const mes = mesValido(Astro.url.searchParams.get('mes'));
+const reporte = await obtenerReporteMensual(mes);
+const { facturadoDelMes, nochesOcupadas, reservasTotales, nombreMes } = reporte;
 
-const { data: pagosMes } = await supabaseAdmin
-  .from('pagos')
-  .select('monto')
-  .gte('creado_en', inicioMes)
-  .lt('creado_en', inicioMesSiguiente);
-
-const facturadoDelMes = (pagosMes ?? []).reduce((acc, p) => acc + Number(p.monto), 0);
-
-const { data: reservasMes } = await supabaseAdmin
-  .from('reservas')
-  .select('fecha_ingreso, fecha_salida, estado')
-  .gte('fecha_ingreso', inicioMes.slice(0, 10))
-  .lt('fecha_ingreso', inicioMesSiguiente.slice(0, 10))
-  .neq('estado', 'CANCELADA');
-
-const reservasTotales = reservasMes?.length ?? 0;
-const nochesOcupadas = (reservasMes ?? []).reduce(
-  (acc, r) => acc + calcularNoches(r.fecha_ingreso, r.fecha_salida),
-  0
-);
+const mesMaximo = hoyISO().slice(0, 7);
 ---
 
 <PanelLayout title="Reportes" activo="reportes">
@@ -39,16 +20,55 @@ const nochesOcupadas = (reservasMes ?? []).reduce(
       <p class="text-texto-suave capitalize">{nombreMes}</p>
     </div>
 
-    <div class="flex flex-col gap-3 sm:hidden">
-      <div class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5">
-        <span class="text-texto-suave text-sm">Facturado del mes</span>
-        <span class="font-titulo font-bold text-xl text-negro">${facturadoDelMes.toLocaleString('es-AR')}</span>
+    <form
+      method="GET"
+      class="bg-superficie rounded-card border-2 border-borde flex flex-col sm:flex-row sm:items-end gap-3 p-5"
+    >
+      <label class="flex flex-col gap-1.5 flex-1">
+        <span class="text-texto-suave text-sm">Mes del reporte</span>
+        <input
+          type="month"
+          name="mes"
+          value={mes}
+          max={mesMaximo}
+          class="bg-fondo-alt rounded-pill border border-borde px-4 py-2 text-sm text-texto outline-none focus:ring-2 focus:ring-primario/25"
+        />
+      </label>
+      <div class="flex gap-2">
+        <button
+          type="submit"
+          class="inline-flex items-center gap-1.5 bg-fondo-alt text-texto rounded-pill px-4 py-2 font-titulo font-semibold text-sm hover:bg-borde/60 transition-colors"
+        >
+          Ver mes
+        </button>
+        <a
+          href={`/api/panel/admin/reportes?mes=${mes}`}
+          class="inline-flex items-center gap-1.5 bg-primario text-white rounded-pill px-4 py-2 font-titulo font-semibold text-sm hover:bg-primario-claro transition-colors"
+        >
+          <span class="material-symbols-outlined text-[18px]">download</span>
+          Descargar Excel
+        </a>
       </div>
-      <div class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5">
+    </form>
+
+    <div class="flex flex-col gap-3 sm:hidden">
+      <div
+        class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5"
+      >
+        <span class="text-texto-suave text-sm">Facturado del mes</span>
+        <span class="font-titulo font-bold text-xl text-negro"
+          >${facturadoDelMes.toLocaleString('es-AR')}</span
+        >
+      </div>
+      <div
+        class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5"
+      >
         <span class="text-texto-suave text-sm">Noches ocupadas</span>
         <span class="font-titulo font-bold text-xl text-negro">{nochesOcupadas}</span>
       </div>
-      <div class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5">
+      <div
+        class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5"
+      >
         <span class="text-texto-suave text-sm">Reservas totales</span>
         <span class="font-titulo font-bold text-xl text-negro">{reservasTotales}</span>
       </div>
@@ -56,14 +76,16 @@ const nochesOcupadas = (reservasMes ?? []).reduce(
     <div class="hidden sm:flex bg-superficie rounded-card border-2 border-borde">
       <div class="flex-1 px-6 py-4">
         <span class="text-texto-suave text-sm">Facturado del mes</span>
-        <p class="font-titulo font-bold text-[26px] text-negro">${facturadoDelMes.toLocaleString('es-AR')}</p>
+        <p class="font-titulo font-bold text-[26px] text-negro">
+          ${facturadoDelMes.toLocaleString('es-AR')}
+        </p>
       </div>
-      <div class="w-px bg-borde my-3.5" />
+      <div class="w-px bg-borde my-3.5"></div>
       <div class="flex-1 px-6 py-4">
         <span class="text-texto-suave text-sm">Noches ocupadas</span>
         <p class="font-titulo font-bold text-[26px] text-negro">{nochesOcupadas}</p>
       </div>
-      <div class="w-px bg-borde my-3.5" />
+      <div class="w-px bg-borde my-3.5"></div>
       <div class="flex-1 px-6 py-4">
         <span class="text-texto-suave text-sm">Reservas totales</span>
         <p class="font-titulo font-bold text-[26px] text-negro">{reservasTotales}</p>

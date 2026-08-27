@@ -5,12 +5,30 @@
 // Vercel agrega automáticamente `Authorization: Bearer $CRON_SECRET` en las
 // invocaciones de cron cuando existe esa env var — así distinguimos una
 // llamada real de cron de una request pública a esta ruta.
+import { timingSafeEqual } from 'node:crypto';
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabase';
 
+// Comparación en tiempo constante para no filtrar el secreto por timing.
+function tokenValido(recibido: string | null, esperado: string): boolean {
+  if (!recibido) return false;
+  const a = Buffer.from(recibido);
+  const b = Buffer.from(`Bearer ${esperado}`);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export const GET: APIRoute = async ({ request }) => {
   const secret = import.meta.env.CRON_SECRET;
-  if (secret && request.headers.get('authorization') !== `Bearer ${secret}`) {
+
+  // Falla en CERRADO: si el secreto no está configurado, este endpoint —que
+  // ejecuta un UPDATE masivo sobre reservas— nunca debe correr por una
+  // request pública. Setear CRON_SECRET en Vercel → Environment Variables.
+  if (!secret) {
+    console.error('CRON_SECRET no está configurado; se rechaza la invocación del cron.');
+    return new Response(JSON.stringify({ error: 'Cron no configurado' }), { status: 503 });
+  }
+
+  if (!tokenValido(request.headers.get('authorization'), secret)) {
     return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
   }
 
@@ -25,7 +43,8 @@ export const GET: APIRoute = async ({ request }) => {
     .lt('fecha_limite_pago', ahora);
 
   if (errBusqueda) {
-    return new Response(JSON.stringify({ error: errBusqueda.message }), { status: 500 });
+    console.error('Cron cancelar-vencidas — error buscando reservas:', errBusqueda);
+    return new Response(JSON.stringify({ error: 'Error interno' }), { status: 500 });
   }
 
   const idsACancelar = (vencidas ?? [])
@@ -42,7 +61,8 @@ export const GET: APIRoute = async ({ request }) => {
     .in('id', idsACancelar);
 
   if (errUpdate) {
-    return new Response(JSON.stringify({ error: errUpdate.message }), { status: 500 });
+    console.error('Cron cancelar-vencidas — error actualizando reservas:', errUpdate);
+    return new Response(JSON.stringify({ error: 'Error interno' }), { status: 500 });
   }
 
   return new Response(JSON.stringify({ ok: true, canceladas: idsACancelar.length }), { status: 200 });

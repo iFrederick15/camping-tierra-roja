@@ -12,6 +12,7 @@ import {
   diaSiguiente,
   CAPACIDAD_MAXIMA_CABANA,
 } from '../../../../lib/reservas';
+import { validarDatosCliente } from '../../../../lib/validacion';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.usuario) {
@@ -39,6 +40,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       JSON.stringify({ error: 'Nombre, DNI y fechas son obligatorios' }),
       { status: 400 }
     );
+  }
+
+  const errorDatos = validarDatosCliente(body);
+  if (errorDatos) {
+    return new Response(JSON.stringify({ error: errorDatos }), { status: 400 });
   }
 
   // Los quinchos se reservan por un solo día.
@@ -123,8 +129,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     .single();
 
   if (errInsert || !reserva) {
+    console.error('POST /api/panel/reservas/manual — error insertando reserva:', errInsert);
     return new Response(
-      JSON.stringify({ error: errInsert?.message ?? 'No se pudo crear la reserva' }),
+      JSON.stringify({ error: 'No se pudo crear la reserva' }),
       { status: 500 }
     );
   }

@@ -2,8 +2,12 @@
 // (motorhome o quincho). Solo-admin (gateado por middleware).
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../../lib/supabase';
+import { exigirAdmin } from '../../../../lib/auth-guard';
 
-export const PATCH: APIRoute = async ({ request }) => {
+export const PATCH: APIRoute = async ({ request, locals }) => {
+  const noAutorizado = exigirAdmin(locals);
+  if (noAutorizado) return noAutorizado;
+
   const body = await request.json();
   const { id, atributos, activa } = body;
 
@@ -17,7 +21,8 @@ export const PATCH: APIRoute = async ({ request }) => {
 
   const { error } = await supabaseAdmin.from('parcelas').update(cambios).eq('id', id);
   if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    console.error('PATCH /api/panel/admin/parcelas:', error);
+    return new Response(JSON.stringify({ error: 'No se pudo guardar el cambio' }), { status: 500 });
   }
   return new Response(JSON.stringify({ ok: true }), { status: 200 });
 };

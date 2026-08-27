@@ -21,7 +21,8 @@ export const POST: APIRoute = async ({ params, locals }) => {
   const { error } = await supabaseAdmin.from('reservas').update({ estado: 'CANCELADA' }).eq('id', id);
 
   if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    console.error('POST /api/panel/reservas/[id]/cancelar:', error);
+    return new Response(JSON.stringify({ error: 'No se pudo cancelar la reserva' }), { status: 500 });
   }
   return new Response(JSON.stringify({ ok: true }), { status: 200 });
 };

@@ -38,7 +38,8 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   });
 
   if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    console.error('POST /api/panel/reservas/[id]/pago:', error);
+    return new Response(JSON.stringify({ error: 'No se pudo registrar el pago' }), { status: 500 });
   }
 
   const actualizada = await obtenerReserva(id);

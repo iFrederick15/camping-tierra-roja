@@ -2,6 +2,7 @@
 import '../../styles/global.css';
 import { createSupabaseServerClient } from '../../lib/supabase-server';
 import { supabaseAdmin } from '../../lib/supabase';
+import { consumir, ipDe } from '../../lib/rate-limit';
 
 let error: string | null = null;
 
@@ -10,26 +11,35 @@ if (Astro.request.method === 'POST') {
   const email = String(form.get('email') ?? '');
   const password = String(form.get('password') ?? '');
 
-  const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
-  const { data, error: errLogin } = await supabase.auth.signInWithPassword({ email, password });
+  // Freno best-effort a la fuerza bruta: 8 intentos cada 15 min por IP.
+  // (La protección robusta necesita un store compartido — ver
+  // auditoria-seguridad.md H-04 — y la que trae Supabase Auth.)
+  const limite = consumir(`login:${ipDe(Astro.request)}`, 8, 15 * 60 * 1000);
 
-  if (errLogin || !data.user) {
-    // TEMPORAL: log del error real en el server para diagnosticar el login.
-    // El mensaje al usuario se queda genérico a propósito (no confirmar si
-    // el email existe o no).
-    console.error('Error de login Supabase:', errLogin);
-    error = 'Email o contraseña incorrectos';
+  if (!limite.permitido) {
+    error = `Demasiados intentos. Espera ${Math.ceil(limite.reintentarEnSegundos / 60)} minutos.`;
   } else {
-    const { data: perfil } = await supabaseAdmin
-      .from('perfiles')
-      .select('rol')
-      .eq('id', data.user.id)
-      .single();
+    const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
+    const { data, error: errLogin } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (!perfil) {
-      error = 'Tu usuario no tiene un perfil asignado. Contacta al administrador.';
+    if (errLogin || !data.user) {
+      // TEMPORAL: log del error real en el server para diagnosticar el login.
+      // El mensaje al usuario se queda genérico a propósito (no confirmar si
+      // el email existe o no).
+      console.error('Error de login Supabase:', errLogin);
+      error = 'Email o contraseña incorrectos';
     } else {
-      return Astro.redirect(perfil.rol === 'admin' ? '/panel/admin' : '/panel');
+      const { data: perfil } = await supabaseAdmin
+        .from('perfiles')
+        .select('rol')
+        .eq('id', data.user.id)
+        .single();
+
+      if (!perfil) {
+        error = 'Tu usuario no tiene un perfil asignado. Contacta al administrador.';
+      } else {
+        return Astro.redirect(perfil.rol === 'admin' ? '/panel/admin' : '/panel');
+      }
     }
   }
 }

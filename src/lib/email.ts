@@ -4,6 +4,7 @@
 
 import { Resend } from 'resend';
 import { NEGOCIO } from './negocio';
+import { escaparHtml } from './html';
 
 interface DatosConfirmacion {
   email: string;
@@ -32,8 +33,8 @@ export async function enviarEmailConfirmacion(datos: DatosConfirmacion) {
       subject: `Reserva confirmada — ${datos.unidadNombre}`,
       html: `
         <h2>¡Tu reserva está confirmada!</h2>
-        <p>Hola ${datos.nombreCliente},</p>
-        <p><b>${datos.unidadNombre}</b><br/>
+        <p>Hola ${escaparHtml(datos.nombreCliente)},</p>
+        <p><b>${escaparHtml(datos.unidadNombre)}</b><br/>
         Del ${fmt(datos.fechaIngreso)} al ${fmt(datos.fechaSalida)}</p>
         <p><b>Total: $${datos.montoTotal.toLocaleString('es-AR')}</b></p>
         <p>Tienes hasta el ${datos.fechaLimitePago.toLocaleString('es-AR')} para transferir la seña.
@@ -68,11 +69,11 @@ export async function enviarEmailContacto(datos: DatosContacto) {
     subject: `Consulta web (${datos.tipoConsulta}) — ${datos.nombre}`,
     html: `
       <h2>Nuevo mensaje desde el formulario de contacto</h2>
-      <p><b>Nombre:</b> ${datos.nombre}</p>
-      <p><b>Email:</b> ${datos.email}</p>
-      <p><b>Tipo de consulta:</b> ${datos.tipoConsulta}</p>
+      <p><b>Nombre:</b> ${escaparHtml(datos.nombre)}</p>
+      <p><b>Email:</b> ${escaparHtml(datos.email)}</p>
+      <p><b>Tipo de consulta:</b> ${escaparHtml(datos.tipoConsulta)}</p>
       <p><b>Mensaje:</b></p>
-      <p>${datos.mensaje.replace(/\n/g, '<br/>')}</p>
+      <p>${escaparHtml(datos.mensaje).replace(/\n/g, '<br/>')}</p>
     `,
   });
 }

@@ -15,6 +15,7 @@ import {
   diaSiguiente,
   CAPACIDAD_MAXIMA_CABANA,
 } from '../../../../lib/reservas';
+import { validarDatosCliente } from '../../../../lib/validacion';
 
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
   if (!locals.usuario) {
@@ -61,6 +62,11 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       JSON.stringify({ error: 'La fecha de salida debe ser posterior a la de ingreso' }),
       { status: 400 }
     );
+  }
+
+  const errorDatos = validarDatosCliente(body);
+  if (errorDatos) {
+    return new Response(JSON.stringify({ error: errorDatos }), { status: 400 });
   }
   if (unidadTipo === 'QUINCHOS' && fechaSalida !== diaSiguiente(fechaIngreso)) {
     return new Response(
@@ -181,7 +187,8 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     .eq('id', id);
 
   if (errUpdate) {
-    return new Response(JSON.stringify({ error: errUpdate.message }), { status: 500 });
+    console.error('PATCH /api/panel/reservas/[id] — error actualizando:', errUpdate);
+    return new Response(JSON.stringify({ error: 'No se pudo guardar la reserva' }), { status: 500 });
   }
 
   const actualizada = await obtenerReserva(id);
