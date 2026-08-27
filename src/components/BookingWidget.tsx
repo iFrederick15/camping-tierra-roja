@@ -1082,6 +1082,9 @@ export default function BookingWidget({
           <p className="text-texto-suave max-w-sm">
             Te enviamos los detalles y los datos para transferir a tu email.
           </p>
+          <h3 className="font-title font-bold  text-acento mt-8">
+            <a href="/">Volver al inicio.</a>
+          </h3>
         </section>
       )}
     </div>
