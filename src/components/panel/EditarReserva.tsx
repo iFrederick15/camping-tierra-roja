@@ -266,7 +266,7 @@ export default function EditarReserva(props: Props) {
     return (
       <button
         onClick={() => setAbierto(true)}
-        className="inline-flex items-center gap-2 border-2 border-primario rounded-pill px-5 py-2.5 font-titulo font-bold text-texto-suave hover:bg-primario-claro transition-colors"
+        className="inline-flex items-center gap-2 border-2 border-primario rounded-pill px-5 py-2.5 font-titulo font-bold text-primario hover:bg-primario-claro hover:text-fondo transition-colors"
       >
         Editar reserva
       </button>
