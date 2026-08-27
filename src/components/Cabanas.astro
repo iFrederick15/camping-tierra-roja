@@ -11,7 +11,8 @@ const cabanas = [
       { icono: "outdoor_grill", texto: "Quincho con parrilla" },
     ],
     precio: "$150.000/noche",
-    imagen: "/images/cabaña.webp",
+    imagen: "/images/cabanha.webp",
+    alt: "Cabaña para 8 personas con quincho y parrilla en Camping Tierra Roja, Puerto Iguazú",
     link: "/reservar",
   },
 ];
@@ -40,7 +41,9 @@ const cabanas = [
           <div class="lg:col-span-3 relative overflow-hidden min-h-72 lg:min-h-0">
             <img
               src={cabana.imagen}
-              alt={cabana.nombre}
+              alt={cabana.alt}
+              width="1600"
+              height="721"
               class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               loading="lazy"
             />

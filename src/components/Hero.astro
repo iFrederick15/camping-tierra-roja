@@ -2,19 +2,21 @@
 // Hero section con imagen de fondo
 ---
 
-<header class="relative min-h-screen flex items-center overflow-hidden">
-  <!-- Background image placeholder -->
+<section class="relative min-h-screen flex items-center overflow-hidden">
+  <!-- Background image -->
   <div class="absolute inset-0 z-0">
     <div
       class="absolute inset-0 bg-gradient-to-br from-fondo-oscuro via-fondo-oscuro/80 to-primario/40 opacity-10"
     >
     </div>
-    <!-- Placeholder: reemplazar con imagen real del parque -->
     <img
       src="/images/tierra-roja-drone.webp"
-      alt="Vista aérea del camping Tierra Roja en la selva misionera"
+      alt="Vista aérea del camping y parque acuático Tierra Roja en la selva misionera de Puerto Iguazú"
       class="h-full w-full object-cover object-center blur-xs scale-105"
+      width="1440"
+      height="812"
       loading="eager"
+      fetchpriority="high"
     />
     <div class="absolute inset-0 bg-gradient-to-r from-negro/80 via-negro/50 to-transparent"></div>
     <div class="absolute inset-0 bg-gradient-to-t from-negro/60 via-transparent to-transparent">
@@ -26,19 +28,20 @@
       <div class="max-w-2xl">
         <!-- Title -->
         <h1
-          class="font-titulo font-bold text-4xl sm:text-5xl lg:text-7xl leading-[1.05] tracking-tight text-white mb-6 break-words text-center md:text-left"
+          class="font-titulo font-bold text-4xl sm:text-5xl lg:text-7xl leading-[1.05] tracking-tight text-white mb-4 break-words text-center md:text-left"
         >
-          Bienvenido a <br />
-          <span class="whitespace-nowrap">
-            Camping <span class="text-acento italic text-[1.15em]">Tierra Roja</span>
-          </span>
+          Camping y parque acuático <br />
+          <span
+            class="bg-gradient-to-r from-primario to-acento bg-clip-text text-transparent italic pr-1"
+            >Tierra Roja</span
+          >
         </h1>
 
         <!-- Subtitle -->
         <p
           class="text-lg lg:text-xl text-white/80 max-w-xl mb-10 leading-relaxed text-center md:text-left mx-auto md:mx-0"
         >
-          Diversión, Naturaleza y Relax Para Toda La Familia
+          Diversión, naturaleza y relax para toda la familia, en plena selva misionera.
         </p>
 
         <!-- CTAs -->
@@ -55,9 +58,10 @@
         <div class="md:hidden mt-4 rounded-card overflow-hidden shadow-hero aspect-[4/3]">
           <img
             src="/images/tierra-roja-drone.jpg"
-            alt="Vista aérea del camping Tierra Roja en la selva misionera"
+            alt="Vista aérea del predio de Camping Tierra Roja rodeado de selva, Puerto Iguazú"
             class="w-full h-full object-cover object-center"
-            loading="eager"
+            width="1440"
+            height="812"
           />
         </div>
       </div>
@@ -67,9 +71,10 @@
         <div class="rounded-card overflow-hidden shadow-hero aspect-[4/3] rotate-2">
           <img
             src="/images/tierra-roja-drone.jpg"
-            alt="Vista aérea del camping Tierra Roja en la selva misionera"
+            alt="Vista aérea del predio de Camping Tierra Roja rodeado de selva, Puerto Iguazú"
             class="w-full h-full object-cover object-center"
-            loading="eager"
+            width="1440"
+            height="812"
           />
         </div>
 
@@ -90,4 +95,4 @@
   <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
     <span class="material-symbols-outlined text-white/50 text-3xl">keyboard_arrow_down</span>
   </div>
-</header>
+</section>

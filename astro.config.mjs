@@ -19,6 +19,9 @@ export default defineConfig({
       // no deben aparecer en el sitemap (ya están protegidas por auth en
       // middleware.ts, esto además evita que Google intente indexarlas).
       filter: (page) => !page.includes('/panel') && !page.includes('/api/'),
+      // `lastmod` = fecha del build. Es una pista de re-rastreo para Google;
+      // sin datos por-página, la fecha de deploy es una aproximación válida.
+      serialize: (item) => ({ ...item, lastmod: new Date().toISOString() }),
     }),
   ],
   vite: {
@@ -31,8 +34,8 @@ export default defineConfig({
     // con "Cross-site POST form submissions are forbidden".
     allowedDomains: [
       { hostname: 'camping-tierra-roja.vercel.app' },
-      // Agregar acá el dominio propio (ej. { hostname: 'tierraroja.com.ar' }
-      // y su variante con www) cuando se configure en Vercel.
+      { hostname: 'tierraroja.com.ar' },
+      { hostname: 'www.tierraroja.com.ar' },
     ],
   },
 });

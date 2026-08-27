@@ -35,18 +35,8 @@
   --shadow-hero: 0 24px 64px rgba(43, 24, 16, 0.12);
 }
 
-/* ── Fuentes ── */
-@font-face {
-  font-family: 'Ubuntu';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('https://fonts.gstatic.com/s/ubuntu/v20/4iCs6KVjbNBYlgoKcg72j00.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Ubuntu';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('https://fonts.gstatic.com/s/ubuntu/v20/4iCv6KVjbNBYlgoCjC3jvGyN.woff2') format('woff2');
-}
+/* ── Fuentes ──
+   Ubuntu, DM Sans, Petemoss y Material Symbols se cargan desde un único
+   <link> a Google Fonts en Layout.astro (con display=swap). Antes Ubuntu
+   estaba además declarada acá con @font-face propio: declaración duplicada,
+   ahora eliminada. */

@@ -3,3 +3,8 @@ node_modules
 .astro
 dist
 .vercel
+
+# Archivos residuales de sincronización (iCloud/Dropbox) y de macOS
+* 2.*
+*.DS_Store
+.DS_Store

@@ -11,9 +11,12 @@ import BookingWidget from '../components/BookingWidget';
   <header class="relative w-full h-[36vh] md:h-[44vh] overflow-hidden">
     <img
       src="/images/camping.webp"
-      alt="Camping Tierra Roja entre la selva misionera"
+      alt="Parcelas de camping entre la selva misionera en Tierra Roja, Puerto Iguazú"
+      width="1600"
+      height="739"
       class="absolute inset-0 w-full h-full object-cover"
       loading="eager"
+      fetchpriority="high"
     />
     <div class="absolute inset-0 bg-gradient-to-t from-fondo-alt via-negro/40 to-negro/10"></div>
     <div class="absolute inset-0 flex items-end">
@@ -33,6 +36,37 @@ import BookingWidget from '../components/BookingWidget';
     <div class="-mt-0 md:-mt-16 relative z-10">
       <!-- client:load: es el único punto interactivo real de la página -->
       <BookingWidget client:load />
+    </div>
+
+    <!-- Contenido estático (server-render): da valor semántico a la URL más
+         allá del widget interactivo y responde dudas frecuentes antes de reservar. -->
+    <div class="max-w-3xl mx-auto mt-16 space-y-10">
+      <div>
+        <h2 class="font-titulo font-bold text-2xl md:text-3xl text-texto mb-4">
+          Qué podés reservar
+        </h2>
+        <ul class="space-y-2 text-texto-suave leading-relaxed list-disc pl-5">
+          <li><strong class="text-texto">Camping:</strong> parcelas para carpa con acceso a las piscinas y a los sanitarios.</li>
+          <li><strong class="text-texto">Motorhome:</strong> espacio con conexiones completas y seguridad 24 hs.</li>
+          <li><strong class="text-texto">Quinchos:</strong> quinchos con parrilla para pasar el día.</li>
+          <li><strong class="text-texto">Cabaña:</strong> cabaña para hasta 8 personas con aire acondicionado, Wi-Fi y quincho propio.</li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="font-titulo font-bold text-2xl md:text-3xl text-texto mb-4">
+          Cómo funciona la reserva
+        </h2>
+        <p class="text-texto-suave leading-relaxed">
+          Elegí el tipo de unidad y las fechas en el buscador de arriba y confirmá al instante, sin
+          necesidad de registro. Para dejar la reserva firme se abona una seña por transferencia
+          dentro del plazo indicado en el correo de confirmación; el saldo se paga al ingresar. La
+          estadía se cuenta desde el ingreso hasta las 10:00 hs del día siguiente. Podés ver el
+          detalle completo en los
+          <a href="/terminos-y-condiciones" class="text-primario font-semibold">Términos y Condiciones</a>
+          y en las
+          <a href="/normas-del-parque" class="text-primario font-semibold">Normas del Parque</a>.
+        </p>
+      </div>
     </div>
   </section>
 </Layout>

@@ -1,6 +1,7 @@
 ---
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
+import { NEGOCIO } from '../lib/negocio';
 import '../styles/global.css';
 
 interface Props {
@@ -12,12 +13,14 @@ interface Props {
 const {
   title = 'Tierra Roja | Camping y Parque Acuático - Puerto Iguazú',
   description = 'Camping y parque acuático en Puerto Iguazú, Misiones. Piscinas, cabañas, parcelas de camping y espacio motorhome en plena selva misionera.',
-  image = '/images/tierra-roja-drone.webp',
+  // JPG (no WebP): el scraper de Open Graph de Facebook/WhatsApp no renderiza
+  // la previsualización con WebP, y ese es el canal de difusión principal.
+  image = '/images/tierra-roja-drone.jpg',
 } = Astro.props;
 
 // El dominio de marca vive en un solo lugar (astro.config.mjs → site) para
 // que canonical, Open Graph y el JSON-LD de más abajo no puedan desincronizarse.
-const sitioUrl = (Astro.site ?? new URL('https://tierrarojaiguazu.com')).origin;
+const sitioUrl = (Astro.site ?? new URL('https://tierraroja.com.ar')).origin;
 const canonicalURL = new URL(Astro.url.pathname, sitioUrl);
 const imagenSocial = new URL(image, sitioUrl);
 
@@ -28,24 +31,34 @@ const schemaNegocio = {
   '@context': 'https://schema.org',
   '@type': 'Campground',
   '@id': `${sitioUrl}/#negocio`,
-  name: 'Tierra Roja - Camping y Parque Acuático',
+  name: NEGOCIO.nombre,
   description:
     'Camping y parque acuático en Puerto Iguazú, Misiones. Piscinas, cabañas, parcelas de camping y espacio motorhome en plena selva misionera.',
   url: sitioUrl,
-  image: `${sitioUrl}/images/tierra-roja-drone.webp`,
-  telephone: '+54 3757 31-7593',
-  email: 'tierrarojaiguazu@gmail.com',
+  image: `${sitioUrl}/images/tierra-roja-drone.jpg`,
+  telephone: NEGOCIO.telefonoE164,
+  email: NEGOCIO.email,
+  priceRange: '$$',
   address: {
     '@type': 'PostalAddress',
-    streetAddress: 'Barrio Los Yerbales 2000 Ha',
-    addressLocality: 'Puerto Iguazú',
-    addressRegion: 'Misiones',
-    addressCountry: 'AR',
+    streetAddress: NEGOCIO.direccion.calle,
+    addressLocality: NEGOCIO.direccion.localidad,
+    addressRegion: NEGOCIO.direccion.region,
+    postalCode: NEGOCIO.direccion.codigoPostal,
+    addressCountry: NEGOCIO.direccion.pais,
   },
   geo: {
     '@type': 'GeoCoordinates',
-    latitude: -25.6381084,
-    longitude: -54.5744466,
+    latitude: NEGOCIO.geo.lat,
+    longitude: NEGOCIO.geo.lng,
+  },
+  hasMap: NEGOCIO.mapaUrl,
+  // El camping opera todo el año (ver Normas del Parque).
+  openingHoursSpecification: {
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    opens: '00:00',
+    closes: '23:59',
   },
   checkoutTime: '10:00:00',
   petsAllowed: true,
@@ -73,6 +86,9 @@ const schemaNegocio = {
     <meta name="description" content={description} />
     <title>{title}</title>
     <link rel="icon" type="image/png" href="/images/favicon-tierra-roja.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#b01c2e" />
     <link rel="canonical" href={canonicalURL} />
 
     <!-- Open Graph (WhatsApp, Instagram, Facebook) -->
@@ -83,12 +99,17 @@ const schemaNegocio = {
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:image" content={imagenSocial} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1440" />
+    <meta property="og:image:height" content="812" />
+    <meta property="og:image:alt" content="Vista aérea del camping y parque acuático Tierra Roja en la selva misionera" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imagenSocial} />
+    <meta name="twitter:image:alt" content="Vista aérea del camping y parque acuático Tierra Roja en la selva misionera" />
 
     <script type="application/ld+json" is:inline set:html={JSON.stringify(schemaNegocio)} />
 
@@ -107,7 +128,9 @@ const schemaNegocio = {
   </head>
   <body class="bg-fondo font-cuerpo text-texto antialiased overflow-x-hidden">
     <Navbar />
-    <slot />
+    <main id="contenido">
+      <slot />
+    </main>
     <Footer />
   </body>
 </html>

@@ -14,12 +14,69 @@ const secciones = [
   { id: 'reclamos', label: '9. Libro de reclamos y sugerencias' },
   { id: 'emergencias', label: '10. Primeros auxilios' },
 ];
+
+// El reglamento tiene formato pregunta/respuesta natural → se estructura como
+// FAQPage para habilitar resultados enriquecidos en Google.
+const faq = [
+  {
+    q: '¿Quiénes pueden ingresar al camping?',
+    a: 'Pueden ingresar todas las personas, sin distinción de nacionalidad, raza, color de piel, género, idioma, origen o religión, acreditando su identidad con DNI, cédula o pasaporte. El complejo se reserva el derecho de admisión y puede invitar a retirarse a quienes incumplan el reglamento o representen un peligro o molestia para otros acampantes.',
+  },
+  {
+    q: '¿Qué documentación necesito para ingresar?',
+    a: 'Al ingresar debés acreditar tu identidad con DNI, cédula o pasaporte, y declarar la cantidad de acompañantes, los vehículos y las fechas de tu estadía.',
+  },
+  {
+    q: '¿Qué se considera una estadía?',
+    a: 'Una estadía es el período comprendido entre el día de ingreso y las 10:00 hs del día siguiente.',
+  },
+  {
+    q: '¿Cómo se cobran los ingresos entre las 00:00 y las 06:00 hs?',
+    a: 'Los ingresos realizados entre las 00:00 hs y las 06:00 hs abonan media (½) estadía, válida hasta las 10:00 hs de ese mismo día.',
+  },
+  {
+    q: '¿Cuál es el horario de descanso?',
+    a: 'El período de descanso va desde las 00:00 hs hasta las 07:00 hs del día siguiente. Pedimos respetar el silencio en ese horario. Los adultos responsables responden por la conducta de los menores a su cargo durante toda la estadía.',
+  },
+  {
+    q: '¿Se puede hacer fuego en el camping?',
+    a: 'Está terminantemente prohibido hacer fuego fuera de los lugares habilitados. Tampoco se permite el ingreso de personas bajo el efecto de alcohol o estupefacientes.',
+  },
+  {
+    q: '¿Cómo debo usar los baños y duchas?',
+    a: 'Está prohibido hacer deposiciones en las duchas y arrojar papel u otros elementos de higiene en los inodoros. Usá los cestos de residuos dispuestos para ese fin y ayudanos a mantener las instalaciones sanitarias en buen estado.',
+  },
+  {
+    q: '¿Se aceptan mascotas?',
+    a: 'Sí, se aceptan mascotas siempre que se mantenga la limpieza del predio. Los dueños son responsables de recoger y disponer correctamente los residuos de sus mascotas.',
+  },
+  {
+    q: '¿Hay libro de reclamos y sugerencias?',
+    a: 'Sí, el camping cuenta con un Libro de Reclamos y/o Sugerencias a disposición de los visitantes que deseen dejar asentada una inquietud o comentario sobre su estadía.',
+  },
+  {
+    q: '¿El camping tiene servicio médico?',
+    a: 'El camping no cuenta con servicio médico, pero dispone de un botiquín de primeros auxilios para atender cualquier eventualidad durante tu estadía. Camping Tierra Roja opera durante todo el año.',
+  },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faq.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+};
 ---
 
 <Layout
   title="Normas del Parque — Tierra Roja"
   description="Reglamento del Camping Tierra Roja: admisión, documentación, horarios de descanso, uso del fuego, mascotas y demás normas de convivencia."
 >
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(faqSchema)} />
+
   <!-- Encabezado -->
   <section class="max-w-7xl mx-auto px-6 pt-12 pb-10 md:pt-16 md:pb-14 text-center md:text-left">
     <p class="font-titulo font-bold text-sm tracking-widest uppercase text-primario mb-4">Legal</p>

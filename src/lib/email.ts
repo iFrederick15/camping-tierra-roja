@@ -3,6 +3,7 @@
 // resumen. Modificar/cancelar = contacto directo con Tierra Roja.
 
 import { Resend } from 'resend';
+import { NEGOCIO } from './negocio';
 
 interface DatosConfirmacion {
   email: string;
@@ -43,4 +44,35 @@ export async function enviarEmailConfirmacion(datos: DatosConfirmacion) {
   } catch (e) {
     console.error('No se pudo enviar el email de confirmación de reserva:', e);
   }
+}
+
+interface DatosContacto {
+  nombre: string;
+  email: string;
+  tipoConsulta: string;
+  mensaje: string;
+}
+
+// Reenvía a la casilla del negocio el mensaje del formulario de /contacto.
+// A diferencia del email de confirmación, acá el resultado sí importa: se
+// propaga el error para que la API responda 502 y el front muestre "no se
+// pudo enviar" (así el usuario recurre a WhatsApp en vez de creer que llegó).
+export async function enviarEmailContacto(datos: DatosContacto) {
+  const resend = new Resend(import.meta.env.RESEND_API_KEY);
+  const destino = import.meta.env.CONTACTO_EMAIL_DESTINO || NEGOCIO.email;
+
+  await resend.emails.send({
+    from: 'Web Tierra Roja <web@tierraroja.com.ar>',
+    to: destino,
+    replyTo: datos.email,
+    subject: `Consulta web (${datos.tipoConsulta}) — ${datos.nombre}`,
+    html: `
+      <h2>Nuevo mensaje desde el formulario de contacto</h2>
+      <p><b>Nombre:</b> ${datos.nombre}</p>
+      <p><b>Email:</b> ${datos.email}</p>
+      <p><b>Tipo de consulta:</b> ${datos.tipoConsulta}</p>
+      <p><b>Mensaje:</b></p>
+      <p>${datos.mensaje.replace(/\n/g, '<br/>')}</p>
+    `,
+  });
 }

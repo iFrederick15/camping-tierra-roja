@@ -5,7 +5,8 @@ const piscinas = [
     descripcion: "Piscina principal con cortina de agua bajo la pérgola, reposeras y juegos.",
     icono: "child_care",
     etiqueta: "Diversión Familiar",
-    imagen: "images/piscina-diversion.webp",
+    imagen: "/images/piscina-diversion.webp",
+    alt: "Piscina principal con cortina de agua y pérgola en el parque acuático de Tierra Roja, Puerto Iguazú",
     color: "primario",
   },
   {
@@ -13,7 +14,8 @@ const piscinas = [
     descripcion: "Tres toboganes de colores para vivir la mejor aventura acuática en familia.",
     icono: "family_restroom",
     etiqueta: "Aventura Familiar",
-    imagen: "images/piscina-familiar.webp",
+    imagen: "/images/piscina-familiar.webp",
+    alt: "Piscina con tres toboganes de colores en el parque acuático de Tierra Roja, Puerto Iguazú",
     color: "acento",
   },
   {
@@ -21,7 +23,8 @@ const piscinas = [
     descripcion: "Cascada de agua y un ambiente especial para desconexión total.",
     icono: "spa",
     etiqueta: "Relax Total",
-    imagen: "images/piscina-relax.webp",
+    imagen: "/images/piscina-relax.webp",
+    alt: "Piscina de relax con cascada de agua en el parque acuático de Tierra Roja, Puerto Iguazú",
     color: "primario",
   },
 ];
@@ -47,7 +50,9 @@ const piscinas = [
           <div class="aspect-[8/5] relative overflow-hidden">
             <img
               src={piscina.imagen}
-              alt={`Piscina ${piscina.nombre}`}
+              alt={piscina.alt}
+              width="800"
+              height="500"
               class="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
               loading="lazy"
             />

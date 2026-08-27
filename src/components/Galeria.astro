@@ -7,55 +7,62 @@ const categorias = [
   { id: 'cabanas', label: 'Cabañas' },
 ];
 
+// Solo fotos reales del predio, alojadas en /public/images. Antes había
+// imágenes de stock (Unsplash / googleusercontent) presentadas como fotos
+// propias: contenido engañoso y dependencia de URLs de terceros que se rompen.
 const fotos = [
   {
     categoria: 'naturaleza',
     imagen: '/images/tierra-roja-drone.webp',
-    titulo: 'Vista aérea de Tierra Roja',
+    ancho: 1440,
+    alto: 812,
+    titulo: 'Vista aérea del predio de Tierra Roja en la selva misionera',
     tall: true,
   },
   {
     categoria: 'camping',
     imagen: '/images/camping.webp',
-    titulo: 'Parcelas de camping',
+    ancho: 1600,
+    alto: 739,
+    titulo: 'Parcelas de camping entre los árboles',
     tall: true,
   },
   {
     categoria: 'piscinas',
-    imagen: 'https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?w=700&q=80',
-    titulo: 'Piscina de diversión',
+    imagen: '/images/piscina-diversion.webp',
+    ancho: 800,
+    alto: 500,
+    titulo: 'Piscina principal con cortina de agua y pérgola',
   },
   {
     categoria: 'cabanas',
-    imagen: 'https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=700&q=80',
-    titulo: 'Interior de nuestra cabaña',
+    imagen: '/images/cabanha.webp',
+    ancho: 1600,
+    alto: 721,
+    titulo: 'Cabaña para 8 personas con quincho propio',
     tall: true,
   },
   {
     categoria: 'camping',
     imagen: '/images/motorhome.webp',
-    titulo: 'Espacio motorhome',
-  },
-  {
-    categoria: 'naturaleza',
-    imagen: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=700&q=80',
-    titulo: 'Senderos de la selva misionera',
+    ancho: 1600,
+    alto: 1200,
+    titulo: 'Espacio con conexiones para motorhome',
   },
   {
     categoria: 'piscinas',
-    imagen: 'https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=700&q=80',
-    titulo: 'Piscina de relax',
+    imagen: '/images/piscina-familiar.webp',
+    ancho: 800,
+    alto: 500,
+    titulo: 'Piscina con toboganes de colores para toda la familia',
     tall: true,
   },
   {
-    categoria: 'camping',
-    imagen: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=700&q=80',
-    titulo: 'Noches bajo las estrellas',
-  },
-  {
-    categoria: 'naturaleza',
-    imagen: 'https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?w=700&q=80',
-    titulo: 'Cascadas cercanas',
+    categoria: 'piscinas',
+    imagen: '/images/piscina-relax.webp',
+    ancho: 800,
+    alto: 500,
+    titulo: 'Piscina de relax con cascada de agua',
   },
 ];
 ---
@@ -112,8 +119,9 @@ const fotos = [
           <img
             src={foto.imagen}
             alt={foto.titulo}
+            width={foto.ancho}
+            height={foto.alto}
             loading="lazy"
-            onerror="this.onerror=null;this.src='/images/camping.jpg';"
             class:list={[
               'w-full object-cover group-hover:scale-105 transition-transform duration-700',
               foto.tall ? 'aspect-[3/4]' : 'aspect-square',
