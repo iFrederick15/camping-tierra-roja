@@ -10,13 +10,13 @@ const categorias = [
 const fotos = [
   {
     categoria: 'naturaleza',
-    imagen: '/images/tierra-roja-drone.jpg',
+    imagen: '/images/tierra-roja-drone.webp',
     titulo: 'Vista aérea de Tierra Roja',
     tall: true,
   },
   {
     categoria: 'camping',
-    imagen: '/images/camping.jpg',
+    imagen: '/images/camping.webp',
     titulo: 'Parcelas de camping',
     tall: true,
   },
@@ -33,7 +33,7 @@ const fotos = [
   },
   {
     categoria: 'camping',
-    imagen: '/images/motorhome.png',
+    imagen: '/images/motorhome.webp',
     titulo: 'Espacio motorhome',
   },
   {
@@ -69,8 +69,8 @@ const fotos = [
     Nuestra <span class="text-primario italic">Galería</span>
   </h1>
   <p class="text-texto-suave text-lg max-w-2xl leading-relaxed mx-auto md:mx-0">
-    Un recorrido visual por las piscinas, el camping, las cabañas y la selva misionera que rodea
-    a Tierra Roja.
+    Un recorrido visual por las piscinas, el camping, las cabañas y la selva misionera que rodea a
+    Tierra Roja.
   </p>
 </section>
 
@@ -119,14 +119,10 @@ const fotos = [
               foto.tall ? 'aspect-[3/4]' : 'aspect-square',
             ]}
           />
-          <div
-            class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4"
-          >
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
             <span class="text-white font-titulo font-bold text-sm text-left">{foto.titulo}</span>
           </div>
-          <span
-            class="material-symbols-outlined absolute top-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30 rounded-full p-1.5 text-base"
-          >
+          <span class="material-symbols-outlined absolute top-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30 rounded-full p-1.5 text-base">
             zoom_in
           </span>
         </button>
@@ -171,16 +167,18 @@ const fotos = [
       alt=""
       class="max-w-full max-h-[75vh] object-contain rounded-lg shadow-hero"
     />
-    <figcaption id="lightbox-caption" class="text-white/80 font-titulo text-sm text-center" />
+    <figcaption id="lightbox-caption" class="text-white/80 font-titulo text-sm text-center">
+    </figcaption>
   </figure>
 </div>
 
 <!-- CTA -->
 <section class="max-w-7xl mx-auto px-6 mb-24">
-  <div
-    class="bg-primario rounded-card px-8 py-14 md:py-16 text-center relative overflow-hidden"
-  >
-    <div class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_20%_80%,_white_1px,_transparent_1px)] bg-[length:40px_40px]" />
+  <div class="bg-primario rounded-card px-8 py-14 md:py-16 text-center relative overflow-hidden">
+    <div
+      class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_20%_80%,_white_1px,_transparent_1px)] bg-[length:40px_40px]"
+    >
+    </div>
     <div class="relative z-10">
       <h2 class="font-titulo font-bold text-3xl md:text-4xl text-white mb-4">
         ¿Listo para vivir la experiencia?

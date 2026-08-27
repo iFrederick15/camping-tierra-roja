@@ -12,12 +12,12 @@ interface Props {
 const {
   title = 'Tierra Roja | Camping y Parque Acuático - Puerto Iguazú',
   description = 'Camping y parque acuático en Puerto Iguazú, Misiones. Piscinas, cabañas, parcelas de camping y espacio motorhome en plena selva misionera.',
-  image = '/images/tierra-roja-drone.jpg',
+  image = '/images/tierra-roja-drone.webp',
 } = Astro.props;
 
 // El dominio de marca vive en un solo lugar (astro.config.mjs → site) para
 // que canonical, Open Graph y el JSON-LD de más abajo no puedan desincronizarse.
-const sitioUrl = (Astro.site ?? new URL('https://tierraroja.com.ar')).origin;
+const sitioUrl = (Astro.site ?? new URL('https://tierrarojaiguazu.com')).origin;
 const canonicalURL = new URL(Astro.url.pathname, sitioUrl);
 const imagenSocial = new URL(image, sitioUrl);
 
@@ -32,7 +32,7 @@ const schemaNegocio = {
   description:
     'Camping y parque acuático en Puerto Iguazú, Misiones. Piscinas, cabañas, parcelas de camping y espacio motorhome en plena selva misionera.',
   url: sitioUrl,
-  image: `${sitioUrl}/images/tierra-roja-drone.jpg`,
+  image: `${sitioUrl}/images/tierra-roja-drone.webp`,
   telephone: '+54 3757 31-7593',
   email: 'tierrarojaiguazu@gmail.com',
   address: {
