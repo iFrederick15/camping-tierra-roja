@@ -30,7 +30,7 @@ export const POST: APIRoute = async ({ request }) => {
   const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (!nombre || !emailValido || !mensaje) {
     return new Response(
-      JSON.stringify({ error: 'Completá tu nombre, un email válido y el mensaje.' }),
+      JSON.stringify({ error: 'Completa tu nombre, un email válido y el mensaje.' }),
       { status: 400 }
     );
   }
@@ -45,7 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
   } catch (e) {
     console.error('No se pudo enviar el email de contacto:', e);
     return new Response(
-      JSON.stringify({ error: 'No pudimos enviar tu mensaje. Escribinos por WhatsApp.' }),
+      JSON.stringify({ error: 'No pudimos enviar tu mensaje. Escríbenos por WhatsApp.' }),
       { status: 502 }
     );
   }

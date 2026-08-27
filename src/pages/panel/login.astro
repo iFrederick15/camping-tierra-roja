@@ -27,7 +27,7 @@ if (Astro.request.method === 'POST') {
       .single();
 
     if (!perfil) {
-      error = 'Tu usuario no tiene un perfil asignado. Contactá al administrador.';
+      error = 'Tu usuario no tiene un perfil asignado. Contacta al administrador.';
     } else {
       return Astro.redirect(perfil.rol === 'admin' ? '/panel/admin' : '/panel');
     }

@@ -450,7 +450,7 @@ export default function BookingWidget({
       })
       .catch((e: Error) => {
         if (!cancelado)
-          setError(e.message || 'No pudimos consultar la disponibilidad. Probá de nuevo.');
+          setError(e.message || 'No pudimos consultar la disponibilidad. Prueba de nuevo.');
       })
       .finally(() => {
         if (!cancelado) setCargandoDisponibilidad(false);
@@ -772,7 +772,7 @@ export default function BookingWidget({
       {paso === 'fechas' && (
         <section className="flex flex-col gap-5 relative z-10">
           <h2 className="font-titulo font-bold text-3xl text-negro">
-            {unidad === 'QUINCHOS' ? 'Elegí el día' : 'Elegí tus fechas'}
+            {unidad === 'QUINCHOS' ? 'Elige el día' : 'Elige tus fechas'}
           </h2>
           {unidad === 'QUINCHOS' ? (
             <label className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave min-w-0">
@@ -954,7 +954,7 @@ export default function BookingWidget({
           {modo === 'staff' && scanEstado === 'baja-confianza' && (
             <p className="flex items-center gap-1.5 text-sm font-medium text-advertencia bg-advertencia/10 rounded-card px-4 py-3">
               <span className="material-symbols-outlined text-[18px]">warning</span>
-              Verificá nombre, apellido y DNI contra el documento físico antes de guardar.
+              Verifica nombre, apellido y DNI contra el documento físico antes de guardar.
             </p>
           )}
           {modo === 'staff' && scanEstado === 'error' && (

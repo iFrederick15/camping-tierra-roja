@@ -12,7 +12,7 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
   <p class="text-texto-suave text-lg max-w-2xl leading-relaxed mx-auto md:mx-0">
     Camping Tierra Roja está en {NEGOCIO.direccion.calle}, {NEGOCIO.direccion.localidad}, a unos 20
     minutos de las Cataratas del Iguazú y del centro de Puerto Iguazú. Atendemos todos los días del
-    año. Para consultas de disponibilidad y reservas, escribinos por WhatsApp o completá el
+    año. Para consultas de disponibilidad y reservas, escríbenos por WhatsApp o completa el
     formulario y te respondemos dentro de las 24 horas.
   </p>
 </section>
@@ -22,7 +22,7 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
   <div
     class="lg:col-span-7 bg-superficie p-8 md:p-12 rounded-xl shadow-(--shadow-elevada) border border-borde/10"
   >
-    <h2 class="font-titulo font-bold text-3xl mb-8">Envianos tu mensaje</h2>
+    <h2 class="font-titulo font-bold text-3xl mb-8">Envíanos tu mensaje</h2>
     <form id="form-contacto" class="space-y-6" method="post" action="/api/contacto" novalidate>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-2">
@@ -165,7 +165,7 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
       class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-6 mb-8 px-4 py-6"
     >
       <div>
-        <h2 class="font-titulo font-extrabold text-3xl mb-5">Encontranos en el mapa</h2>
+        <h2 class="font-titulo font-extrabold text-3xl mb-5">Encuéntranos en el mapa</h2>
         <p class="text-texto-suave">
           Ubicados a tan solo 20 minutos de las majestuosas Cataratas del Iguazú.
         </p>
@@ -219,11 +219,11 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
           estado.className = 'text-sm font-semibold text-confirmado';
         } else {
           estado.textContent =
-            (data && data.error) || 'No pudimos enviar tu mensaje. Probá por WhatsApp.';
+            (data && data.error) || 'No pudimos enviar tu mensaje. Prueba por WhatsApp.';
           estado.className = 'text-sm font-semibold text-primario';
         }
       } catch (err) {
-        estado.textContent = 'No pudimos enviar tu mensaje. Probá por WhatsApp.';
+        estado.textContent = 'No pudimos enviar tu mensaje. Prueba por WhatsApp.';
         estado.className = 'text-sm font-semibold text-primario';
       } finally {
         boton.disabled = false;

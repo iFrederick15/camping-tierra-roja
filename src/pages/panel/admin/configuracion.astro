@@ -161,7 +161,7 @@ for (const p of parcelas ?? []) {
     // Configuración — es uso diario de la dueña, un guardado accidental
     // afecta precios/cupos en vivo del sitio público.
     async function guardar(url: string, body: unknown, msgEl: HTMLElement) {
-      if (!confirm('¿Confirmás guardar este cambio?')) return;
+      if (!confirm('¿Confirmas guardar este cambio?')) return;
       msgEl.textContent = 'Guardando…';
       msgEl.className = 'msg text-sm text-texto-suave';
       const res = await fetch(url, {

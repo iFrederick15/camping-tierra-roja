@@ -36,9 +36,9 @@ export async function enviarEmailConfirmacion(datos: DatosConfirmacion) {
         <p><b>${datos.unidadNombre}</b><br/>
         Del ${fmt(datos.fechaIngreso)} al ${fmt(datos.fechaSalida)}</p>
         <p><b>Total: $${datos.montoTotal.toLocaleString('es-AR')}</b></p>
-        <p>Tenés hasta el ${datos.fechaLimitePago.toLocaleString('es-AR')} para transferir la seña.
+        <p>Tienes hasta el ${datos.fechaLimitePago.toLocaleString('es-AR')} para transferir la seña.
         Datos bancarios: [COMPLETAR].</p>
-        <p>Si necesitás modificar o cancelar tu reserva, escribinos por WhatsApp al [COMPLETAR].</p>
+        <p>Si necesitas modificar o cancelar tu reserva, escríbenos por WhatsApp al [COMPLETAR].</p>
       `,
     });
   } catch (e) {

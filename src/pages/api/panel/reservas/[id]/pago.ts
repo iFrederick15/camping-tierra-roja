@@ -26,7 +26,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     return new Response(JSON.stringify({ error: 'El monto debe ser mayor a cero' }), { status: 400 });
   }
   if (!metodo) {
-    return new Response(JSON.stringify({ error: 'Indicá el método de pago' }), { status: 400 });
+    return new Response(JSON.stringify({ error: 'Indica el método de pago' }), { status: 400 });
   }
 
   const { error } = await supabaseAdmin.rpc('registrar_pago', {
