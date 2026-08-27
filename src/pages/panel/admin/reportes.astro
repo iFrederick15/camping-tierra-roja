@@ -39,33 +39,55 @@ for (const r of reservasMes ?? []) {
 ---
 
 <PanelLayout title="Reportes" activo="reportes">
-  <h1 class="font-titulo font-bold text-3xl text-negro mb-1">Reportes</h1>
-  <p class="text-texto-suave mb-8 capitalize">{nombreMes}</p>
+  <div class="flex flex-col gap-7">
+    <div>
+      <h1 class="font-titulo font-bold text-3xl text-negro">Reportes</h1>
+      <p class="text-texto-suave capitalize">{nombreMes}</p>
+    </div>
 
-  <div class="grid sm:grid-cols-3 gap-4 mb-10">
-    <div class="bg-superficie rounded-card border-2 border-borde p-5">
-      <span class="text-texto-suave text-sm">Facturado del mes</span>
-      <p class="font-titulo font-bold text-3xl text-negro">${facturadoDelMes.toLocaleString('es-AR')}</p>
+    <div class="flex flex-col gap-3 sm:hidden">
+      <div class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5">
+        <span class="text-texto-suave text-sm">Facturado del mes</span>
+        <span class="font-titulo font-bold text-xl text-negro">${facturadoDelMes.toLocaleString('es-AR')}</span>
+      </div>
+      <div class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5">
+        <span class="text-texto-suave text-sm">Noches ocupadas</span>
+        <span class="font-titulo font-bold text-xl text-negro">{nochesOcupadas}</span>
+      </div>
+      <div class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5">
+        <span class="text-texto-suave text-sm">Reservas totales</span>
+        <span class="font-titulo font-bold text-xl text-negro">{reservasTotales}</span>
+      </div>
     </div>
-    <div class="bg-superficie rounded-card border-2 border-borde p-5">
-      <span class="text-texto-suave text-sm">Noches ocupadas</span>
-      <p class="font-titulo font-bold text-3xl text-negro">{nochesOcupadas}</p>
+    <div class="hidden sm:flex bg-superficie rounded-card border-2 border-borde">
+      <div class="flex-1 px-6 py-4">
+        <span class="text-texto-suave text-sm">Facturado del mes</span>
+        <p class="font-titulo font-bold text-[26px] text-negro">${facturadoDelMes.toLocaleString('es-AR')}</p>
+      </div>
+      <div class="w-px bg-borde my-3.5" />
+      <div class="flex-1 px-6 py-4">
+        <span class="text-texto-suave text-sm">Noches ocupadas</span>
+        <p class="font-titulo font-bold text-[26px] text-negro">{nochesOcupadas}</p>
+      </div>
+      <div class="w-px bg-borde my-3.5" />
+      <div class="flex-1 px-6 py-4">
+        <span class="text-texto-suave text-sm">Reservas totales</span>
+        <p class="font-titulo font-bold text-[26px] text-negro">{reservasTotales}</p>
+      </div>
     </div>
-    <div class="bg-superficie rounded-card border-2 border-borde p-5">
-      <span class="text-texto-suave text-sm">Reservas totales</span>
-      <p class="font-titulo font-bold text-3xl text-negro">{reservasTotales}</p>
-    </div>
-  </div>
 
-  <h2 class="font-titulo font-bold text-xl text-negro mb-3">Cómo nos conoció</h2>
-  <div class="flex flex-col gap-2 max-w-md">
-    {
-      Array.from(conteoOrigen.entries()).map(([origen, cantidad]) => (
-        <div class="flex items-center justify-between rounded-card border-2 border-borde px-5 py-3 bg-superficie">
-          <span class="text-texto">{origen}</span>
-          <span class="text-texto-suave font-titulo font-bold">{cantidad}</span>
-        </div>
-      ))
-    }
+    <div class="max-w-md">
+      <h2 class="font-titulo font-bold text-base text-negro mb-3">Cómo nos conoció</h2>
+      <div class="bg-superficie rounded-card border-2 border-borde py-1">
+        {
+          Array.from(conteoOrigen.entries()).map(([origen, cantidad]) => (
+            <div class="flex items-center justify-between px-5 py-2.5 border-t border-fondo-alt first:border-t-0">
+              <span class="text-texto text-sm">{origen}</span>
+              <span class="text-texto-suave font-titulo font-bold text-sm">{cantidad}</span>
+            </div>
+          ))
+        }
+      </div>
+    </div>
   </div>
 </PanelLayout>

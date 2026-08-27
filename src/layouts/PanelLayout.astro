@@ -9,10 +9,16 @@ interface Props {
 const { title, activo } = Astro.props;
 const usuario = Astro.locals.usuario!;
 
+const iniciales = usuario.nombre
+  .split(' ')
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((p) => p[0]!.toUpperCase())
+  .join('');
+
 const navStaff = [
   { href: '/panel', label: 'Hoy', key: 'hoy' },
   { href: '/panel/buscar', label: 'Buscar', key: 'buscar' },
-  { href: '/panel/reservas/nueva', label: 'Nueva reserva', key: 'nueva' },
   { href: '/panel/pendientes-pago', label: 'Pendientes de pago', key: 'pendientes' },
 ];
 
@@ -22,8 +28,6 @@ const navAdmin = [
   { href: '/panel/admin/configuracion', label: 'Configuración', key: 'configuracion' },
   { href: '/panel/admin/reportes', label: 'Reportes', key: 'reportes' },
 ];
-
-const nav = usuario.rol === 'admin' ? [...navStaff, ...navAdmin] : navStaff;
 ---
 
 <!doctype html>
@@ -40,82 +44,114 @@ const nav = usuario.rol === 'admin' ? [...navStaff, ...navAdmin] : navStaff;
       rel="stylesheet"
     />
   </head>
-  <body class="bg-gray-50 font-cuerpo text-texto antialiased min-h-screen lg:flex">
-    <aside class="lg:w-64 lg:shrink-0 bg-superficie border-b lg:border-b-0 lg:border-r border-borde lg:min-h-screen">
-      <div class="p-6 flex lg:flex-col justify-between lg:justify-start items-center lg:items-stretch gap-4">
-        <a href="/panel">
-          <img src="/images/Logo-Tierra-Roja.png" alt="Logo de camping Tierra Roja" class="h-10 w-auto lg:h-12" />
+  <body class="bg-fondo font-cuerpo text-texto antialiased min-h-screen flex flex-col">
+    <!-- Topbar: logo, búsqueda global (solo desktop) y accesos rápidos. -->
+    <header class="h-16 shrink-0 bg-superficie border-b border-borde flex items-center justify-between gap-3 px-4 lg:px-8">
+      <a href="/panel" class="shrink-0 flex items-center">
+        <img src="/images/Logo-Tierra-Roja.png" alt="Logo de camping Tierra Roja" class="h-8 lg:h-9 w-auto" />
+      </a>
+
+      <form
+        method="GET"
+        action="/panel/buscar"
+        class="hidden lg:flex flex-1 max-w-md items-center gap-2 bg-fondo-alt rounded-pill px-4 py-2 text-texto-suave focus-within:ring-2 focus-within:ring-primario/25 transition-shadow"
+      >
+        <span class="material-symbols-outlined text-[18px]">search</span>
+        <input
+          type="text"
+          name="q"
+          placeholder="Buscar reserva, huésped…"
+          class="flex-1 bg-transparent text-sm text-texto placeholder:text-texto-suave outline-none"
+        />
+      </form>
+
+      <div class="flex items-center gap-2 lg:gap-3 shrink-0">
+        <a
+          href="/panel/buscar"
+          aria-label="Buscar"
+          class="lg:hidden flex items-center justify-center w-9 h-9 rounded-full bg-fondo-alt text-texto-suave hover:text-primario transition-colors"
+        >
+          <span class="material-symbols-outlined text-[19px]">search</span>
         </a>
 
-        <!-- Cerrar sesión: en mobile la versión de escritorio queda oculta, así que
-             acá va una versión compacta para que siga siendo posible salir del panel. -->
-        <form method="POST" action="/panel/logout" class="lg:hidden">
-          <button
-            type="submit"
-            aria-label="Cerrar sesión"
-            class="flex items-center justify-center w-10 h-10 rounded-full text-texto-suave hover:bg-primario/10 hover:text-primario transition-colors"
+        <a
+          href="/panel/reservas/nueva"
+          class="hidden lg:inline-flex items-center gap-1.5 bg-primario text-white rounded-pill pl-3.5 pr-4 py-2 font-titulo font-semibold text-sm hover:bg-primario-claro transition-colors"
+        >
+          <span class="material-symbols-outlined text-[18px]">add</span>
+          Nueva reserva
+        </a>
+        <a
+          href="/panel/reservas/nueva"
+          aria-label="Nueva reserva"
+          class="lg:hidden flex items-center justify-center w-9 h-9 rounded-full bg-primario text-white"
+        >
+          <span class="material-symbols-outlined text-[19px]">add</span>
+        </a>
+
+        <div class="flex items-center gap-1.5 pl-1 lg:pl-2 lg:ml-1 lg:border-l lg:border-borde">
+          <span
+            title={usuario.nombre}
+            class="w-8 h-8 shrink-0 rounded-full bg-fondo-alt text-primario flex items-center justify-center font-titulo font-bold text-xs"
           >
-            <span class="material-symbols-outlined text-[20px]">logout</span>
-          </button>
-        </form>
-
-        <nav class="hidden lg:flex flex-col gap-1 mt-6">
-          {
-            nav.map((item) => (
-              <a
-                href={item.href}
-                class:list={[
-                  'font-titulo font-medium text-sm px-3 py-2 rounded-card transition-colors',
-                  activo === item.key
-                    ? 'bg-superficie-elevada text-primario'
-                    : 'text-texto-suave hover:bg-superficie-elevada hover:text-primario',
-                ]}
-              >
-                {item.label}
-              </a>
-            ))
-          }
-        </nav>
-
-        <div class="hidden lg:flex flex-col gap-2 mt-8 pt-4 border-t border-borde">
-          <span class="text-sm text-texto-suave">
-            {usuario.nombre} · <span class="font-medium">{usuario.rol === 'admin' ? 'Admin' : 'Staff'}</span>
+            {iniciales}
           </span>
           <form method="POST" action="/panel/logout">
             <button
               type="submit"
-              class="group flex items-center gap-2 text-sm text-texto-suave font-medium rounded-card px-3 py-2 w-full transition-colors hover:bg-primario/10 hover:text-primario"
+              aria-label="Cerrar sesión"
+              class="flex items-center justify-center w-8 h-8 rounded-full text-texto-suave hover:bg-primario/10 hover:text-primario transition-colors"
             >
-              <span class="material-symbols-outlined text-[18px] transition-transform group-hover:-translate-x-0.5">
-                logout
-              </span>
-              Cerrar sesión
+              <span class="material-symbols-outlined text-[18px]">logout</span>
             </button>
           </form>
         </div>
       </div>
+    </header>
 
-      <!-- Nav mobile: barra horizontal scrolleable, sin JS -->
-      <nav class="lg:hidden flex gap-1 overflow-x-auto px-4 pb-4">
+    <!-- Pestañas: una sola fila para todos los tamaños, scrollea horizontal en mobile. -->
+    <nav class="shrink-0 bg-superficie border-b border-borde overflow-x-auto">
+      <div class="flex items-center gap-1 px-4 lg:px-8 py-2.5 min-w-max">
         {
-          nav.map((item) => (
+          navStaff.map((item) => (
             <a
               href={item.href}
               class:list={[
-                'font-titulo font-medium text-sm px-3 py-2 rounded-card whitespace-nowrap transition-colors',
+                'font-titulo font-medium text-sm px-3.5 py-1.5 rounded-pill whitespace-nowrap transition-colors',
                 activo === item.key
-                  ? 'bg-superficie-elevada text-primario'
-                  : 'text-texto-suave hover:bg-superficie-elevada',
+                  ? 'bg-superficie-elevada text-primario font-semibold'
+                  : 'text-texto-suave hover:bg-superficie-elevada hover:text-primario',
               ]}
             >
               {item.label}
             </a>
           ))
         }
-      </nav>
-    </aside>
 
-    <main class="flex-1 p-6 lg:p-10 max-w-5xl">
+        {
+          usuario.rol === 'admin' && (
+            <>
+              <span class="w-px h-4 bg-borde mx-1.5 shrink-0" />
+              {navAdmin.map((item) => (
+                <a
+                  href={item.href}
+                  class:list={[
+                    'font-titulo font-medium text-sm px-3.5 py-1.5 rounded-pill whitespace-nowrap transition-colors',
+                    activo === item.key
+                      ? 'bg-superficie-elevada text-primario font-semibold'
+                      : 'text-texto-suave hover:bg-superficie-elevada hover:text-primario',
+                  ]}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </>
+          )
+        }
+      </div>
+    </nav>
+
+    <main class="flex-1 w-full max-w-6xl mx-auto p-4 lg:p-10">
       <slot />
     </main>
   </body>

@@ -29,43 +29,169 @@ const ocupacion = (unidades ?? []).map((u: any) => {
   const capacidad = u.tipo === 'CABANA' ? 1 : u.tipo === 'CAMPING' ? u.cupo_total ?? 0 : (u.parcelas ?? []).filter((p: any) => p.activa).length;
   return { tipo: u.tipo, nombre: u.nombre, ocupadas: conteoOcupadas.get(u.id) ?? 0, capacidad };
 });
+
+const capacidadTotal = ocupacion.reduce((acc, u) => acc + u.capacidad, 0);
+const ocupadasTotal = ocupacion.reduce((acc, u) => acc + u.ocupadas, 0);
+const porcentajeOcupacion = capacidadTotal > 0 ? Math.round((ocupadasTotal / capacidadTotal) * 100) : 0;
+
+const fmtHora = (f: string) =>
+  new Date(f).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+type Atencion = {
+  id: string;
+  nombreCliente: string;
+  sub: string;
+  chipLabel: string;
+  chipClassName: string;
+  dotClassName: string;
+};
+
+const atencion: Atencion[] = [
+  ...llegadas.map((r) => ({
+    id: r.id,
+    nombreCliente: r.nombreCliente,
+    sub: r.parcelaNombre ? `${r.unidadNombre} · ${r.parcelaNombre}` : r.unidadNombre,
+    chipLabel: 'Check-in',
+    chipClassName: 'text-confirmado bg-confirmado/10',
+    dotClassName: 'bg-confirmado',
+  })),
+  ...salidas.map((r) => ({
+    id: r.id,
+    nombreCliente: r.nombreCliente,
+    sub: r.parcelaNombre ? `${r.unidadNombre} · ${r.parcelaNombre}` : r.unidadNombre,
+    chipLabel: 'Check-out',
+    chipClassName: 'text-texto-suave bg-superficie-elevada',
+    dotClassName: 'bg-texto-suave',
+  })),
+  ...pendientesPago.map((r) => ({
+    id: r.id,
+    nombreCliente: r.nombreCliente,
+    sub: r.fechaLimitePago ? `Vence ${fmtHora(r.fechaLimitePago)}` : 'Sin plazo',
+    chipLabel: 'Avisar pago',
+    chipClassName: 'text-advertencia bg-advertencia/10',
+    dotClassName: 'bg-advertencia',
+  })),
+];
 ---
 
 <PanelLayout title="Vista operativa" activo="operativa">
-  <h1 class="font-titulo font-bold text-3xl text-negro mb-8">Vista operativa</h1>
+  <div class="flex flex-col gap-7">
+    <h1 class="font-titulo font-bold text-3xl text-negro">Vista operativa</h1>
 
-  <div class="grid sm:grid-cols-3 gap-4 mb-10">
-    <div class="bg-superficie rounded-card border-2 border-borde p-5">
-      <span class="text-texto-suave text-sm">Llegadas hoy</span>
-      <p class="font-titulo font-bold text-3xl text-negro">{llegadas.length}</p>
+    <!-- KPIs: grilla de tarjetas en mobile, franja dividida en escritorio -->
+    <div class="grid grid-cols-2 sm:hidden gap-3">
+      <div class="bg-superficie rounded-card border-2 border-borde px-4 py-3.5">
+        <span class="text-texto-suave text-sm">Llegadas hoy</span>
+        <p class="font-titulo font-bold text-2xl text-negro">{llegadas.length}</p>
+      </div>
+      <div class="bg-superficie rounded-card border-2 border-borde px-4 py-3.5">
+        <span class="text-texto-suave text-sm">Salidas hoy</span>
+        <p class="font-titulo font-bold text-2xl text-negro">{salidas.length}</p>
+      </div>
+      <div class="bg-superficie rounded-card border-2 border-borde px-4 py-3.5">
+        <span class="text-texto-suave text-sm">Pagos pendientes</span>
+        <p class="font-titulo font-bold text-2xl text-primario">{pendientesPago.length}</p>
+      </div>
+      <div class="bg-superficie rounded-card border-2 border-borde px-4 py-3.5">
+        <span class="text-texto-suave text-sm">Ocupación total</span>
+        <p class="font-titulo font-bold text-2xl text-negro">{porcentajeOcupacion}%</p>
+      </div>
     </div>
-    <div class="bg-superficie rounded-card border-2 border-borde p-5">
-      <span class="text-texto-suave text-sm">Salidas hoy</span>
-      <p class="font-titulo font-bold text-3xl text-negro">{salidas.length}</p>
+    <div class="hidden sm:flex bg-superficie rounded-card border-2 border-borde">
+      <div class="flex-1 px-6 py-4">
+        <span class="text-texto-suave text-sm">Llegadas hoy</span>
+        <p class="font-titulo font-bold text-[26px] text-negro">{llegadas.length}</p>
+      </div>
+      <div class="w-px bg-borde my-3.5" />
+      <div class="flex-1 px-6 py-4">
+        <span class="text-texto-suave text-sm">Salidas hoy</span>
+        <p class="font-titulo font-bold text-[26px] text-negro">{salidas.length}</p>
+      </div>
+      <div class="w-px bg-borde my-3.5" />
+      <div class="flex-1 px-6 py-4">
+        <span class="text-texto-suave text-sm">Pagos pendientes</span>
+        <p class="font-titulo font-bold text-[26px] text-primario">{pendientesPago.length}</p>
+      </div>
+      <div class="w-px bg-borde my-3.5" />
+      <div class="flex-1 px-6 py-4">
+        <span class="text-texto-suave text-sm">Ocupación total</span>
+        <p class="font-titulo font-bold text-[26px] text-negro">{porcentajeOcupacion}%</p>
+      </div>
     </div>
-    <div class="bg-superficie rounded-card border-2 border-borde p-5">
-      <span class="text-texto-suave text-sm">Pagos pendientes</span>
-      <p class="font-titulo font-bold text-3xl text-primario">{pendientesPago.length}</p>
-    </div>
-  </div>
 
-  <h2 class="font-titulo font-bold text-xl text-negro mb-3">Ocupación actual</h2>
-  <div class="flex flex-col gap-2 mb-10">
-    {
-      ocupacion.map((u) => (
-        <a
-          href={`/panel/admin/calendario?tipo=${u.tipo}`}
-          class="flex items-center justify-between rounded-card border-2 border-borde px-5 py-3 bg-superficie hover:border-primario-claro transition-colors"
-        >
-          <span class="font-titulo font-medium text-negro">{u.nombre}</span>
-          <span class="text-texto-suave text-sm">{u.ocupadas} / {u.capacidad}</span>
-        </a>
-      ))
-    }
-  </div>
+    <div class="flex flex-col lg:flex-row gap-5 items-start">
+      <!-- Necesita atención hoy -->
+      <div class="w-full lg:flex-[1.6] bg-superficie rounded-card border-2 border-borde py-1">
+        <h2 class="font-titulo font-bold text-[15px] text-negro px-5 pt-3.5 pb-2.5">Necesita atención hoy</h2>
+        {
+          atencion.length === 0 ? (
+            <p class="text-texto-suave text-sm px-5 py-4">No hay nada urgente por ahora.</p>
+          ) : (
+            atencion.map((a) => (
+              <a
+                href={`/panel/reservas/${a.id}`}
+                class="flex items-center gap-3 px-5 py-2.5 border-t border-fondo-alt hover:bg-fondo-alt/60 transition-colors"
+              >
+                <span class:list={['w-2 h-2 rounded-full shrink-0', a.dotClassName]} />
+                <div class="flex-1 min-w-0">
+                  <span class="font-titulo font-semibold text-[13.5px] text-negro truncate block">{a.nombreCliente}</span>
+                  <span class="text-texto-suave text-xs block truncate">{a.sub}</span>
+                </div>
+                <span class:list={['shrink-0 font-titulo font-semibold text-[11.5px] rounded-pill px-3 py-1.5 whitespace-nowrap', a.chipClassName]}>
+                  {a.chipLabel}
+                </span>
+              </a>
+            ))
+          )
+        }
+      </div>
 
-  <div class="flex gap-4">
-    <a href="/panel" class="text-primario font-titulo font-medium hover:underline">Ver Inicio de Staff →</a>
-    <a href="/panel/pendientes-pago" class="text-primario font-titulo font-medium hover:underline">Ver pendientes de pago →</a>
+      <!-- Ocupación + accesos -->
+      <div class="w-full lg:flex-1 flex flex-col gap-4">
+        <div class="bg-superficie rounded-card border-2 border-borde p-5">
+          <h2 class="font-titulo font-bold text-sm text-negro mb-3">Ocupación</h2>
+          <div class="flex flex-col gap-2.5">
+            {
+              ocupacion.map((u) => {
+                const pct = u.capacidad > 0 ? Math.min(100, Math.round((u.ocupadas / u.capacidad) * 100)) : 0;
+                return (
+                  <a
+                    href={`/panel/admin/calendario?tipo=${u.tipo}`}
+                    class="flex items-center gap-2.5 group"
+                  >
+                    <span class="w-[68px] shrink-0 text-texto-suave text-xs truncate group-hover:text-primario transition-colors">{u.nombre}</span>
+                    <span class="flex-1 h-1.5 rounded-pill bg-fondo-alt overflow-hidden">
+                      <span class="block h-full rounded-pill bg-primario-claro" style={`width:${pct}%`} />
+                    </span>
+                    <span class="w-9 shrink-0 text-texto-suave text-[11px] text-right">{u.ocupadas}/{u.capacidad}</span>
+                  </a>
+                );
+              })
+            }
+          </div>
+        </div>
+
+        <div class="bg-superficie rounded-card border-2 border-borde py-1">
+          <h2 class="font-titulo font-bold text-sm text-negro px-5 pt-3 pb-2">Accesos rápidos</h2>
+          <a href="/panel/admin/calendario" class="flex items-center justify-between px-5 py-2.5 border-t border-fondo-alt hover:text-primario transition-colors">
+            <span class="text-sm">Ver calendario</span>
+            <span class="material-symbols-outlined text-[16px] text-texto-suave">chevron_right</span>
+          </a>
+          <a href="/panel/admin/configuracion" class="flex items-center justify-between px-5 py-2.5 border-t border-fondo-alt hover:text-primario transition-colors">
+            <span class="text-sm">Configuración de precios</span>
+            <span class="material-symbols-outlined text-[16px] text-texto-suave">chevron_right</span>
+          </a>
+          <a href="/panel/admin/reportes" class="flex items-center justify-between px-5 py-2.5 border-t border-fondo-alt hover:text-primario transition-colors">
+            <span class="text-sm">Reportes del mes</span>
+            <span class="material-symbols-outlined text-[16px] text-texto-suave">chevron_right</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-5">
+      <a href="/panel" class="text-primario font-titulo font-medium text-sm hover:underline">Ver Inicio de Staff →</a>
+      <a href="/panel/pendientes-pago" class="text-primario font-titulo font-medium text-sm hover:underline">Ver pendientes de pago →</a>
+    </div>
   </div>
 </PanelLayout>

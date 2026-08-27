@@ -262,16 +262,16 @@ const filasConSegmentos = filas.map((fila) => ({
     </div>
   </div>
 
-  <div class="flex gap-2 mb-4 border-b-2 border-borde">
+  <div class="flex gap-1.5 mb-4 flex-wrap">
     {
       ORDEN_TIPOS.map((tipo) => (
         <a
           href={`/panel/admin/calendario?mes=${mesValido}&tipo=${tipo}`}
           class:list={[
-            'px-4 py-2 font-titulo font-medium text-sm -mb-0.5 border-b-2 transition-colors',
+            'px-4 py-1.5 rounded-pill font-titulo font-medium text-sm transition-colors',
             tipo === tipoSeleccionado
-              ? 'border-primario text-primario'
-              : 'border-transparent text-texto-suave hover:text-primario',
+              ? 'bg-superficie-elevada text-primario font-semibold'
+              : 'text-texto-suave hover:bg-superficie-elevada hover:text-primario',
           ]}
         >
           {ETIQUETAS_TIPO[tipo]}

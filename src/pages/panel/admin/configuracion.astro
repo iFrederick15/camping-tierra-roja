@@ -59,7 +59,7 @@ for (const p of parcelas ?? []) {
                   </label>
                   <button
                     type="submit"
-                    class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+                    class="border-2 border-borde rounded-pill px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
                   >
                     Guardar
                   </button>
@@ -85,7 +85,7 @@ for (const p of parcelas ?? []) {
                   </label>
                   <button
                     type="submit"
-                    class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+                    class="border-2 border-borde rounded-pill px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
                   >
                     Guardar
                   </button>
@@ -110,13 +110,17 @@ for (const p of parcelas ?? []) {
               {lista.map((p: any) => (
                 <form class="form-parcela flex flex-wrap items-end gap-3 rounded-card border-2 border-borde px-5 py-3 bg-superficie" data-id={p.id}>
                   <span class="font-titulo font-medium text-negro flex-1 min-w-48">{p.nombre}</span>
-                  <label class="flex items-center gap-2 text-sm text-texto-suave">
-                    <input type="checkbox" name="activa" checked={p.activa} />
-                    Activa
+                  <label class="flex items-center gap-2.5 text-sm text-texto-suave cursor-pointer select-none">
+                    <span class="relative inline-flex items-center shrink-0">
+                      <input type="checkbox" name="activa" checked={p.activa} class="peer sr-only" />
+                      <span class="w-9 h-5 rounded-pill bg-borde peer-checked:bg-primario transition-colors" />
+                      <span class="absolute left-0.5 top-0.5 w-4 h-4 rounded-pill bg-white shadow-sm transition-transform peer-checked:translate-x-4" />
+                    </span>
+                    <span class="font-titulo font-medium">Activa</span>
                   </label>
                   <button
                     type="submit"
-                    class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+                    class="border-2 border-borde rounded-pill px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
                   >
                     Guardar
                   </button>
