@@ -12,6 +12,9 @@ export const GET: APIRoute = async ({ url }) => {
   const desde = url.searchParams.get('desde');
   const hasta = url.searchParams.get('hasta');
   const categoria = url.searchParams.get('categoria') ?? undefined;
+  // Al editar una reserva, se la excluye para que sus fechas actuales no
+  // cuenten como ocupación (ver obtenerDisponibilidad en lib/reservas.ts).
+  const excluir = url.searchParams.get('excluir') ?? undefined;
 
   if (!unidadTipo || !desde || !hasta) {
     return new Response(
@@ -20,7 +23,7 @@ export const GET: APIRoute = async ({ url }) => {
     );
   }
 
-  const resultado = await obtenerDisponibilidad(unidadTipo, desde, hasta, categoria);
+  const resultado = await obtenerDisponibilidad(unidadTipo, desde, hasta, categoria, excluir);
 
   if ('error' in resultado) {
     return new Response(JSON.stringify({ error: resultado.error }), { status: resultado.status });

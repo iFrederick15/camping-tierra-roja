@@ -92,7 +92,10 @@ export async function obtenerDisponibilidad(
   unidadTipo: string,
   desde: string,
   hasta: string,
-  categoria?: string
+  categoria?: string,
+  // Al editar una reserva, se la excluye del cálculo para que no colisione
+  // consigo misma (sus propias fechas ya "ocupan" la unidad/parcela).
+  excluirReservaId?: string
 ): Promise<{ error: string; status: number } | { unidad: { id: string; nombre: string }; disponibilidad: Disponibilidad }> {
   const { data: unidad, error: errUnidad } = await supabaseAdmin
     .from('unidades')
@@ -108,13 +111,15 @@ export async function obtenerDisponibilidad(
     return { error: 'Falta la categoría de quincho', status: 400 };
   }
 
-  const { data: solapadas, error: errReservas } = await supabaseAdmin
+  let queryReservas = supabaseAdmin
     .from('reservas')
     .select('parcela_id')
     .eq('unidad_id', unidad.id)
     .in('estado', ['CONFIRMADA', 'CHECKIN_HECHO'])
     .lt('fecha_ingreso', hasta)
     .gt('fecha_salida', desde);
+  if (excluirReservaId) queryReservas = queryReservas.neq('id', excluirReservaId);
+  const { data: solapadas, error: errReservas } = await queryReservas;
 
   if (errReservas) {
     return { error: errReservas.message, status: 500 };
@@ -172,7 +177,11 @@ export async function obtenerDisponibilidad(
 export async function asignarParcelaMotorhome(
   unidadId: string,
   desde: string,
-  hasta: string
+  hasta: string,
+  excluirReservaId?: string,
+  // Al editar una reserva, se conserva su parcela actual si sigue libre para
+  // no reubicar al cliente sin necesidad.
+  parcelaPreferida?: string | null
 ): Promise<string | null> {
   const { data: parcelas } = await supabaseAdmin
     .from('parcelas')
@@ -181,15 +190,24 @@ export async function asignarParcelaMotorhome(
     .eq('activa', true)
     .order('numero');
 
-  const { data: solapadas } = await supabaseAdmin
+  let querySolapadas = supabaseAdmin
     .from('reservas')
     .select('parcela_id')
     .eq('unidad_id', unidadId)
     .in('estado', ['CONFIRMADA', 'CHECKIN_HECHO'])
     .lt('fecha_ingreso', hasta)
     .gt('fecha_salida', desde);
+  if (excluirReservaId) querySolapadas = querySolapadas.neq('id', excluirReservaId);
+  const { data: solapadas } = await querySolapadas;
 
   const ocupadasIds = new Set((solapadas ?? []).map((r) => r.parcela_id));
+  if (
+    parcelaPreferida &&
+    !ocupadasIds.has(parcelaPreferida) &&
+    (parcelas ?? []).some((p) => p.id === parcelaPreferida)
+  ) {
+    return parcelaPreferida;
+  }
   const libre = (parcelas ?? []).find((p) => !ocupadasIds.has(p.id));
   return libre?.id ?? null;
 }
@@ -297,6 +315,10 @@ export interface ReservaResumen {
   cantidadMenores: number;
   cantidadMayores: number;
   detallePrecio: ItemPrecio[];
+  parcelaId: string | null;
+  categoriaSeleccionada: string | null;
+  datosVehiculo: string | null;
+  comoNosConocio: string | null;
 }
 
 type FiltroReservas =
@@ -306,7 +328,7 @@ type FiltroReservas =
   | { modo: 'pendientes-pago' };
 
 const SELECT_RESUMEN =
-  'id, nombre_cliente, dni, telefono, email, fecha_ingreso, fecha_salida, monto_total, monto_pagado, fecha_limite_pago, estado, origen, cantidad_acompanantes, cantidad_menores, cantidad_mayores, detalle_precio, unidades(nombre, tipo), parcelas(nombre)';
+  'id, nombre_cliente, dni, telefono, email, fecha_ingreso, fecha_salida, monto_total, monto_pagado, fecha_limite_pago, estado, origen, cantidad_acompanantes, cantidad_menores, cantidad_mayores, detalle_precio, parcela_id, categoria_seleccionada, datos_vehiculo, como_nos_conocio, unidades(nombre, tipo), parcelas(nombre)';
 
 function mapearResumen(r: any): ReservaResumen {
   return {
@@ -329,6 +351,10 @@ function mapearResumen(r: any): ReservaResumen {
     cantidadMenores: r.cantidad_menores ?? 0,
     cantidadMayores: r.cantidad_mayores ?? 0,
     detallePrecio: r.detalle_precio ?? [],
+    parcelaId: r.parcela_id ?? null,
+    categoriaSeleccionada: r.categoria_seleccionada ?? null,
+    datosVehiculo: r.datos_vehiculo ?? null,
+    comoNosConocio: r.como_nos_conocio ?? null,
   };
 }
 

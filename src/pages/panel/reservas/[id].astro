@@ -1,6 +1,7 @@
 ---
 import PanelLayout from '../../../layouts/PanelLayout.astro';
 import RegistrarPago from '../../../components/panel/RegistrarPago.tsx';
+import EditarReserva from '../../../components/panel/EditarReserva.tsx';
 import {
   obtenerReserva,
   calcularEstadoPago,
@@ -43,6 +44,28 @@ const ESTADO_LABEL: Record<string, string> = {
     </span>
   </div>
   <p class="text-texto-suave mb-8">{ESTADO_LABEL[reserva.estado]} · {reserva.origen === 'WEB' ? 'Reserva web' : 'Reserva manual'}</p>
+
+  {reserva.estado !== 'CANCELADA' && reserva.estado !== 'CHECKOUT_HECHO' && (
+    <div class="mb-8">
+      <EditarReserva
+        client:load
+        id={reserva.id}
+        unidadTipo={reserva.unidadTipo}
+        categoriaSeleccionada={reserva.categoriaSeleccionada}
+        fechaIngreso={reserva.fechaIngreso}
+        fechaSalida={reserva.fechaSalida}
+        parcelaId={reserva.parcelaId}
+        cantidadAcompanantes={reserva.cantidadAcompanantes}
+        cantidadMenores={reserva.cantidadMenores}
+        cantidadMayores={reserva.cantidadMayores}
+        nombreCliente={reserva.nombreCliente}
+        dni={reserva.dni}
+        email={reserva.email}
+        telefono={reserva.telefono}
+        datosVehiculo={reserva.datosVehiculo}
+      />
+    </div>
+  )}
 
   <div class="grid md:grid-cols-2 gap-6 mb-8">
     <div class="bg-superficie rounded-card border-2 border-borde p-5 flex flex-col gap-2">
