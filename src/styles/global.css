@@ -19,6 +19,9 @@
   --color-confirmado: #16a34a;
   --color-advertencia: #b8842c;
 
+  /* ── Reseñas ── */
+  --color-estrella: #f5b301;
+
   /* ── Tipografía ── */
   --font-titulo: 'Ubuntu', 'DM Sans', sans-serif;
   --font-cuerpo: 'DM Sans', 'Inter', sans-serif;

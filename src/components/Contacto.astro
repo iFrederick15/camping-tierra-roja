@@ -7,7 +7,7 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
   <h1
     class="font-titulo font-extrabold text-4xl md:text-6xl text-texto mb-6 tracking-tight leading-tight"
   >
-    <span class="text-primario italic">Contacto</span> y cómo llegar
+    <span class="text-primario">Contacto</span> y cómo llegar
   </h1>
   <p class="text-texto-suave text-lg max-w-2xl leading-relaxed mx-auto md:mx-0">
     Camping Tierra Roja está en {NEGOCIO.direccion.calle}, {NEGOCIO.direccion.localidad}, a unos 20
@@ -26,8 +26,9 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
     <form id="form-contacto" class="space-y-6" method="post" action="/api/contacto" novalidate>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-2">
-          <label for="contacto-nombre" class="font-cuerpo text-sm font-semibold text-texto-suave ml-2"
-            >Nombre completo</label
+          <label
+            for="contacto-nombre"
+            class="font-cuerpo text-sm font-semibold text-texto-suave ml-2">Nombre completo</label
           >
           <input
             id="contacto-nombre"
@@ -40,8 +41,9 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
           />
         </div>
         <div class="space-y-2">
-          <label for="contacto-email" class="font-cuerpo text-sm font-semibold text-texto-suave ml-2"
-            >Email</label
+          <label
+            for="contacto-email"
+            class="font-cuerpo text-sm font-semibold text-texto-suave ml-2">Email</label
           >
           <input
             id="contacto-email"
@@ -71,8 +73,9 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
         </select>
       </div>
       <div class="space-y-2">
-        <label for="contacto-mensaje" class="font-cuerpo text-sm font-semibold text-texto-suave ml-2"
-          >Mensaje</label
+        <label
+          for="contacto-mensaje"
+          class="font-cuerpo text-sm font-semibold text-texto-suave ml-2">Mensaje</label
         >
         <textarea
           id="contacto-mensaje"
@@ -93,7 +96,8 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
       >
         Enviar mensaje
       </button>
-      <p id="form-contacto-estado" class="text-sm font-semibold" role="status" aria-live="polite"></p>
+      <p id="form-contacto-estado" class="text-sm font-semibold" role="status" aria-live="polite">
+      </p>
     </form>
   </div>
   <!-- Side Info Cluster -->
@@ -117,8 +121,9 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
           </div>
           <div>
             <p class="font-bold text-texto">Teléfono</p>
-            <a href={`tel:${NEGOCIO.telefonoE164}`} class="text-texto-suave hover:text-primario transition-colors"
-              >{NEGOCIO.telefono}</a
+            <a
+              href={`tel:${NEGOCIO.telefonoE164}`}
+              class="text-texto-suave hover:text-primario transition-colors">{NEGOCIO.telefono}</a
             >
           </div>
         </div>
@@ -128,8 +133,9 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
           </div>
           <div>
             <p class="font-bold text-texto">Email</p>
-            <a href={`mailto:${NEGOCIO.email}`} class="text-texto-suave hover:text-primario transition-colors"
-              >{NEGOCIO.email}</a
+            <a
+              href={`mailto:${NEGOCIO.email}`}
+              class="text-texto-suave hover:text-primario transition-colors">{NEGOCIO.email}</a
             >
           </div>
         </div>
@@ -138,7 +144,9 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
         class="flex items-center justify-center gap-3 bg-[#25D366] text-white w-full py-4 rounded-xl font-bold hover:brightness-110 transition-all shadow-md"
         href={`https://wa.me/${NEGOCIO.whatsapp}`}
       >
-        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat</span>
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;"
+          >chat</span
+        >
         Hablar por WhatsApp
       </a>
     </div>
@@ -152,7 +160,9 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         loading="lazy"
       />
-      <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+      <div
+        class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6"
+      >
         <p class="text-white font-titulo font-bold text-xl">En plena selva misionera.</p>
       </div>
     </div>
@@ -215,7 +225,8 @@ import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
 
         if (res.ok) {
           form.reset();
-          estado.textContent = '¡Listo! Recibimos tu mensaje y te respondemos dentro de las 24 horas.';
+          estado.textContent =
+            '¡Listo! Recibimos tu mensaje y te respondemos dentro de las 24 horas.';
           estado.className = 'text-sm font-semibold text-confirmado';
         } else {
           estado.textContent =

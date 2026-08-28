@@ -1,0 +1,202 @@
+---
+// Sección de reseñas de clientes — antes del CTA
+const resenas = [
+  {
+    nombre: "Mirian Alvarez",
+    texto:
+      "Un camping espectacular, las instalaciones son como se ven en las imágenes, a las 19hs cortan la música para poder descansar, y la gente que va a pasar el dia debe retirarse en ese horario.es super armonioso y lleno de espacios diferentes para pasar el dia. Tiene sector de carpas y otro para motorhome, hay proveduria. La limpieza Es un 10! Tanto en baños como en todo el camping.  Volveré.",
+    estrellas: 5,
+  },
+  {
+    nombre: "Eduardo Eberle",
+    texto:
+      "Excelente lugar para pasar unos días como lo hicimos nosotros,  3 piletas hermosas , lugar para motorhome,  cabaña para 8/10 personas muy cómoda,  limpieza del lugar excelente,  los baños para la gente que acampa son un lujo , re contra recomendable,  y muchas cosas mas , para que lo visiten y descubran.",
+    estrellas: 5,
+  },
+  {
+    nombre: "Doscanariosdeviaje",
+    texto:
+      "Maravilloso camping y ambiente. Estuvimos 3 noches y nos hubiéramos quedado un mes. Varias piscinas, baños impolutos con duchas de agua caliente. Espacios grandes para motorhome, agua, luz todo incluido en el precio.",
+    estrellas: 5,
+  },
+  {
+    nombre: "Lililana Landriel",
+    texto:
+      "Excelente lugar. Con áreas específicas para cada edad. 3 piscinas enormes. Y cada una perfectamente cuidadas y limpias por sus empleados. La zona de camping perfecto. Se puede ir con carpa o motor home y tiene su sector de piscina para disfrutar de ella solo mayores de 15 años, y no tengo objeciones con ello, porque hay una para cada rango etario. Baños impecables. Quinchos innumerables,aceptan mascotas. MUY RECOMENDABLE",
+    estrellas: 5,
+  },
+  {
+    nombre: "Valeria Alvert",
+    texto:
+      "l camping es muy precioso, todo cuidado, baños y duchas impecables con agua caliente, la atención es amable. El sistema de organización de parcelas para motorhome está muy bueno",
+    estrellas: 4,
+  },
+];
+
+const esCarrusel = resenas.length > 3;
+---
+
+<section class="py-24 lg:py-32 bg-fondo px-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-16 lg:mb-20">
+      <h2 class="font-titulo font-bold text-4xl lg:text-5xl text-negro mb-4">
+        Lo que dicen nuestros huéspedes
+      </h2>
+      <p class="text-texto-suave max-w-2xl mx-auto text-lg">
+        Historias reales de quienes ya vivieron el latido de la selva.
+      </p>
+    </div>
+
+    {esCarrusel ? (
+      <div class="resenas-carrusel-wrapper relative" data-carrusel>
+        <!-- Pista scrolleable -->
+        <div
+          class="resenas-pista flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 -mx-6 px-6 md:mx-0 md:px-0 [scrollbar-width:none] [-ms-overflow-style:none]"
+          data-pista
+        >
+          {resenas.map((resena) => (
+            <article class="snap-start shrink-0 basis-[85%] sm:basis-[47%] lg:basis-[calc((100%-3rem)/3)] bg-superficie rounded-card p-8 lg:p-10 shadow-suave flex flex-col gap-6 hover:shadow-elevada transition-shadow duration-500">
+              <div class="flex gap-1 text-estrella" aria-label={`${resena.estrellas} de 5 estrellas`}>
+                {Array.from({ length: resena.estrellas }).map(() => (
+                  <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">star</span>
+                ))}
+              </div>
+              <p class="text-texto text-base leading-relaxed flex-1">
+                "{resena.texto}"
+              </p>
+              <div class="flex items-center gap-4 pt-2 border-t border-borde">
+                <div class="w-11 h-11 rounded-full bg-primario/10 flex items-center justify-center shrink-0">
+                  <span class="font-titulo font-bold text-primario text-sm">
+                    {resena.nombre.split(" ").map((n) => n[0]).join("")}
+                  </span>
+                </div>
+                <div>
+                  <p class="font-titulo font-bold text-negro text-sm">{resena.nombre}</p>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <!-- Controles -->
+        <div class="flex items-center justify-center gap-6 mt-8">
+          <button
+            type="button"
+            data-prev
+            aria-label="Reseña anterior"
+            class="w-11 h-11 rounded-full bg-superficie shadow-suave flex items-center justify-center text-negro hover:shadow-elevada transition-shadow disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+
+          <div class="flex gap-2" data-dots>
+            {resenas.map((_, i) => (
+              <button
+                type="button"
+                data-dot={i}
+                aria-label={`Ir a la reseña ${i + 1}`}
+                class="w-2.5 h-2.5 rounded-full bg-borde transition-colors"
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            data-next
+            aria-label="Reseña siguiente"
+            class="w-11 h-11 rounded-full bg-superficie shadow-suave flex items-center justify-center text-negro hover:shadow-elevada transition-shadow disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
+        {resenas.map((resena) => (
+          <article class="bg-superficie rounded-card p-8 lg:p-10 shadow-suave flex flex-col gap-6 hover:shadow-elevada transition-shadow duration-500">
+            <div class="flex gap-1 text-estrella" aria-label={`${resena.estrellas} de 5 estrellas`}>
+              {Array.from({ length: resena.estrellas }).map(() => (
+                <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">star</span>
+              ))}
+            </div>
+            <p class="text-texto text-base leading-relaxed flex-1">
+              "{resena.texto}"
+            </p>
+            <div class="flex items-center gap-4 pt-2 border-t border-borde">
+              <div class="w-11 h-11 rounded-full bg-primario/10 flex items-center justify-center shrink-0">
+                <span class="font-titulo font-bold text-primario text-sm">
+                  {resena.nombre.split(" ").map((n) => n[0]).join("")}
+                </span>
+              </div>
+              <div>
+                <p class="font-titulo font-bold text-negro text-sm">{resena.nombre}</p>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .resenas-pista::-webkit-scrollbar {
+    display: none;
+  }
+</style>
+
+<script>
+  function initCarrusel(root: HTMLElement) {
+    const pista = root.querySelector<HTMLElement>("[data-pista]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-prev]");
+    const next = root.querySelector<HTMLButtonElement>("[data-next]");
+    const dots = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-dot]"));
+    if (!pista) return;
+
+    const tarjetas = Array.from(pista.children) as HTMLElement[];
+
+    const indiceActual = () => {
+      const scroll = pista.scrollLeft;
+      let mejor = 0;
+      let dist = Infinity;
+      tarjetas.forEach((t, i) => {
+        const d = Math.abs(t.offsetLeft - pista.offsetLeft - scroll);
+        if (d < dist) {
+          dist = d;
+          mejor = i;
+        }
+      });
+      return mejor;
+    };
+
+    const irA = (i: number) => {
+      const idx = Math.max(0, Math.min(tarjetas.length - 1, i));
+      const tarjeta = tarjetas[idx];
+      pista.scrollTo({ left: tarjeta.offsetLeft - pista.offsetLeft, behavior: "smooth" });
+    };
+
+    const actualizar = () => {
+      const actual = indiceActual();
+      dots.forEach((d, i) => {
+        const activo = i === actual;
+        d.classList.toggle("bg-primario", activo);
+        d.classList.toggle("bg-borde", !activo);
+        d.classList.toggle("w-6", activo);
+      });
+      if (prev) prev.disabled = pista.scrollLeft <= 1;
+      if (next) {
+        next.disabled = pista.scrollLeft >= pista.scrollWidth - pista.clientWidth - 1;
+      }
+    };
+
+    prev?.addEventListener("click", () => irA(indiceActual() - 1));
+    next?.addEventListener("click", () => irA(indiceActual() + 1));
+    dots.forEach((d, i) => d.addEventListener("click", () => irA(i)));
+    pista.addEventListener("scroll", actualizar, { passive: true });
+    window.addEventListener("resize", actualizar);
+    actualizar();
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-carrusel]").forEach(initCarrusel);
+</script>

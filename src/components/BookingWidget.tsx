@@ -125,9 +125,9 @@ function calcularDetalle(
 // TODO: reemplazar por fotos reales por tipo (hoy solo hay una imagen para
 // camping y motorhome, y ninguna para cabaña/quincho — placeholders temporales).
 const IMAGENES_UNIDAD: Record<TipoUnidad, string[]> = {
-  CAMPING: ['/images/camping.jpg', '/images/camping.jpg', '/images/camping.jpg'],
-  MOTORHOME: ['/images/motorhome.png', '/images/motorhome.png', '/images/motorhome.png'],
-  CABANA: [],
+  CAMPING: ['/images/camping.jpg'],
+  MOTORHOME: ['/images/motorhome.png'],
+  CABANA: ['/images/cabanha.webp'],
   QUINCHOS: [],
 };
 
