@@ -539,6 +539,49 @@ export async function obtenerReporteMensual(
   };
 }
 
+// ------------------------------------------------------------
+// Comentarios de reserva — bitácora libre para asentar inconvenientes.
+// Ver sql/007_comentarios_reserva.sql. Se listan en la pantalla de Detalle.
+// ------------------------------------------------------------
+export interface ComentarioReserva {
+  id: string;
+  texto: string;
+  autor: string | null;
+  creadoEn: string;
+}
+
+export async function listarComentarios(reservaId: string): Promise<ComentarioReserva[]> {
+  const { data, error } = await supabaseAdmin
+    .from('comentarios_reserva')
+    .select('id, texto, autor, creado_en')
+    .eq('reserva_id', reservaId)
+    .order('creado_en', { ascending: false });
+  if (error || !data) return [];
+  return data.map((c: any) => ({
+    id: c.id,
+    texto: c.texto,
+    autor: c.autor,
+    creadoEn: c.creado_en,
+  }));
+}
+
+export async function agregarComentario(
+  reservaId: string,
+  texto: string,
+  autor: string | null
+): Promise<ComentarioReserva | null> {
+  const { data, error } = await supabaseAdmin
+    .from('comentarios_reserva')
+    .insert({ reserva_id: reservaId, texto, autor })
+    .select('id, texto, autor, creado_en')
+    .single();
+  if (error || !data) {
+    console.error('agregarComentario:', error);
+    return null;
+  }
+  return { id: data.id, texto: data.texto, autor: data.autor, creadoEn: data.creado_en };
+}
+
 // Detalle de una reserva puntual — Detalle/Check-in/Check-out.
 export async function obtenerReserva(id: string): Promise<ReservaResumen | null> {
   const { data, error } = await supabaseAdmin

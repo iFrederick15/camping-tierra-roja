@@ -2,8 +2,10 @@
 import PanelLayout from '../../../layouts/PanelLayout.astro';
 import RegistrarPago from '../../../components/panel/RegistrarPago.tsx';
 import EditarReserva from '../../../components/panel/EditarReserva.tsx';
+import ComentariosReserva from '../../../components/panel/ComentariosReserva.tsx';
 import {
   obtenerReserva,
+  listarComentarios,
   calcularEstadoPago,
   ESTILO_ESTADO_PAGO,
   puedeHacerCheckin,
@@ -16,6 +18,8 @@ const reserva = await obtenerReserva(id!);
 if (!reserva) {
   return Astro.redirect('/panel');
 }
+
+const comentarios = await listarComentarios(reserva.id);
 
 const estadoPago = calcularEstadoPago(reserva.montoTotal, reserva.montoPagado);
 const estilo = ESTILO_ESTADO_PAGO[estadoPago];
@@ -110,6 +114,10 @@ const ESTADO_LABEL: Record<string, string> = {
       <RegistrarPago reservaId={reserva.id} client:load />
     </div>
   )}
+
+  <div class="mb-8">
+    <ComentariosReserva reservaId={reserva.id} comentariosIniciales={comentarios} client:load />
+  </div>
 
   {reserva.estado === 'CONFIRMADA' && (
     <form id="form-checkin" class="bg-superficie rounded-card border-2 border-borde p-5 flex flex-col gap-3 mb-6">
