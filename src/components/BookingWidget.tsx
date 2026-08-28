@@ -483,8 +483,7 @@ export default function BookingWidget({
   // El atributo `min` del <input type="date"> guía al selector nativo pero no
   // impide tipear a mano una fecha de salida anterior o igual a la de entrada.
   // (No aplica a QUINCHOS: ahí la salida se deriva del día siguiente.)
-  const rangoFechasInvalido =
-    !!fechaIngreso && !!fechaSalida && fechaSalida <= fechaIngreso;
+  const rangoFechasInvalido = !!fechaIngreso && !!fechaSalida && fechaSalida <= fechaIngreso;
 
   const puedeContinuarDesdeFechas =
     !rangoFechasInvalido &&
@@ -686,6 +685,10 @@ export default function BookingWidget({
                         </button>
                       ))}
                   </div>
+                  <p className="text-xs text-texto-suave flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[16px]">info</span>
+                    El valor del motorhome por noche incluye 2 personas.
+                  </p>
                   <div className="border-t border-borde pt-4 flex flex-col gap-3">
                     <p className="flex items-center gap-1.5 text-sm font-titulo font-bold text-negro">
                       <span className="material-symbols-outlined text-[18px] text-primario">
@@ -705,10 +708,6 @@ export default function BookingWidget({
                         />
                       ))}
                   </div>
-                  <p className="text-xs text-texto-suave flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px]">info</span>
-                    El valor incluye 2 personas.
-                  </p>
                 </div>
               )}
 
