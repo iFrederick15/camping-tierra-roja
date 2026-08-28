@@ -422,6 +422,13 @@ export default function BookingWidget({
   useEffect(() => {
     if (!unidad || !fechaIngreso || !fechaSalida) return;
     if (unidad === 'QUINCHOS' && !categoria) return;
+    if (fechaSalida <= fechaIngreso) {
+      // Rango inválido: limpiamos cualquier disponibilidad previa para que no
+      // quede habilitado "Continuar" con fechas que ya no tienen sentido.
+      setDisponibilidad(null);
+      setParcelaSeleccionada(null);
+      return;
+    }
     let cancelado = false;
     setCargandoDisponibilidad(true);
     setParcelaSeleccionada(null);
@@ -473,7 +480,14 @@ export default function BookingWidget({
   const minEntrada = modo === 'publico' ? hoyISOLocal() : undefined;
   const minSalida = fechaIngreso ? diaSiguiente(fechaIngreso) : minEntrada;
 
+  // El atributo `min` del <input type="date"> guía al selector nativo pero no
+  // impide tipear a mano una fecha de salida anterior o igual a la de entrada.
+  // (No aplica a QUINCHOS: ahí la salida se deriva del día siguiente.)
+  const rangoFechasInvalido =
+    !!fechaIngreso && !!fechaSalida && fechaSalida <= fechaIngreso;
+
   const puedeContinuarDesdeFechas =
+    !rangoFechasInvalido &&
     disponibilidad &&
     ((disponibilidad.tipo === 'cupo' && disponibilidad.disponible) ||
       (disponibilidad.tipo === 'unica' && disponibilidad.disponible) ||
@@ -836,6 +850,12 @@ export default function BookingWidget({
                 </div>
               </label>
             </div>
+          )}
+
+          {rangoFechasInvalido && (
+            <p className="text-[#DC2626] text-sm font-medium">
+              La fecha de salida debe ser posterior a la de entrada.
+            </p>
           )}
 
           {cargandoDisponibilidad && (
