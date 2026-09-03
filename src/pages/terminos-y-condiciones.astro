@@ -1,6 +1,7 @@
 ---
 export const prerender = true;
 import Layout from '../layouts/Layout.astro';
+import { NEGOCIO, CONTACTO_HREF, DIRECCION_COMPLETA } from '../lib/negocio';
 
 const actualizado = '15 de agosto de 2026';
 
@@ -67,8 +68,8 @@ const secciones = [
         <div class="mt-6 pt-6 border-t border-borde/60">
           <p class="text-texto-suave text-xs leading-relaxed">
             ¿Tienes dudas sobre estos términos? Escríbenos a{' '}
-            <a href="mailto:tierrarojaiguazu@gmail.com" class="text-primario font-semibold">
-              tierrarojaiguazu@gmail.com
+            <a href={CONTACTO_HREF.mailto} class="text-primario font-semibold">
+              {NEGOCIO.email}
             </a>
           </p>
         </div>
@@ -99,8 +100,7 @@ const secciones = [
         <h2 class="font-titulo font-bold text-2xl text-texto">2. Objeto del servicio</h2>
         <p class="text-texto-suave leading-relaxed">
           A través del sitio ofrecemos la reserva de estadías en nuestras distintas unidades:
-          camping, motorhome, quinchos y cabañas, ubicadas en Barrio Los Yerbales 2000 Ha, Puerto
-          Iguazú, Misiones. La disponibilidad y los precios mostrados corresponden a las fechas
+          camping, motorhome, quinchos y cabañas, ubicadas en {DIRECCION_COMPLETA}. La disponibilidad y los precios mostrados corresponden a las fechas
           consultadas y pueden variar según la temporada.
         </p>
       </div>
@@ -147,8 +147,8 @@ const secciones = [
         <p class="text-texto-suave leading-relaxed">
           Si ya efectuaste el pago y necesitas modificar o cancelar tu reserva, escríbenos por
           WhatsApp o a{' '}
-          <a href="mailto:tierrarojaiguazu@gmail.com" class="text-primario font-semibold"
-            >tierrarojaiguazu@gmail.com</a
+          <a href={CONTACTO_HREF.mailto} class="text-primario font-semibold"
+            >{NEGOCIO.email}</a
           >. Estos cambios se resuelven de forma directa con nuestro equipo, evaluando cada caso
           según la anticipación y la disponibilidad.
         </p>
@@ -220,10 +220,10 @@ const secciones = [
               <span class="material-symbols-outlined text-lg">mail</span>
             </div>
             <a
-              href="mailto:hola@tierraroja.com.ar"
+              href={CONTACTO_HREF.mailto}
               class="text-texto font-semibold hover:text-primario transition-colors"
             >
-              hola@tierraroja.com.ar
+              {NEGOCIO.email}
             </a>
           </div>
           <div class="flex items-center gap-3">
@@ -231,7 +231,7 @@ const secciones = [
               <span class="material-symbols-outlined text-lg">location_on</span>
             </div>
             <span class="text-texto font-semibold">
-              Barrio Los Yerbales 2000 Ha, Puerto Iguazú, Misiones
+              {DIRECCION_COMPLETA}
             </span>
           </div>
         </div>

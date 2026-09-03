@@ -1,4 +1,6 @@
 ---
+import { NEGOCIO, CONTACTO_HREF, DIRECCION_CORTA } from '../lib/negocio';
+
 const explorar = [
   { label: 'Inicio', href: '/' },
   { label: 'Piscinas', href: '/#piscinas' },
@@ -33,7 +35,7 @@ const info = [
         <!-- Social icons -->
         <div class="flex gap-3">
           <a
-            href="https://www.instagram.com/tierraroja_iguazu"
+            href={NEGOCIO.redes.instagram}
             class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
             aria-label="Instagram"
           >
@@ -44,7 +46,7 @@ const info = [
             </svg>
           </a>
           <a
-            href="https://www.facebook.com/tierrarojaiguazu"
+            href={NEGOCIO.redes.facebook}
             class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
             aria-label="Facebook"
           >
@@ -55,7 +57,7 @@ const info = [
             </svg>
           </a>
           <a
-            href="https://www.tiktok.com/@tierraroja_iguazu"
+            href={NEGOCIO.redes.tiktok}
             class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
             aria-label="TikTok"
           >
@@ -115,7 +117,7 @@ const info = [
             Contacto
           </h3>
           <a
-            href="https://wa.me/5493757317593"
+            href={CONTACTO_HREF.whatsapp}
             class="flex items-center gap-2 mb-3 text-primario font-titulo font-bold text-sm hover:text-acento transition-colors"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 shrink-0">
@@ -123,10 +125,10 @@ const info = [
                 d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.45 1.27 4.9L2 22l5.25-1.28A9.94 9.94 0 0 0 12.04 22c5.52 0 10-4.48 10-10s-4.48-10-10-10Zm5.84 14.24c-.25.7-1.24 1.28-2.03 1.45-.54.11-1.25.2-3.64-.78-2.94-1.21-4.85-4.2-5-4.4-.14-.19-1.2-1.6-1.2-3.05s.75-2.16 1.02-2.46c.25-.28.55-.35.73-.35.18 0 .37 0 .53.01.17.01.4-.06.62.48.25.6.83 2.08.9 2.23.07.15.12.33.02.53-.1.2-.15.32-.3.5-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.3.76 1.26 1.64 2.04 1.13 1 2.08 1.32 2.38 1.47.3.15.47.13.65-.08.18-.2.76-.88.96-1.18.2-.3.4-.25.68-.15.28.1 1.76.83 2.06.98.3.15.5.23.57.35.07.13.07.72-.18 1.42Z"
               ></path>
             </svg>
-            +54 3757 31-7593
+            {NEGOCIO.telefono}
           </a>
           <a
-            href="mailto:tierrarojaiguazu@gmail.com"
+            href={CONTACTO_HREF.mailto}
             class="flex items-center gap-2 mb-3 text-primario font-titulo font-bold text-sm hover:text-acento transition-colors"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 shrink-0">
@@ -134,7 +136,7 @@ const info = [
                 d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6Zm2.2.2 7.36 5.6a.7.7 0 0 0 .88 0l7.36-5.6A.2.2 0 0 0 19.66 6H4.34a.2.2 0 0 0-.14.2ZM4 8.16V18h16V8.16l-6.85 5.22a2.7 2.7 0 0 1-3.3 0L4 8.16Z"
               ></path>
             </svg>
-            tierrarojaiguazu@gmail.com
+            {NEGOCIO.email}
           </a>
           <p class="flex items-start gap-2 text-texto-suave text-sm leading-relaxed">
             <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 shrink-0 mt-0.5">
@@ -142,7 +144,7 @@ const info = [
                 d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"
               ></path>
             </svg>
-            <span>Barrio Los Yerbales 2000 Ha<br />Puerto Iguazú, Misiones</span>
+            <span>{DIRECCION_CORTA.linea1}<br />{DIRECCION_CORTA.linea2}</span>
           </p>
         </div>
       </div>

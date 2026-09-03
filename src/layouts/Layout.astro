@@ -1,7 +1,7 @@
 ---
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
-import { NEGOCIO } from '../lib/negocio';
+import { NEGOCIO, REDES } from '../lib/negocio';
 import '../styles/global.css';
 
 interface Props {
@@ -62,11 +62,7 @@ const schemaNegocio = {
   },
   checkoutTime: '10:00:00',
   petsAllowed: true,
-  sameAs: [
-    'https://www.instagram.com/tierraroja_iguazu',
-    'https://www.facebook.com/tierrarojaiguazu',
-    'https://www.tiktok.com/@tierraroja_iguazu',
-  ],
+  sameAs: REDES,
   amenityFeature: [
     { '@type': 'LocationFeatureSpecification', name: 'Piscinas', value: true },
     { '@type': 'LocationFeatureSpecification', name: 'Parcelas de camping', value: true },

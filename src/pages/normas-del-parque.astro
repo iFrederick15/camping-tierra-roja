@@ -1,6 +1,7 @@
 ---
 export const prerender = true;
 import Layout from '../layouts/Layout.astro';
+import { NEGOCIO, CONTACTO_HREF } from '../lib/negocio';
 
 const secciones = [
   { id: 'admision', label: '1. Admisión y derecho de ingreso' },
@@ -117,8 +118,8 @@ const faqSchema = {
         <div class="mt-6 pt-6 border-t border-borde/60">
           <p class="text-texto-suave text-xs leading-relaxed">
             ¿Tienes alguna consulta sobre el reglamento? Escríbenos a{' '}
-            <a href="mailto:tierrarojaiguazu@gmail.com" class="text-primario font-semibold">
-              tierrarojaiguazu@gmail.com
+            <a href={CONTACTO_HREF.mailto} class="text-primario font-semibold">
+              {NEGOCIO.email}
             </a>
           </p>
         </div>
