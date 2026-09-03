@@ -15,7 +15,7 @@ const {
   description = 'Camping y parque acuático en Puerto Iguazú, Misiones. Piscinas, cabañas, parcelas de camping y espacio motorhome en plena selva misionera.',
   // JPG (no WebP): el scraper de Open Graph de Facebook/WhatsApp no renderiza
   // la previsualización con WebP, y ese es el canal de difusión principal.
-  image = '/images/tierra-roja-drone.jpg',
+  image = '/images/general/tierra-roja-drone.jpg',
 } = Astro.props;
 
 // El dominio de marca vive en un solo lugar (astro.config.mjs → site) para
@@ -35,7 +35,7 @@ const schemaNegocio = {
   description:
     'Camping y parque acuático en Puerto Iguazú, Misiones. Piscinas, cabañas, parcelas de camping y espacio motorhome en plena selva misionera.',
   url: sitioUrl,
-  image: `${sitioUrl}/images/tierra-roja-drone.jpg`,
+  image: `${sitioUrl}/images/general/tierra-roja-drone.jpg`,
   telephone: NEGOCIO.telefonoE164,
   email: NEGOCIO.email,
   priceRange: '$$',
@@ -85,8 +85,8 @@ const schemaNegocio = {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <title>{title}</title>
-    <link rel="icon" type="image/png" href="/images/favicon-tierra-roja.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon-192.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#b01c2e" />
     <link rel="canonical" href={canonicalURL} />

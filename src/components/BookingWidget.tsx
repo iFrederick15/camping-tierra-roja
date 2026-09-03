@@ -122,13 +122,16 @@ function calcularDetalle(
   return detalle;
 }
 
-// TODO: reemplazar por fotos reales por tipo (hoy solo hay una imagen para
-// camping y motorhome, y ninguna para cabaña/quincho — placeholders temporales).
+// Fotos reales del predio por tipo de unidad.
 const IMAGENES_UNIDAD: Record<TipoUnidad, string[]> = {
-  CAMPING: ['/images/camping.jpg'],
-  MOTORHOME: ['/images/motorhome.png'],
-  CABANA: ['/images/cabanha.webp'],
-  QUINCHOS: [],
+  CAMPING: ['/images/camping/camping.jpg'],
+  MOTORHOME: [
+    '/images/motorhome/motorhome.png',
+    '/images/motorhome/parcelas_motorhome.png',
+    '/images/motorhome/parrillas_motorhome.png',
+  ],
+  CABANA: ['/images/cabanhas/cabanha.webp'],
+  QUINCHOS: ['/images/quinchos/quincho.png'],
 };
 
 function Carousel({ imagenes, alt }: { imagenes: string[]; alt: string }) {

@@ -5,6 +5,8 @@ const categorias = [
   { id: 'piscinas', label: 'Piscinas' },
   { id: 'camping', label: 'Camping' },
   { id: 'cabanas', label: 'Cabañas' },
+  { id: 'quinchos', label: 'Quinchos' },
+  { id: 'actividades', label: 'Actividades' },
 ];
 
 // Solo fotos reales del predio, alojadas en /public/images. Antes había
@@ -13,7 +15,7 @@ const categorias = [
 const fotos = [
   {
     categoria: 'naturaleza',
-    imagen: '/images/tierra-roja-drone.webp',
+    imagen: '/images/general/tierra-roja-drone.webp',
     ancho: 1440,
     alto: 812,
     titulo: 'Vista aérea del predio de Tierra Roja en la selva misionera',
@@ -21,7 +23,7 @@ const fotos = [
   },
   {
     categoria: 'camping',
-    imagen: '/images/camping.webp',
+    imagen: '/images/camping/camping.webp',
     ancho: 1600,
     alto: 739,
     titulo: 'Parcelas de camping entre los árboles',
@@ -29,14 +31,14 @@ const fotos = [
   },
   {
     categoria: 'piscinas',
-    imagen: '/images/piscina-diversion.webp',
+    imagen: '/images/piscinas/piscina-diversion.webp',
     ancho: 800,
     alto: 500,
     titulo: 'Piscina principal con cortina de agua y pérgola',
   },
   {
     categoria: 'cabanas',
-    imagen: '/images/cabanha.webp',
+    imagen: '/images/cabanhas/cabanha.webp',
     ancho: 1600,
     alto: 721,
     titulo: 'Cabaña para 8 personas con quincho propio',
@@ -44,14 +46,14 @@ const fotos = [
   },
   {
     categoria: 'camping',
-    imagen: '/images/motorhome.webp',
+    imagen: '/images/motorhome/motorhome.webp',
     ancho: 1600,
     alto: 1200,
     titulo: 'Espacio con conexiones para motorhome',
   },
   {
     categoria: 'piscinas',
-    imagen: '/images/piscina-familiar.webp',
+    imagen: '/images/piscinas/piscina-familiar.webp',
     ancho: 800,
     alto: 500,
     titulo: 'Piscina con toboganes de colores para toda la familia',
@@ -59,10 +61,55 @@ const fotos = [
   },
   {
     categoria: 'piscinas',
-    imagen: '/images/piscina-relax.webp',
+    imagen: '/images/piscinas/piscina-relax.webp',
     ancho: 800,
     alto: 500,
     titulo: 'Piscina de relax con cascada de agua',
+  },
+  {
+    categoria: 'camping',
+    imagen: '/images/motorhome/parcelas_motorhome.png',
+    ancho: 1600,
+    alto: 1200,
+    titulo: 'Parcelas para motorhome con conexiones de agua y luz',
+  },
+  {
+    categoria: 'camping',
+    imagen: '/images/motorhome/parrillas_motorhome.png',
+    ancho: 1600,
+    alto: 1200,
+    titulo: 'Parrillas individuales en el sector de motorhome',
+    tall: true,
+  },
+  {
+    categoria: 'quinchos',
+    imagen: '/images/quinchos/quincho.png',
+    ancho: 1600,
+    alto: 1200,
+    titulo: 'Quincho techado con parrilla para reuniones',
+    tall: true,
+  },
+  {
+    categoria: 'actividades',
+    imagen: '/images/canchas/canchas.png',
+    ancho: 1600,
+    alto: 1200,
+    titulo: 'Canchas deportivas del predio',
+  },
+  {
+    categoria: 'actividades',
+    imagen: '/images/canchas/cancha_futbol.png',
+    ancho: 1600,
+    alto: 1200,
+    titulo: 'Cancha de fútbol al aire libre',
+    tall: true,
+  },
+  {
+    categoria: 'actividades',
+    imagen: '/images/canchas/cancha_voley.png',
+    ancho: 1600,
+    alto: 1200,
+    titulo: 'Cancha de vóley para jugar en grupo',
   },
 ];
 ---
