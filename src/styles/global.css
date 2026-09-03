@@ -22,10 +22,13 @@
   /* ── Reseñas ── */
   --color-estrella: #f5b301;
 
-  /* ── Tipografía ── */
-  --font-titulo: 'Ubuntu', 'DM Sans', sans-serif;
-  --font-cuerpo: 'DM Sans', 'Inter', sans-serif;
-  --font-acento: 'Petemoss', cursive;
+  /* ── Tipografía ──
+     Principal (títulos): Ubuntu — según manual de marca.
+     Secundaria (cuerpo): el manual indica Bahnschrift, fuente propietaria de
+     Microsoft sin licencia web; se usa Barlow como sustituto libre de carácter
+     DIN equivalente. */
+  --font-titulo: 'Ubuntu', 'Barlow', sans-serif;
+  --font-cuerpo: 'Barlow', system-ui, sans-serif;
 
   /* ── Border radius ── */
   --radius-card: 1.5rem;
@@ -39,7 +42,5 @@
 }
 
 /* ── Fuentes ──
-   Ubuntu, DM Sans, Petemoss y Material Symbols se cargan desde un único
-   <link> a Google Fonts en Layout.astro (con display=swap). Antes Ubuntu
-   estaba además declarada acá con @font-face propio: declaración duplicada,
-   ahora eliminada. */
+   Ubuntu, Barlow y Material Symbols se cargan desde un único <link> a Google
+   Fonts en Layout.astro (con display=swap). */
