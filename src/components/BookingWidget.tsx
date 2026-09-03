@@ -126,12 +126,12 @@ function calcularDetalle(
 const IMAGENES_UNIDAD: Record<TipoUnidad, string[]> = {
   CAMPING: ['/images/camping/camping.jpg'],
   MOTORHOME: [
-    '/images/motorhome/motorhome.png',
-    '/images/motorhome/parcelas_motorhome.png',
-    '/images/motorhome/parrillas_motorhome.png',
+    '/images/motorhome/motorhome.webp',
+    '/images/motorhome/parcelas_motorhome.webp',
+    '/images/motorhome/parrillas_motorhome.webp',
   ],
   CABANA: ['/images/cabanhas/cabanha.webp'],
-  QUINCHOS: ['/images/quinchos/quincho.png'],
+  QUINCHOS: ['/images/quinchos/quincho.webp'],
 };
 
 function Carousel({ imagenes, alt }: { imagenes: string[]; alt: string }) {
