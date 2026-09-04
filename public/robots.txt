@@ -1,5 +1,20 @@
+# Camping Tierra Roja — Puerto Iguazú, Misiones, Argentina
+# https://tierraroja.com.ar
+
 User-agent: *
+Allow: /
+
+# El panel administrativo y las rutas de API no son contenido público.
+# (Ya están protegidos por autenticación en src/middleware.ts; esto además
+# evita que los buscadores gasten presupuesto de rastreo en ellos.)
 Disallow: /panel/
 Disallow: /api/
+
+# El parámetro ?unidad= de /reservar solo preselecciona el tipo de
+# alojamiento: no genera contenido distinto. Se bloquea el rastreo de esas
+# variantes para no multiplicar URLs duplicadas.
+Disallow: /reservar?
+Disallow: /pt/reservar?
+Disallow: /en/book?
 
 Sitemap: https://tierraroja.com.ar/sitemap-index.xml

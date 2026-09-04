@@ -1,0 +1,303 @@
+---
+// "Tu base para descubrir Iguazú".
+//
+// Vende la ubicación como parte del producto: nadie viaja a Puerto Iguazú
+// por el camping, viaja por las Cataratas — y el camping es la base. Es
+// también la sección que más peso tiene para el visitante brasileño, que
+// llega por Foz do Iguaçu.
+//
+// Los tiempos de viaje salen de `src/lib/ubicacion.ts`. Los que todavía no
+// están confirmados NO se muestran como número: se muestra el destino con un
+// "consultar", nunca una distancia inventada.
+//
+// Debajo del mapa va el descriptivo completo de Atractivos Iguazú (ACATI):
+// las 34 fichas del folleto oficial, con el mismo número que llevan en el
+// mapa impreso. Tierra Roja es la número 26, así que la guía sirve para dos
+// cosas: le resuelve el itinerario al huésped y muestra que el camping está
+// en la guía oficial de la ciudad. Los datos están en `src/lib/atractivos.ts`.
+import EncabezadoSeccion from './ui/EncabezadoSeccion.astro';
+import BotonReserva from './ui/BotonReserva.astro';
+import { PUNTOS_DE_INTERES } from '../lib/ubicacion';
+import {
+  ATRACTIVOS,
+  CATEGORIAS_ATRACTIVOS,
+  GUIA_OFICIAL,
+  logoDeAtractivo,
+} from '../lib/atractivos';
+import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
+import { EVENTOS } from '../lib/analytics';
+import { interpolar, type Idioma, type Traducciones } from '../i18n';
+
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+}
+
+const { idioma, t } = Astro.props;
+
+const puntos = PUNTOS_DE_INTERES.map((p) => ({ ...p, ...t.ubicacion.puntos[p.clave] }));
+
+const tA = t.ubicacion.atractivos;
+
+// El icono de cada categoría se resuelve acá para no buscarlo dentro del map.
+const iconoCategoria = Object.fromEntries(
+  CATEGORIAS_ATRACTIVOS.map((c) => [c.id, c.icono])
+) as Record<string, string>;
+
+const atractivos = ATRACTIVOS.map((a) => ({
+  ...a,
+  texto: a.descripcion[idioma],
+  icono: iconoCategoria[a.categoria],
+  categoriaNombre: tA.categorias[a.categoria],
+  // Sin logo publicable, la tarjeta muestra el número del mapa.
+  logo: a.sinLogo ? null : logoDeAtractivo(a.numero),
+}));
+
+// Los filtros llevan el total de cada categoría: es un dato del folleto, no
+// un adorno, y le dice al visitante qué tan grande es cada grupo.
+const filtros = [
+  { id: 'todas', nombre: tA.todas, total: atractivos.length },
+  ...CATEGORIAS_ATRACTIVOS.map((c) => ({
+    id: c.id,
+    nombre: tA.categorias[c.id],
+    total: atractivos.filter((a) => a.categoria === c.id).length,
+  })),
+];
+
+// El iframe de Google Maps se carga en el idioma del visitante.
+const hlMapa = idioma === 'pt' ? 'pt-BR' : idioma === 'en' ? 'en' : 'es';
+const mapaEmbed = `https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Acu%C3%A1tico,${NEGOCIO.geo.lat},${NEGOCIO.geo.lng}&hl=${hlMapa}&z=14&output=embed`;
+---
+
+<section id="ubicacion" class="scroll-mt-20 px-6 py-20 lg:py-28">
+  <div class="mx-auto max-w-7xl">
+    <EncabezadoSeccion
+      kicker={t.ubicacion.kicker}
+      titulo={t.ubicacion.titulo}
+      subtitulo={t.ubicacion.subtitulo}
+      class="mb-14"
+    />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
+      <!-- Puntos de interés -->
+      <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-7 lg:content-start">
+        {
+          puntos.map((punto) => (
+            <li class="flex gap-4 rounded-card border border-borde bg-superficie p-5 shadow-suave transition-shadow duration-300 hover:shadow-elevada">
+              <span
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-borde text-primario"
+                aria-hidden="true"
+              >
+                <span class="material-symbols-outlined">{punto.icono}</span>
+              </span>
+              <div class="min-w-0">
+                <p class="font-titulo font-bold leading-tight text-negro">{punto.nombre}</p>
+                <p class="mt-0.5 text-sm leading-snug text-texto-suave">{punto.detalle}</p>
+                <p
+                  class:list={[
+                    'mt-2 inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 font-titulo text-xs font-bold',
+                    punto.confirmado
+                      ? 'bg-primario/8 text-primario'
+                      : 'bg-fondo-alt text-texto-suave',
+                  ]}
+                >
+                  <span class="material-symbols-outlined text-sm" aria-hidden="true">
+                    {punto.confirmado ? 'schedule' : 'chat'}
+                  </span>
+                  {punto.confirmado && punto.minutos !== null
+                    ? interpolar(t.ubicacion.minutos, { minutos: punto.minutos })
+                    : t.ubicacion.sinConfirmar}
+                </p>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+
+      <!-- Mapa + dirección -->
+      <div class="lg:col-span-5">
+        <div class="overflow-hidden rounded-card border border-borde bg-superficie shadow-suave">
+          <div class="aspect-[4/3] w-full bg-fondo-alt">
+            <iframe
+              class="h-full w-full border-0"
+              src={mapaEmbed}
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              title={t.ubicacion.mapaTitulo}></iframe>
+          </div>
+          <div class="p-6">
+            <h3 class="mb-2 font-titulo text-lg font-bold text-negro">
+              {t.ubicacion.direccionTitulo}
+            </h3>
+            <address class="mb-5 not-italic leading-relaxed text-texto-suave">
+              {DIRECCION_COMPLETA}
+            </address>
+            <div class="flex flex-col gap-3">
+              <a
+                href={NEGOCIO.mapaUrl}
+                target="_blank"
+                rel="noopener"
+                data-evento={EVENTOS.MAPA}
+                data-evento-detalle="ubicacion"
+                class="inline-flex min-h-12 items-center justify-center gap-2 rounded-pill border-2 border-primario px-6 font-titulo font-bold text-primario transition-colors hover:bg-primario hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+              >
+                <span class="material-symbols-outlined text-xl" aria-hidden="true">near_me</span>
+                {t.ubicacion.comoLlegar}
+              </a>
+              <BotonReserva idioma={idioma} texto={t.ubicacion.cta} tamano="md" bloque />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Descriptivo de atractivos (guía oficial ACATI) -->
+    <div class="mt-16 border-t border-borde pt-14 lg:mt-20 lg:pt-16">
+      <div class="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div class="max-w-2xl">
+          <h3 class="font-titulo text-2xl font-bold text-negro sm:text-3xl">{tA.titulo}</h3>
+          <p class="mt-2 leading-relaxed text-texto-suave">
+            {interpolar(tA.subtitulo, { total: atractivos.length })}
+          </p>
+        </div>
+        <a
+          href={GUIA_OFICIAL}
+          target="_blank"
+          rel="noopener"
+          class="inline-flex shrink-0 items-center gap-2 font-titulo font-bold text-primario underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+        >
+          <span class="material-symbols-outlined text-xl" aria-hidden="true">map</span>
+          {tA.verGuia}
+        </a>
+      </div>
+
+      <div
+        class="mb-6 flex flex-wrap gap-2"
+        id="atractivos-filtros"
+        role="group"
+        aria-label={tA.filtrarPor}
+      >
+        {
+          filtros.map((filtro, i) => (
+            <button
+              type="button"
+              data-categoria={filtro.id}
+              aria-pressed={i === 0 ? 'true' : 'false'}
+              class:list={[
+                'atractivo-filtro min-h-11 rounded-pill border px-4 font-titulo text-sm font-bold transition-colors',
+                'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40',
+                i === 0
+                  ? 'border-primario bg-primario text-white'
+                  : 'border-borde bg-superficie text-texto-suave hover:border-primario hover:text-primario',
+              ]}
+            >
+              {filtro.nombre}
+              <span class="ml-1.5 font-normal opacity-70">{filtro.total}</span>
+            </button>
+          ))
+        }
+      </div>
+
+      <p id="atractivos-estado" class="sr-only" role="status" aria-live="polite"></p>
+
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          atractivos.map((a) => (
+            <li class="atractivo-item" data-categoria={a.categoria}>
+              <article
+                class:list={[
+                  'flex h-full gap-3.5 rounded-card border bg-superficie p-4',
+                  a.nuestro ? 'border-primario' : 'border-borde',
+                ]}
+              >
+                <span
+                  class:list={[
+                    'flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border p-1.5 font-titulo text-lg font-bold',
+                    a.nuestro ? 'border-primario' : 'border-borde',
+                    a.logo ? 'bg-white' : 'bg-fondo-alt text-texto-suave',
+                  ]}
+                  aria-hidden={a.logo ? undefined : 'true'}
+                >
+                  {a.logo ? (
+                    <img
+                      src={a.logo}
+                      alt=""
+                      width="80"
+                      height="56"
+                      loading="lazy"
+                      decoding="async"
+                      class="h-full w-full object-contain"
+                    />
+                  ) : (
+                    a.numero
+                  )}
+                </span>
+                <div class="min-w-0">
+                  <p class="font-titulo font-bold leading-tight text-negro">
+                    {a.nombre}
+                    {a.nuestro && (
+                      <span class="ml-2 inline-block rounded-pill bg-primario px-2 py-0.5 align-middle text-[11px] font-bold uppercase tracking-wide text-white">
+                        {tA.aqui}
+                      </span>
+                    )}
+                  </p>
+                  <p class="mt-1 text-sm leading-snug text-texto-suave">{a.texto}</p>
+                  <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-texto-suave">
+                    <span class="inline-flex items-center gap-1">
+                      <span class="material-symbols-outlined text-sm" aria-hidden="true">
+                        {a.icono}
+                      </span>
+                      {a.categoriaNombre}
+                    </span>
+                    <span>{interpolar(tA.numeroMapa, { numero: a.numero })}</span>
+                  </p>
+                </div>
+              </article>
+            </li>
+          ))
+        }
+      </ul>
+
+      <p class="mt-6 text-xs leading-relaxed text-texto-suave">{tA.fuente}</p>
+    </div>
+  </div>
+</section>
+
+<script is:inline define:vars={{ textoConteo: tA.conteo }}>
+  // Filtro por categoría del descriptivo. Es mejora progresiva: sin JS se ven
+  // los 34 atractivos, que es el estado por defecto del HTML.
+  (function () {
+    const filtros = Array.from(document.querySelectorAll('.atractivo-filtro'));
+    const items = Array.from(document.querySelectorAll('.atractivo-item'));
+    const estado = document.getElementById('atractivos-estado');
+    if (!filtros.length || !items.length) return;
+
+    filtros.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const categoria = btn.dataset.categoria;
+
+        filtros.forEach((b) => {
+          const activo = b === btn;
+          b.setAttribute('aria-pressed', activo ? 'true' : 'false');
+          b.classList.toggle('border-primario', activo);
+          b.classList.toggle('bg-primario', activo);
+          b.classList.toggle('text-white', activo);
+          b.classList.toggle('border-borde', !activo);
+          b.classList.toggle('bg-superficie', !activo);
+          b.classList.toggle('text-texto-suave', !activo);
+          b.classList.toggle('hover:border-primario', !activo);
+          b.classList.toggle('hover:text-primario', !activo);
+        });
+
+        let visibles = 0;
+        items.forEach((item) => {
+          const mostrar = categoria === 'todas' || item.dataset.categoria === categoria;
+          item.hidden = !mostrar;
+          if (mostrar) visibles++;
+        });
+
+        if (estado) estado.textContent = textoConteo.replace('{n}', String(visibles));
+      });
+    });
+  })();
+</script>

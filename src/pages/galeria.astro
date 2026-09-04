@@ -2,13 +2,14 @@
 export const prerender = true;
 import Layout from '../layouts/Layout.astro';
 import Galeria from '../components/Galeria.astro';
+import { idiomaActual, traducciones } from '../i18n';
+
+const idioma = idiomaActual(Astro);
+const t = traducciones(idioma);
 ---
 
-<Layout
-  title="Tierra Roja - Galería"
-  description="Recorre nuestra galería de fotos: piscinas, camping, cabañas y la selva misionera de Camping Tierra Roja en Puerto Iguazú."
->
+<Layout title={t.galeria.metaTitulo} description={t.galeria.metaDescripcion}>
   <div class="pt-8 md:pt-12">
-    <Galeria />
+    <Galeria idioma={idioma} t={t} />
   </div>
 </Layout>

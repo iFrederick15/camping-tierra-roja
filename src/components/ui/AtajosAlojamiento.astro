@@ -1,0 +1,76 @@
+---
+// Los tres atajos de reserva: 🏕️ Camping · 🚐 Motorhome · 🏡 Cabaña.
+//
+// Es la pieza central del embudo: aparece bajo el CTA principal del hero y
+// se reutiliza en el cierre de la página. Cada atajo entra directo al widget
+// de reserva con la unidad ya seleccionada, así el usuario que ya sabe qué
+// quiere se saltea el primer paso.
+import { RUTAS, type Idioma, type Traducciones } from '../../i18n';
+import { EVENTOS } from '../../lib/analytics';
+
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+  /** `claro` sobre fondos oscuros (hero), `oscuro` sobre fondo claro. */
+  tono?: 'claro' | 'oscuro';
+  class?: string;
+}
+
+const { idioma, t, tono = 'claro', class: clase = '' } = Astro.props;
+
+const atajos = [
+  { unidad: 'CAMPING', icono: 'forest', ...t.alojamientos.camping },
+  { unidad: 'MOTORHOME', icono: 'airport_shuttle', ...t.alojamientos.motorhome },
+  { unidad: 'CABANA', icono: 'cottage', ...t.alojamientos.cabana },
+] as const;
+
+const claro = tono === 'claro';
+---
+
+<ul class:list={['grid grid-cols-3 gap-2 sm:gap-3', clase]}>
+  {
+    atajos.map((atajo) => (
+      <li>
+        <a
+          href={`${RUTAS[idioma].reservar}?unidad=${atajo.unidad}`}
+          data-evento={EVENTOS.ALOJAMIENTO}
+          data-evento-detalle={atajo.unidad}
+          class:list={[
+            'group flex h-full min-h-20 flex-col items-center justify-center gap-1 rounded-2xl',
+            'px-2 py-3 sm:px-3 sm:py-4 text-center transition-colors duration-150',
+            'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2',
+            claro
+              ? 'bg-negro/70 border border-white/25 hover:bg-negro/85 hover:border-white/50 focus-visible:ring-white/50 focus-visible:ring-offset-transparent'
+              : 'bg-superficie border border-borde shadow-suave hover:border-primario/40 hover:shadow-elevada focus-visible:ring-primario/40 focus-visible:ring-offset-fondo',
+          ]}
+        >
+          <span
+            class:list={[
+              'material-symbols-outlined text-2xl sm:text-3xl',
+              claro ? 'text-white' : 'text-primario',
+            ]}
+            aria-hidden="true"
+          >
+            {atajo.icono}
+          </span>
+          <span
+            class:list={[
+              'font-titulo font-bold text-xs sm:text-sm leading-tight',
+              claro ? 'text-white' : 'text-negro',
+            ]}
+          >
+            {atajo.nombre}
+          </span>
+          <span
+            class:list={[
+              'hidden sm:block text-[11px] leading-tight',
+              claro ? 'text-white/70' : 'text-texto-suave',
+            ]}
+          >
+            {atajo.detalle}
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ul>

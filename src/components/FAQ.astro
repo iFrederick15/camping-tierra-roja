@@ -1,0 +1,82 @@
+---
+// Preguntas frecuentes.
+//
+// Resuelve las objeciones que hoy hacen que la gente escriba por WhatsApp
+// antes de reservar (¿mascotas? ¿está cerca de las Cataratas? ¿cómo se
+// paga?) y alimenta el FAQPage de schema.org, que puede aparecer como
+// resultado enriquecido en Google.
+//
+// Se usa <details>/<summary> nativo: acordeón accesible por teclado, con
+// aria-expanded implícito y funcional sin JavaScript.
+import EncabezadoSeccion from './ui/EncabezadoSeccion.astro';
+import BotonWhatsApp from './ui/BotonWhatsApp.astro';
+import { tienePlaceholder, limpiarPlaceholder } from '../lib/faq';
+import { EVENTOS } from '../lib/analytics';
+import type { Idioma, Traducciones } from '../i18n';
+
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+}
+
+const { idioma, t } = Astro.props;
+const items = t.faq.items;
+---
+
+<section id="faq" class="scroll-mt-20 bg-fondo-alt px-6 py-20 lg:py-28">
+  <div class="mx-auto max-w-3xl">
+    <EncabezadoSeccion
+      kicker={t.faq.kicker}
+      titulo={t.faq.titulo}
+      subtitulo={t.faq.subtitulo}
+      class="mb-12"
+    />
+
+    <div class="divide-y divide-borde overflow-hidden rounded-card bg-superficie shadow-suave">
+      {
+        items.map((item) => (
+          <details class="group" data-faq={item.q}>
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5 font-titulo text-base font-bold text-negro transition-colors hover:bg-fondo-alt/60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-primario/40 lg:text-lg [&::-webkit-details-marker]:hidden">
+              {item.q}
+              <span
+                class="material-symbols-outlined shrink-0 text-2xl text-primario transition-transform duration-200 group-open:rotate-180"
+                aria-hidden="true"
+              >
+                expand_more
+              </span>
+            </summary>
+            <div class="px-6 pb-6 pt-1">
+              <p class="leading-relaxed text-texto-suave">{limpiarPlaceholder(item.a)}</p>
+              {tienePlaceholder(item.a) && (
+                /* Aviso visible solo para quien administra el sitio: marca qué
+                   dato falta. Se quita solo cuando se completa el texto en
+                   `src/i18n/<idioma>.ts`. */
+                <p class="mt-3 rounded-lg border border-dashed border-advertencia/60 bg-advertencia/5 px-4 py-2.5 text-xs leading-relaxed text-advertencia">
+                  <strong class="font-bold">Nota para el administrador:</strong>{' '}
+                  {item.a.match(/\[COMPLETAR:[^\]]*\]/)?.[0] ?? ''}
+                </p>
+              )}
+            </div>
+          </details>
+        ))
+      }
+    </div>
+
+    <div class="mt-10 flex flex-col items-center gap-4 text-center">
+      <p class="font-titulo text-lg font-bold text-negro">{t.faq.ctaTexto}</p>
+      <BotonWhatsApp idioma={idioma} texto={t.faq.ctaBoton} contexto={t.faq.titulo} />
+    </div>
+  </div>
+</section>
+
+<script define:vars={{ evento: EVENTOS.FAQ_ABIERTA }}>
+  // Se mide la APERTURA de cada pregunta, no cada clic: saber qué dudas tiene
+  // la gente antes de reservar es la señal útil; que cierre el acordeón, no.
+  document.querySelectorAll('details[data-faq]').forEach((detalle) => {
+    detalle.addEventListener('toggle', () => {
+      if (detalle.open && window.trackEvent) {
+        window.trackEvent(evento, detalle.dataset.faq);
+      }
+    });
+  });
+</script>

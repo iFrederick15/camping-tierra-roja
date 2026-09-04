@@ -1,142 +1,59 @@
 ---
-const categorias = [
-  { id: 'todas', label: 'Todas' },
-  { id: 'General', label: 'General' },
-  { id: 'piscinas', label: 'Piscinas' },
-  { id: 'camping', label: 'Camping' },
-  { id: 'cabanas', label: 'Cabañas' },
-  { id: 'quinchos', label: 'Quinchos' },
-  { id: 'actividades', label: 'Actividades' },
-];
+// Galería de fotos.
+//
+// Mejoras sobre la versión anterior:
+//   • el filtro "General" nunca funcionaba: el botón tenía id 'General' y las
+//     fotos la categoría 'general' — nunca coincidían. Ahora las categorías
+//     salen de una sola fuente (`src/lib/galeria.ts`),
+//   • las fotos de motorhome tienen su propia categoría (antes estaban dentro
+//     de "camping" y no se podían filtrar),
+//   • el `alt` de cada foto está traducido,
+//   • el visor a pantalla completa devuelve el foco al botón que lo abrió y
+//     atrapa el foco mientras está abierto (WCAG 2.4.3 / 2.1.2),
+//   • se anuncia el resultado del filtro a los lectores de pantalla.
+import BotonReserva from './ui/BotonReserva.astro';
+import { CATEGORIAS, FOTOS } from '../lib/galeria';
+import { interpolar, type Idioma, type Traducciones } from '../i18n';
 
-// Solo fotos reales del predio, alojadas en /public/images. Antes había
-// imágenes de stock (Unsplash / googleusercontent) presentadas como fotos
-// propias: contenido engañoso y dependencia de URLs de terceros que se rompen.
-const fotos = [
-  {
-    categoria: 'general',
-    imagen: '/images/general/tierra-roja-drone.webp',
-    ancho: 1440,
-    alto: 812,
-    titulo: 'Vista aérea del predio de Tierra Roja en la selva misionera',
-    tall: true,
-  },
-  {
-    categoria: 'camping',
-    imagen: '/images/camping/camping.webp',
-    ancho: 1600,
-    alto: 739,
-    titulo: 'Parcelas de camping entre los árboles',
-    tall: true,
-  },
-  {
-    categoria: 'piscinas',
-    imagen: '/images/piscinas/piscina-diversion.webp',
-    ancho: 800,
-    alto: 500,
-    titulo: 'Piscina principal con cortina de agua y pérgola',
-  },
-  {
-    categoria: 'cabanas',
-    imagen: '/images/cabanhas/cabanha.webp',
-    ancho: 1600,
-    alto: 721,
-    titulo: 'Cabaña para 8 personas con quincho propio',
-    tall: true,
-  },
-  {
-    categoria: 'camping',
-    imagen: '/images/motorhome/motorhome.webp',
-    ancho: 1600,
-    alto: 1200,
-    titulo: 'Espacio con conexiones para motorhome',
-  },
-  {
-    categoria: 'piscinas',
-    imagen: '/images/piscinas/piscina-familiar.webp',
-    ancho: 800,
-    alto: 500,
-    titulo: 'Piscina con toboganes de colores para toda la familia',
-    tall: true,
-  },
-  {
-    categoria: 'piscinas',
-    imagen: '/images/piscinas/piscina-relax.webp',
-    ancho: 800,
-    alto: 500,
-    titulo: 'Piscina de relax con cascada de agua',
-  },
-  {
-    categoria: 'camping',
-    imagen: '/images/motorhome/parcelas_motorhome.webp',
-    ancho: 1600,
-    alto: 1200,
-    titulo: 'Parcelas para motorhome con conexiones de agua y luz',
-  },
-  {
-    categoria: 'camping',
-    imagen: '/images/motorhome/parrillas_motorhome.webp',
-    ancho: 1600,
-    alto: 1200,
-    titulo: 'Parrillas individuales en el sector de motorhome',
-    tall: true,
-  },
-  {
-    categoria: 'quinchos',
-    imagen: '/images/quinchos/quincho.webp',
-    ancho: 1600,
-    alto: 1200,
-    titulo: 'Quincho techado con parrilla para reuniones',
-    tall: true,
-  },
-  {
-    categoria: 'actividades',
-    imagen: '/images/canchas/canchas.webp',
-    ancho: 1600,
-    alto: 1200,
-    titulo: 'Canchas deportivas del predio',
-  },
-  {
-    categoria: 'actividades',
-    imagen: '/images/canchas/cancha_futbol.webp',
-    ancho: 1600,
-    alto: 1200,
-    titulo: 'Cancha de fútbol al aire libre',
-    tall: true,
-  },
-  {
-    categoria: 'actividades',
-    imagen: '/images/canchas/cancha_voley.webp',
-    ancho: 1600,
-    alto: 1200,
-    titulo: 'Cancha de vóley para jugar en grupo',
-  },
-];
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+}
+
+const { idioma, t } = Astro.props;
+
+const fotos = FOTOS.map((foto, i) => ({ ...foto, titulo: t.galeria.fotos[i] ?? '' }));
+const categorias = CATEGORIAS.map((c) => ({ id: c.id, label: t.galeria.categorias[c.id] }));
 ---
 
-<!-- Header -->
-<section class="max-w-7xl mx-auto px-6 mb-12 text-center md:text-left">
+<section class="mx-auto mb-12 max-w-7xl px-6 text-center md:text-left">
   <h1
-    class="font-titulo font-extrabold text-5xl md:text-7xl text-texto mb-6 tracking-tight leading-tight"
+    class="mb-5 font-titulo text-4xl font-extrabold leading-tight tracking-tight text-texto sm:text-5xl md:text-6xl"
   >
-    Nuestra <span class="text-primario">Galería</span>
+    {t.galeria.titulo}
+    <span class="text-primario">{t.galeria.tituloDestacado}</span>
   </h1>
-  <p class="text-texto-suave text-lg max-w-2xl leading-relaxed mx-auto md:mx-0">
-    Un recorrido visual por las piscinas, el camping, las cabañas y la selva misionera que rodea a
-    Tierra Roja.
+  <p class="mx-auto max-w-2xl text-lg leading-relaxed text-texto-suave md:mx-0">
+    {t.galeria.subtitulo}
   </p>
 </section>
 
 <!-- Filtros -->
-<section class="max-w-7xl mx-auto px-6 mb-10">
-  <div class="flex flex-wrap justify-center md:justify-start gap-3" id="galeria-filtros">
+<section class="mx-auto mb-10 max-w-7xl px-6">
+  <div
+    class="flex flex-wrap justify-center gap-2.5 md:justify-start"
+    id="galeria-filtros"
+    role="group"
+    aria-label={t.galeria.filtrarPor}
+  >
     {
       categorias.map((cat, i) => (
         <button
           type="button"
           data-categoria={cat.id}
           class:list={[
-            'filtro-btn font-titulo font-bold text-sm px-6 py-2.5 rounded-pill transition-all duration-200',
+            'filtro-btn min-h-11 rounded-pill px-5 font-titulo text-sm font-bold transition-all duration-200',
+            'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40',
             i === 0
               ? 'bg-primario text-white shadow-suave'
               : 'bg-fondo-alt text-texto-suave hover:bg-primario/10 hover:text-primario',
@@ -148,117 +65,129 @@ const fotos = [
       ))
     }
   </div>
+  <p id="galeria-estado" class="sr-only" role="status" aria-live="polite"></p>
 </section>
 
-<!-- Grid tipo masonry -->
-<section class="max-w-7xl mx-auto px-6 mb-24">
-  <div class="columns-2 md:columns-3 lg:columns-4 gap-4" id="galeria-grid">
+<!-- Mosaico -->
+<section class="mx-auto mb-20 max-w-7xl px-6">
+  <div class="columns-2 gap-4 md:columns-3 lg:columns-4" id="galeria-grid">
     {
       fotos.map((foto, i) => (
         <button
           type="button"
-          class="galeria-item block w-full mb-4 break-inside-avoid rounded-card overflow-hidden group relative shadow-suave hover:shadow-elevada transition-shadow duration-300"
+          class="galeria-item group relative mb-4 block w-full break-inside-avoid overflow-hidden rounded-card shadow-suave transition-shadow duration-300 hover:shadow-elevada focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/50"
           data-categoria={foto.categoria}
           data-index={i}
-          aria-label={`Ampliar foto: ${foto.titulo}`}
+          aria-label={interpolar(t.galeria.ampliar, { titulo: foto.titulo })}
         >
           <img
             src={foto.imagen}
             alt={foto.titulo}
             width={foto.ancho}
             height={foto.alto}
-            loading="lazy"
+            loading={i < 4 ? 'eager' : 'lazy'}
+            decoding="async"
             class:list={[
-              'w-full object-cover group-hover:scale-105 transition-transform duration-700',
-              foto.tall ? 'aspect-[3/4]' : 'aspect-square',
+              'w-full object-cover transition-transform duration-700 group-hover:scale-105',
+              foto.alta ? 'aspect-[3/4]' : 'aspect-square',
             ]}
           />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-            <span class="text-white font-titulo font-bold text-sm text-left">{foto.titulo}</span>
-          </div>
-          <span class="material-symbols-outlined absolute top-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30 rounded-full p-1.5 text-base">
+          <span class="absolute inset-0 flex items-end bg-gradient-to-t from-black/70 via-black/0 to-transparent p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
+            <span class="text-left font-titulo text-sm font-bold text-white">{foto.titulo}</span>
+          </span>
+          <span
+            class="material-symbols-outlined absolute right-3 top-3 rounded-full bg-black/40 p-1.5 text-base text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
+            aria-hidden="true"
+          >
             zoom_in
           </span>
         </button>
       ))
     }
   </div>
+  <p id="galeria-vacio" hidden class="py-16 text-center text-texto-suave">
+    {t.galeria.sinResultados}
+  </p>
 </section>
 
-<!-- Lightbox -->
+<!-- Visor a pantalla completa -->
 <div
   id="lightbox"
-  class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm hidden items-center justify-center px-4"
+  hidden
+  role="dialog"
+  aria-modal="true"
+  aria-label={t.galeria.tituloDestacado}
+  class="fixed inset-0 z-100 items-center justify-center bg-black/92 px-4 backdrop-blur-sm"
 >
   <button
     id="lightbox-cerrar"
     type="button"
-    aria-label="Cerrar"
-    class="absolute top-5 right-5 md:top-8 md:right-8 text-white/80 hover:text-white transition-colors"
+    aria-label={t.galeria.cerrar}
+    class="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/60 md:right-8 md:top-8"
   >
-    <span class="material-symbols-outlined text-4xl">close</span>
+    <span class="material-symbols-outlined text-4xl" aria-hidden="true">close</span>
   </button>
   <button
     id="lightbox-prev"
     type="button"
-    aria-label="Foto anterior"
-    class="absolute left-3 md:left-8 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+    aria-label={t.galeria.fotoAnterior}
+    class="absolute left-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/60 md:left-8"
   >
-    <span class="material-symbols-outlined text-4xl md:text-5xl">chevron_left</span>
+    <span class="material-symbols-outlined text-4xl md:text-5xl" aria-hidden="true"
+      >chevron_left</span
+    >
   </button>
   <button
     id="lightbox-next"
     type="button"
-    aria-label="Foto siguiente"
-    class="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+    aria-label={t.galeria.fotoSiguiente}
+    class="absolute right-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/60 md:right-8"
   >
-    <span class="material-symbols-outlined text-4xl md:text-5xl">chevron_right</span>
+    <span class="material-symbols-outlined text-4xl md:text-5xl" aria-hidden="true"
+      >chevron_right</span
+    >
   </button>
-  <figure class="max-w-4xl max-h-[85vh] flex flex-col items-center gap-4">
+  <figure class="flex max-h-[85vh] max-w-4xl flex-col items-center gap-4">
     <img
       id="lightbox-img"
       src=""
       alt=""
-      class="max-w-full max-h-[75vh] object-contain rounded-lg shadow-hero"
+      class="max-h-[75vh] max-w-full rounded-lg object-contain shadow-hero"
     />
-    <figcaption id="lightbox-caption" class="text-white/80 font-titulo text-sm text-center">
+    <figcaption class="text-center font-titulo text-sm text-white/85">
+      <span id="lightbox-caption"></span>
+      <span id="lightbox-contador" class="mt-1 block text-xs text-white/60"></span>
     </figcaption>
   </figure>
 </div>
 
 <!-- CTA -->
-<section class="max-w-7xl mx-auto px-6 mb-24">
-  <div class="bg-primario rounded-card px-8 py-14 md:py-16 text-center relative overflow-hidden">
+<section class="mx-auto mb-24 max-w-7xl px-6">
+  <div class="relative overflow-hidden rounded-card bg-primario px-8 py-14 text-center md:py-16">
     <div
-      class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_20%_80%,_white_1px,_transparent_1px)] bg-[length:40px_40px]"
+      class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,_white_1px,_transparent_1px)] bg-[length:40px_40px] opacity-5"
     >
     </div>
     <div class="relative z-10">
-      <h2 class="font-titulo font-bold text-3xl md:text-4xl text-white mb-4">
-        ¿Listo para vivir la experiencia?
+      <h2 class="mb-4 font-titulo text-3xl font-bold text-white md:text-4xl">
+        {t.galeria.ctaTitulo}
       </h2>
-      <p class="text-white/70 mb-8 max-w-xl mx-auto">
-        Reserva tu lugar en Tierra Roja y sé parte de estos momentos.
-      </p>
-      <a
-        href="/reservar"
-        class="inline-flex items-center gap-2 bg-white text-primario px-8 py-3.5 rounded-pill font-titulo font-bold text-sm hover:scale-105 transition-transform duration-200 shadow-lg"
-      >
-        Reservar Ahora
-        <span class="material-symbols-outlined text-lg">arrow_forward</span>
-      </a>
+      <p class="mx-auto mb-8 max-w-xl text-white/85">{t.galeria.ctaTexto}</p>
+      <div class="flex justify-center">
+        <BotonReserva idioma={idioma} texto={t.galeria.ctaBoton} variante="claro" tamano="lg" />
+      </div>
     </div>
   </div>
 </section>
 
-<script is:inline>
+<script is:inline define:vars={{ textoContador: t.galeria.contador }}>
   (function () {
-    const filtros = document.querySelectorAll('#galeria-filtros .filtro-btn');
+    const filtros = Array.from(document.querySelectorAll('#galeria-filtros .filtro-btn'));
     const items = Array.from(document.querySelectorAll('.galeria-item'));
+    const vacio = document.getElementById('galeria-vacio');
+    const estado = document.getElementById('galeria-estado');
 
-    function visibleItems() {
-      return items.filter((el) => !el.classList.contains('hidden'));
-    }
+    const visibles = () => items.filter((el) => !el.hidden);
 
     filtros.forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -275,69 +204,95 @@ const fotos = [
         });
 
         items.forEach((el) => {
-          const coincide = categoria === 'todas' || el.dataset.categoria === categoria;
-          el.classList.toggle('hidden', !coincide);
+          el.hidden = !(categoria === 'todas' || el.dataset.categoria === categoria);
         });
+
+        const cantidad = visibles().length;
+        if (vacio) vacio.hidden = cantidad > 0;
+        // Anuncia el resultado del filtro a lectores de pantalla, que no ven
+        // que el mosaico cambió.
+        if (estado) estado.textContent = `${btn.textContent.trim()}: ${cantidad}`;
       });
     });
 
-    // Lightbox
+    // ── Visor a pantalla completa ──
     const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
-    const lightboxCaption = document.getElementById('lightbox-caption');
-    let currentIndex = 0;
+    const img = document.getElementById('lightbox-img');
+    const caption = document.getElementById('lightbox-caption');
+    const contador = document.getElementById('lightbox-contador');
+    const btnCerrar = document.getElementById('lightbox-cerrar');
+    const btnPrev = document.getElementById('lightbox-prev');
+    const btnNext = document.getElementById('lightbox-next');
+    if (!lightbox || !img || !caption || !contador) return;
 
-    function abrir(index) {
-      const visibles = visibleItems();
-      if (!visibles.length) return;
-      currentIndex = index;
-      const item = visibles[currentIndex];
-      const img = item.querySelector('img');
-      lightboxImg.src = img.src;
-      lightboxImg.alt = img.alt;
-      lightboxCaption.textContent = img.alt;
-      lightbox.classList.remove('hidden');
+    let indice = 0;
+    let disparador = null;
+
+    function pintar() {
+      const lista = visibles();
+      if (!lista.length) return;
+      const foto = lista[indice].querySelector('img');
+      img.src = foto.src;
+      img.alt = foto.alt;
+      caption.textContent = foto.alt;
+      contador.textContent = textoContador
+        .replace('{actual}', String(indice + 1))
+        .replace('{total}', String(lista.length));
+    }
+
+    function abrir(i, origen) {
+      indice = i;
+      disparador = origen;
+      pintar();
+      lightbox.hidden = false;
       lightbox.classList.add('flex');
       document.body.style.overflow = 'hidden';
+      btnCerrar.focus();
     }
 
     function cerrar() {
-      lightbox.classList.add('hidden');
+      lightbox.hidden = true;
       lightbox.classList.remove('flex');
       document.body.style.overflow = '';
+      // Devolver el foco a la miniatura desde la que se abrió el visor.
+      if (disparador) disparador.focus();
     }
 
     function mover(delta) {
-      const visibles = visibleItems();
-      if (!visibles.length) return;
-      currentIndex = (currentIndex + delta + visibles.length) % visibles.length;
-      const img = visibles[currentIndex].querySelector('img');
-      lightboxImg.src = img.src;
-      lightboxImg.alt = img.alt;
-      lightboxCaption.textContent = img.alt;
+      const lista = visibles();
+      if (!lista.length) return;
+      indice = (indice + delta + lista.length) % lista.length;
+      pintar();
     }
 
     items.forEach((item) => {
       item.addEventListener('click', () => {
-        const visibles = visibleItems();
-        const index = visibles.indexOf(item);
-        abrir(index === -1 ? 0 : index);
+        const i = visibles().indexOf(item);
+        abrir(i === -1 ? 0 : i, item);
       });
     });
 
-    document.getElementById('lightbox-cerrar').addEventListener('click', cerrar);
-    document.getElementById('lightbox-prev').addEventListener('click', () => mover(-1));
-    document.getElementById('lightbox-next').addEventListener('click', () => mover(1));
-
+    btnCerrar.addEventListener('click', cerrar);
+    btnPrev.addEventListener('click', () => mover(-1));
+    btnNext.addEventListener('click', () => mover(1));
     lightbox.addEventListener('click', (e) => {
       if (e.target === lightbox) cerrar();
     });
 
     document.addEventListener('keydown', (e) => {
-      if (lightbox.classList.contains('hidden')) return;
+      if (lightbox.hidden) return;
       if (e.key === 'Escape') cerrar();
-      if (e.key === 'ArrowLeft') mover(-1);
-      if (e.key === 'ArrowRight') mover(1);
+      else if (e.key === 'ArrowLeft') mover(-1);
+      else if (e.key === 'ArrowRight') mover(1);
+      else if (e.key === 'Tab') {
+        // Trampa de foco: mientras el visor está abierto, Tab no debe salirse
+        // hacia la página de atrás.
+        const focos = [btnCerrar, btnPrev, btnNext];
+        const actual = focos.indexOf(document.activeElement);
+        e.preventDefault();
+        const siguiente = e.shiftKey ? actual - 1 : actual + 1;
+        focos[(siguiente + focos.length) % focos.length].focus();
+      }
     });
   })();
 </script>

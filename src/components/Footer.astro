@@ -1,159 +1,276 @@
 ---
-import { NEGOCIO, CONTACTO_HREF, DIRECCION_CORTA } from '../lib/negocio';
+// Pie de página.
+//
+// Cierra el embudo: quien llegó hasta acá leyó toda la página y sigue sin
+// reservar, así que el footer abre con un bloque de reserva antes de los
+// enlaces. Además concentra NAP (nombre, dirección, teléfono) — señal de SEO
+// local — redes, idiomas y legales.
+import SelectorIdioma from './SelectorIdioma.astro';
+import BotonReserva from './ui/BotonReserva.astro';
+import { NEGOCIO, CONTACTO_HREF, DIRECCION_CORTA, whatsappHref } from '../lib/negocio';
+import { EVENTOS } from '../lib/analytics';
+import { RUTAS, interpolar, type Idioma, type Traducciones } from '../i18n';
+
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+}
+
+const { idioma, t } = Astro.props;
+const rutas = RUTAS[idioma];
+const inicio = rutas.home === '/' ? '' : rutas.home;
+const ancla = (id: string) => `${inicio}/#${id}`.replace('//#', '/#');
+
+const alojamiento = [
+  { label: t.nav.camping, href: ancla('camping') },
+  { label: t.nav.motorhome, href: ancla('motorhome') },
+  { label: t.nav.cabana, href: ancla('cabanas') },
+  { label: t.nav.parque, href: ancla('piscinas') },
+];
 
 const explorar = [
-  { label: 'Inicio', href: '/' },
-  { label: 'Piscinas', href: '/#piscinas' },
-  { label: 'Camping', href: '/#camping' },
-  { label: 'Cabañas', href: '/#cabanas' },
-  { label: 'Galería', href: '/galeria' },
-  { label: 'Contacto', href: '/contacto' },
+  { label: t.nav.inicio, href: rutas.home },
+  { label: t.nav.ubicacion, href: ancla('ubicacion') },
+  { label: t.nav.faq, href: ancla('faq') },
+  { label: t.nav.galeria, href: rutas.galeria },
+  { label: t.nav.contacto, href: rutas.contacto },
 ];
 
+// Los textos legales solo existen en español (ver src/i18n/config.ts).
 const info = [
-  { label: 'Normas del Parque', href: '/normas-del-parque' },
-  { label: 'Términos y Condiciones', href: '/terminos-y-condiciones' },
-  { label: 'Política de Privacidad', href: '/politica-de-privacidad' },
+  { label: t.footer.normas, href: '/normas-del-parque' },
+  { label: t.footer.terminos, href: '/terminos-y-condiciones' },
+  { label: t.footer.privacidad, href: '/politica-de-privacidad' },
 ];
+
+const redes = [
+  {
+    nombre: 'Instagram',
+    href: NEGOCIO.redes.instagram,
+    path: 'M12 2c-2.716 0-3.056.012-4.123.06-1.064.049-1.791.218-2.427.465a4.9 4.9 0 0 0-1.772 1.153A4.9 4.9 0 0 0 2.525 5.45c-.247.636-.416 1.363-.465 2.427C2.012 8.944 2 9.284 2 12s.012 3.056.06 4.123c.049 1.064.218 1.791.465 2.427a4.9 4.9 0 0 0 1.153 1.772 4.9 4.9 0 0 0 1.772 1.153c.636.247 1.363.416 2.427.465C8.944 21.988 9.284 22 12 22s3.056-.012 4.123-.06c1.064-.049 1.791-.218 2.427-.465a4.9 4.9 0 0 0 1.772-1.153 4.9 4.9 0 0 0 1.153-1.772c.247-.636.416-1.363.465-2.427.048-1.067.06-1.407.06-4.123s-.012-3.056-.06-4.123c-.049-1.064-.218-1.791-.465-2.427a4.9 4.9 0 0 0-1.153-1.772A4.9 4.9 0 0 0 18.55 2.525c-.636-.247-1.363-.416-2.427-.465C15.056 2.012 14.716 2 12 2Zm0 1.802c2.67 0 2.986.01 4.04.059.976.044 1.505.207 1.858.344.467.181.8.399 1.15.748.35.35.567.683.748 1.15.137.353.3.882.344 1.858.048 1.054.059 1.37.059 4.04s-.01 2.986-.059 4.04c-.044.976-.207 1.505-.344 1.858a3.1 3.1 0 0 1-.748 1.15 3.1 3.1 0 0 1-1.15.748c-.353.137-.882.3-1.858.344-1.054.048-1.37.059-4.04.059s-2.986-.01-4.04-.059c-.976-.044-1.505-.207-1.858-.344a3.1 3.1 0 0 1-1.15-.748 3.1 3.1 0 0 1-.748-1.15c-.137-.353-.3-.882-.344-1.858-.048-1.054-.059-1.37-.059-4.04s.01-2.986.059-4.04c.044-.976.207-1.505.344-1.858.181-.467.399-.8.748-1.15.35-.35.683-.567 1.15-.748.353-.137.882-.3 1.858-.344 1.054-.048 1.37-.059 4.04-.059ZM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.25a3.25 3.25 0 1 1 0-6.5 3.25 3.25 0 0 1 0 6.5Zm5.2-8.65a1.17 1.17 0 1 0 0-2.34 1.17 1.17 0 0 0 0 2.34Z',
+  },
+  {
+    nombre: 'Facebook',
+    href: NEGOCIO.redes.facebook,
+    path: 'M22 12.061C22 6.505 17.523 2 12 2S2 6.505 2 12.061c0 5.022 3.657 9.184 8.438 9.939v-7.03H7.898v-2.909h2.54V9.845c0-2.522 1.492-3.915 3.777-3.915 1.094 0 2.238.196 2.238.196v2.475h-1.26c-1.243 0-1.63.775-1.63 1.57v1.89h2.773l-.443 2.909h-2.33V22c4.78-.755 8.437-4.917 8.437-9.939Z',
+  },
+  {
+    nombre: 'TikTok',
+    href: NEGOCIO.redes.tiktok,
+    path: 'M16.6 5.82c-.7-.77-1.09-1.77-1.09-2.82h-3.05v13.63c0 1.5-1.22 2.72-2.72 2.72a2.72 2.72 0 0 1-2.72-2.72 2.72 2.72 0 0 1 2.72-2.72c.28 0 .55.04.8.12V10.9a5.9 5.9 0 0 0-.8-.06 5.77 5.77 0 0 0-5.77 5.77A5.77 5.77 0 0 0 9.74 22.4a5.77 5.77 0 0 0 5.77-5.77V9.02a8.75 8.75 0 0 0 5.12 1.64V7.61a5.68 5.68 0 0 1-3.03-1.79Z',
+  },
+];
+
+const claseEnlace =
+  'inline-flex min-h-9 items-center text-sm text-texto-suave transition-colors hover:text-primario focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 rounded';
 ---
 
-<footer class="bg-white rounded-t-[3rem] mt-8">
-  <div class="max-w-7xl mx-auto px-6 lg:px-8 pt-10 pb-6 lg:pt-16 lg:pb-8">
+<footer class="mt-8 rounded-t-[3rem] bg-superficie">
+  <div class="mx-auto max-w-7xl px-6 pb-8 pt-12 lg:px-8 lg:pt-16">
+    <!-- Último llamado a la acción antes de que el usuario se vaya -->
     <div
-      class="flex flex-col lg:flex-row justify-between items-start gap-8 mb-8 lg:gap-12 lg:mb-12"
+      class="mb-12 flex flex-col items-center gap-5 rounded-card bg-primario px-6 py-8 text-center sm:flex-row sm:justify-between sm:text-left lg:px-10"
     >
-      <!-- Brand -->
-      <div class="max-w-xs">
-        <!-- Logo -->
+      <div>
+        <p class="font-titulo text-2xl font-bold text-white lg:text-3xl">{t.footer.ctaTitulo}</p>
+        <p class="mt-1 text-white/85">{t.footer.ctaTexto}</p>
+      </div>
+      <BotonReserva idioma={idioma} texto={t.footer.cta} variante="claro" tamano="lg" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-3 lg:grid-cols-5">
+      <!-- Marca + redes -->
+      <div class="col-span-2 md:col-span-3 lg:col-span-2">
         <img
           src="/images/marca/Logo-Tierra-Roja.webp"
           alt="Camping Tierra Roja"
           width="626"
           height="356"
-          class="h-28 w-auto mb-4 lg:mb-5"
+          class="mb-4 h-24 w-auto"
+          loading="lazy"
         />
-        <!-- Social icons -->
-        <div class="flex gap-3">
-          <a
-            href={NEGOCIO.redes.instagram}
-            class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
-            aria-label="Instagram"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-              <path
-                d="M12 2c-2.716 0-3.056.012-4.123.06-1.064.049-1.791.218-2.427.465a4.9 4.9 0 0 0-1.772 1.153A4.9 4.9 0 0 0 2.525 5.45c-.247.636-.416 1.363-.465 2.427C2.012 8.944 2 9.284 2 12s.012 3.056.06 4.123c.049 1.064.218 1.791.465 2.427a4.9 4.9 0 0 0 1.153 1.772 4.9 4.9 0 0 0 1.772 1.153c.636.247 1.363.416 2.427.465C8.944 21.988 9.284 22 12 22s3.056-.012 4.123-.06c1.064-.049 1.791-.218 2.427-.465a4.9 4.9 0 0 0 1.772-1.153 4.9 4.9 0 0 0 1.153-1.772c.247-.636.416-1.363.465-2.427.048-1.067.06-1.407.06-4.123s-.012-3.056-.06-4.123c-.049-1.064-.218-1.791-.465-2.427a4.9 4.9 0 0 0-1.153-1.772A4.9 4.9 0 0 0 18.55 2.525c-.636-.247-1.363-.416-2.427-.465C15.056 2.012 14.716 2 12 2Zm0 1.802c2.67 0 2.986.01 4.04.059.976.044 1.505.207 1.858.344.467.181.8.399 1.15.748.35.35.567.683.748 1.15.137.353.3.882.344 1.858.048 1.054.059 1.37.059 4.04s-.01 2.986-.059 4.04c-.044.976-.207 1.505-.344 1.858a3.1 3.1 0 0 1-.748 1.15 3.1 3.1 0 0 1-1.15.748c-.353.137-.882.3-1.858.344-1.054.048-1.37.059-4.04.059s-2.986-.01-4.04-.059c-.976-.044-1.505-.207-1.858-.344a3.1 3.1 0 0 1-1.15-.748 3.1 3.1 0 0 1-.748-1.15c-.137-.353-.3-.882-.344-1.858-.048-1.054-.059-1.37-.059-4.04s.01-2.986.059-4.04c.044-.976.207-1.505.344-1.858.181-.467.399-.8.748-1.15.35-.35.683-.567 1.15-.748.353-.137.882-.3 1.858-.344 1.054-.048 1.37-.059 4.04-.059ZM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.25a3.25 3.25 0 1 1 0-6.5 3.25 3.25 0 0 1 0 6.5Zm5.2-8.65a1.17 1.17 0 1 0 0-2.34 1.17 1.17 0 0 0 0 2.34Z"
-              ></path>
-            </svg>
-          </a>
-          <a
-            href={NEGOCIO.redes.facebook}
-            class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
-            aria-label="Facebook"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-              <path
-                d="M22 12.061C22 6.505 17.523 2 12 2S2 6.505 2 12.061c0 5.022 3.657 9.184 8.438 9.939v-7.03H7.898v-2.909h2.54V9.845c0-2.522 1.492-3.915 3.777-3.915 1.094 0 2.238.196 2.238.196v2.475h-1.26c-1.243 0-1.63.775-1.63 1.57v1.89h2.773l-.443 2.909h-2.33V22c4.78-.755 8.437-4.917 8.437-9.939Z"
-              ></path>
-            </svg>
-          </a>
-          <a
-            href={NEGOCIO.redes.tiktok}
-            class="w-10 h-10 rounded-full bg-superficie flex items-center justify-center hover:bg-primario hover:text-white text-texto-suave transition-colors duration-200 shadow-sm"
-            aria-label="TikTok"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-              <path
-                d="M16.6 5.82c-.7-.77-1.09-1.77-1.09-2.82h-3.05v13.63c0 1.5-1.22 2.72-2.72 2.72a2.72 2.72 0 0 1-2.72-2.72 2.72 2.72 0 0 1 2.72-2.72c.28 0 .55.04.8.12V10.9a5.9 5.9 0 0 0-.8-.06 5.77 5.77 0 0 0-5.77 5.77A5.77 5.77 0 0 0 9.74 22.4a5.77 5.77 0 0 0 5.77-5.77V9.02a8.75 8.75 0 0 0 5.12 1.64V7.61a5.68 5.68 0 0 1-3.03-1.79Z"
-              ></path>
-            </svg>
-          </a>
-        </div>
+        <p class="mb-5 max-w-xs text-sm leading-relaxed text-texto-suave">
+          {t.footer.descripcion}
+        </p>
+        <p class="mb-2 font-titulo text-xs font-bold uppercase tracking-wider text-negro">
+          {t.footer.seguinos}
+        </p>
+        <ul class="flex gap-3">
+          {
+            redes.map((red) => (
+              <li>
+                <a
+                  href={red.href}
+                  target="_blank"
+                  rel="noopener"
+                  aria-label={red.nombre}
+                  class="flex h-11 w-11 items-center justify-center rounded-full bg-fondo-alt text-texto-suave shadow-sm transition-colors duration-200 hover:bg-primario hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                    <path d={red.path} />
+                  </svg>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
       </div>
 
-      <!-- Links grid -->
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-8 md:gap-10 lg:gap-16">
-        <div>
-          <h3 class="font-titulo font-bold text-negro text-sm uppercase tracking-wider mb-5">
-            Explorar
-          </h3>
-          <ul class="space-y-3">
-            {
-              explorar.map((link) => (
-                <li>
-                  <a
-                    href={link.href}
-                    class="text-texto-suave text-sm hover:text-primario transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))
-            }
-          </ul>
-        </div>
+      <!-- Alojamiento -->
+      <nav aria-labelledby="footer-alojamiento">
+        <h2
+          id="footer-alojamiento"
+          class="mb-4 font-titulo text-sm font-bold uppercase tracking-wider text-negro"
+        >
+          {t.footer.alojamiento}
+        </h2>
+        <ul class="space-y-1">
+          {
+            alojamiento.map((l) => (
+              <li>
+                <a href={l.href} class={claseEnlace}>
+                  {l.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
 
-        <div>
-          <h3 class="font-titulo font-bold text-negro text-sm uppercase tracking-wider mb-5">
-            Información
-          </h3>
-          <ul class="space-y-3">
-            {
-              info.map((link) => (
-                <li>
-                  <a
-                    href={link.href}
-                    class="text-texto-suave text-sm hover:text-primario transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))
-            }
-          </ul>
-        </div>
+      <!-- Explorar -->
+      <nav aria-labelledby="footer-explorar">
+        <h2
+          id="footer-explorar"
+          class="mb-4 font-titulo text-sm font-bold uppercase tracking-wider text-negro"
+        >
+          {t.footer.explorar}
+        </h2>
+        <ul class="space-y-1">
+          {
+            explorar.map((l) => (
+              <li>
+                <a href={l.href} class={claseEnlace}>
+                  {l.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
 
-        <div class="col-span-2 md:col-span-1">
-          <h3 class="font-titulo font-bold text-negro text-sm uppercase tracking-wider mb-5">
-            Contacto
-          </h3>
-          <a
-            href={CONTACTO_HREF.whatsapp}
-            class="flex items-center gap-2 mb-3 text-primario font-titulo font-bold text-sm hover:text-acento transition-colors"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 shrink-0">
-              <path
-                d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.45 1.27 4.9L2 22l5.25-1.28A9.94 9.94 0 0 0 12.04 22c5.52 0 10-4.48 10-10s-4.48-10-10-10Zm5.84 14.24c-.25.7-1.24 1.28-2.03 1.45-.54.11-1.25.2-3.64-.78-2.94-1.21-4.85-4.2-5-4.4-.14-.19-1.2-1.6-1.2-3.05s.75-2.16 1.02-2.46c.25-.28.55-.35.73-.35.18 0 .37 0 .53.01.17.01.4-.06.62.48.25.6.83 2.08.9 2.23.07.15.12.33.02.53-.1.2-.15.32-.3.5-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.3.76 1.26 1.64 2.04 1.13 1 2.08 1.32 2.38 1.47.3.15.47.13.65-.08.18-.2.76-.88.96-1.18.2-.3.4-.25.68-.15.28.1 1.76.83 2.06.98.3.15.5.23.57.35.07.13.07.72-.18 1.42Z"
-              ></path>
-            </svg>
-            {NEGOCIO.telefono}
-          </a>
-          <a
-            href={CONTACTO_HREF.mailto}
-            class="flex items-center gap-2 mb-3 text-primario font-titulo font-bold text-sm hover:text-acento transition-colors"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 shrink-0">
-              <path
-                d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6Zm2.2.2 7.36 5.6a.7.7 0 0 0 .88 0l7.36-5.6A.2.2 0 0 0 19.66 6H4.34a.2.2 0 0 0-.14.2ZM4 8.16V18h16V8.16l-6.85 5.22a2.7 2.7 0 0 1-3.3 0L4 8.16Z"
-              ></path>
-            </svg>
-            {NEGOCIO.email}
-          </a>
-          <p class="flex items-start gap-2 text-texto-suave text-sm leading-relaxed">
-            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 shrink-0 mt-0.5">
-              <path
-                d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"
-              ></path>
-            </svg>
-            <span>{DIRECCION_CORTA.linea1}<br />{DIRECCION_CORTA.linea2}</span>
-          </p>
-        </div>
+      <!-- Contacto (NAP) -->
+      <div class="col-span-2 md:col-span-1">
+        <h2 class="mb-4 font-titulo text-sm font-bold uppercase tracking-wider text-negro">
+          {t.footer.contacto}
+        </h2>
+        <ul class="space-y-3">
+          <li>
+            <a
+              href={whatsappHref(idioma)}
+              target="_blank"
+              rel="noopener"
+              data-evento={EVENTOS.WHATSAPP}
+              data-evento-detalle="footer"
+              class="inline-flex min-h-11 items-center gap-2 rounded font-titulo text-sm font-bold text-primario transition-colors hover:text-acento-texto focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                class="h-4 w-4 shrink-0"
+                aria-hidden="true"
+              >
+                <path
+                  d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.45 1.27 4.9L2 22l5.25-1.28A9.94 9.94 0 0 0 12.04 22c5.52 0 10-4.48 10-10s-4.48-10-10-10Zm5.84 14.24c-.25.7-1.24 1.28-2.03 1.45-.54.11-1.25.2-3.64-.78-2.94-1.21-4.85-4.2-5-4.4-.14-.19-1.2-1.6-1.2-3.05s.75-2.16 1.02-2.46c.25-.28.55-.35.73-.35.18 0 .37 0 .53.01.17.01.4-.06.62.48.25.6.83 2.08.9 2.23.07.15.12.33.02.53-.1.2-.15.32-.3.5-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.3.76 1.26 1.64 2.04 1.13 1 2.08 1.32 2.38 1.47.3.15.47.13.65-.08.18-.2.76-.88.96-1.18.2-.3.4-.25.68-.15.28.1 1.76.83 2.06.98.3.15.5.23.57.35.07.13.07.72-.18 1.42Z"
+                ></path>
+              </svg>
+              <span>
+                WhatsApp
+                <span class="block font-cuerpo font-normal text-texto-suave">
+                  {NEGOCIO.telefono}
+                </span>
+              </span>
+            </a>
+          </li>
+          <li>
+            <a
+              href={CONTACTO_HREF.tel}
+              data-evento={EVENTOS.TELEFONO}
+              class={claseEnlace + ' gap-2'}
+            >
+              <span class="material-symbols-outlined text-base" aria-hidden="true">call</span>
+              {NEGOCIO.telefono}
+            </a>
+          </li>
+          <li>
+            <a
+              href={CONTACTO_HREF.mailto}
+              data-evento={EVENTOS.EMAIL}
+              class={claseEnlace + ' min-h-11 gap-2 break-all'}
+            >
+              <span class="material-symbols-outlined text-base shrink-0" aria-hidden="true"
+                >mail</span
+              >
+              {NEGOCIO.email}
+            </a>
+          </li>
+          <li>
+            <a
+              href={NEGOCIO.mapaUrl}
+              target="_blank"
+              rel="noopener"
+              data-evento={EVENTOS.MAPA}
+              data-evento-detalle="footer"
+              class={claseEnlace + ' min-h-11 items-start gap-2 leading-relaxed'}
+            >
+              <span class="material-symbols-outlined mt-0.5 shrink-0 text-base" aria-hidden="true"
+                >location_on</span
+              >
+              <span>{DIRECCION_CORTA.linea1}<br />{DIRECCION_CORTA.linea2}</span>
+            </a>
+          </li>
+        </ul>
       </div>
     </div>
 
-    <!-- Bottom bar -->
-    <div class="border-t border-borde pt-6 lg:pt-8 text-center">
-      <p class="text-texto-suave text-xs">
-        © {new Date().getFullYear()} Tierra Roja – Camping y Parque Acuático. Puerto Iguazú, Misiones.
+    <!-- Idiomas + legales -->
+    <div
+      class="mt-10 flex flex-col gap-6 border-t border-borde pt-8 lg:flex-row lg:justify-between"
+    >
+      <div>
+        <h2 class="mb-2 font-titulo text-xs font-bold uppercase tracking-wider text-negro">
+          {t.footer.idioma}
+        </h2>
+        <SelectorIdioma idioma={idioma} t={t} variante="lista" />
+      </div>
+      <nav aria-labelledby="footer-info" class="lg:text-right">
+        <h2
+          id="footer-info"
+          class="mb-2 font-titulo text-xs font-bold uppercase tracking-wider text-negro"
+        >
+          {t.footer.informacion}
+        </h2>
+        <ul class="flex flex-wrap gap-x-5 gap-y-1 lg:justify-end">
+          {
+            info.map((l) => (
+              <li>
+                <a href={l.href} hreflang="es" class={claseEnlace}>
+                  {l.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        {
+          idioma !== 'es' && (
+            <p class="mt-1 text-xs text-texto-suave/80">{t.footer.legalesSoloEs}</p>
+          )
+        }
+      </nav>
+    </div>
+
+    <div class="mt-8 border-t border-borde pt-6 text-center">
+      <p class="text-xs text-texto-suave">
+        {interpolar(t.footer.derechos, { ano: new Date().getFullYear() })}
       </p>
     </div>
   </div>

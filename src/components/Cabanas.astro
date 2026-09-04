@@ -1,96 +1,95 @@
 ---
-const cabanas = [
-  {
-    nombre: "Cabaña",
-    capacidad: "Capacidad 8 personas",
-    amenities: [
-      { icono: "bed", texto: "3 Habitaciones" },
-      { icono: "ac_unit", texto: "Aire Acondicionado" },
-      { icono: "wifi", texto: "Wi-Fi incluido" },
-      { icono: "live_tv", texto: "TV con DirecTV" },
-      { icono: "pool", texto: "Acceso a las piscinas" },
-      { icono: "outdoor_grill", texto: "Quincho con parrilla" },
-    ],
-    precio: "$150.000/noche",
-    imagen: "/images/cabanhas/cabanha.webp",
-    alt: "Cabaña para 8 personas con quincho y parrilla en Camping Tierra Roja, Puerto Iguazú",
-    link: "/reservar",
-  },
-];
+// Cabaña.
+//
+// Corrección de accesibilidad: los textos secundarios sobre el rojo de marca
+// estaban en `text-white/50` (≈2.4:1 de contraste, muy por debajo del 4.5:1
+// que exige WCAG AA). Pasan a `/80` y `/85`.
+import BotonReserva from './ui/BotonReserva.astro';
+import type { Idioma, Traducciones } from '../i18n';
+
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+}
+
+const { idioma, t } = Astro.props;
+
+const iconos = ['bed', 'ac_unit', 'wifi', 'live_tv', 'pool', 'outdoor_grill'];
+const amenities = t.cabana.amenities.map((texto, i) => ({ texto, icono: iconos[i] }));
 ---
 
-<section id="cabanas" class="py-24 lg:py-32 bg-primario px-6 relative overflow-hidden">
+<section id="cabanas" class="relative scroll-mt-20 overflow-hidden bg-primario px-6 py-20 lg:py-28">
   <!-- Textura de fondo sutil -->
-  <div class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(circle_at_20%_80%,_white_1px,_transparent_1px)] bg-[length:40px_40px]"></div>
+  <div
+    class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,_white_1px,_transparent_1px)] bg-[length:40px_40px] opacity-5"
+  >
+  </div>
 
-  <div class="max-w-7xl mx-auto relative z-10">
-    <!-- Header centrado -->
-    <div class="text-center mb-16">
-      <h2 class="font-titulo font-bold text-4xl lg:text-6xl text-white mb-4">
-        Nuestra Cabaña
-      </h2>
-      <p class="text-white/50 text-lg italic font-titulo">
-        "El confort de un hotel, la esencia de la selva."
+  <div class="relative z-10 mx-auto max-w-7xl">
+    <div class="mb-14 text-center">
+      <p
+        class="mb-3 font-titulo text-xs font-bold uppercase tracking-[0.14em] text-white/85 sm:text-sm"
+      >
+        {t.cabana.kicker}
       </p>
+      <h2 class="mb-4 font-titulo text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
+        {t.cabana.titulo}
+      </h2>
+      <p class="font-titulo text-lg italic text-white/80">{t.cabana.cita}</p>
     </div>
 
-    <!-- Tarjeta horizontal -->
-    <div class="max-w-5xl mx-auto">
-      {cabanas.map((cabana) => (
-        <article class="group grid grid-cols-1 lg:grid-cols-5 rounded-card overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm shadow-hero">
-          <!-- Imagen (3/5) -->
-          <div class="lg:col-span-3 relative overflow-hidden min-h-72 lg:min-h-0">
-            <img
-              src={cabana.imagen}
-              alt={cabana.alt}
-              width="1600"
-              height="721"
-              class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              loading="lazy"
-            />
-            <!-- Badge precio
-            <div class="absolute bottom-5 left-5 bg-white/15 backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-pill">
-              <span class="text-white font-titulo font-bold text-sm">{cabana.precio}</span>
-            </div>
-            -->
-          </div>
+    <div class="mx-auto max-w-5xl">
+      <article
+        class="group grid grid-cols-1 overflow-hidden rounded-card bg-fondo-oscuro shadow-hero lg:grid-cols-5"
+      >
+        <div class="relative min-h-72 overflow-hidden lg:col-span-3 lg:min-h-0">
+          <img
+            src="/images/cabanhas/cabanha.webp"
+            alt="Cabaña para 8 personas con quincho y parrilla propios en Camping Tierra Roja, Puerto Iguazú"
+            width="1600"
+            height="721"
+            class="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
 
-          <!-- Panel de info (2/5) -->
-          <div class="lg:col-span-2 p-8 lg:p-10 flex flex-col justify-between gap-8">
-            <div>
-              <!-- Nombre y capacidad -->
-              <h3 class="font-titulo font-bold text-3xl lg:text-4xl text-white italic mb-1">
-                {cabana.nombre}
-              </h3>
-              <p class="text-white/50 text-sm font-titulo mb-8">
-                {cabana.capacidad}
-              </p>
+        <div class="flex flex-col justify-between gap-8 p-8 lg:col-span-2 lg:p-10">
+          <div>
+            <h3 class="mb-1 font-titulo text-3xl font-bold italic text-white lg:text-4xl">
+              {t.cabana.nombre}
+            </h3>
+            <p class="mb-7 font-titulo text-sm text-white/80">{t.cabana.capacidad}</p>
 
-              <!-- Separador -->
-              <div class="w-12 h-px bg-white/20 mb-8"></div>
+            <div class="mb-7 h-px w-12 bg-white/30"></div>
 
-              <!-- Amenities -->
-              <ul class="space-y-4">
-                {cabana.amenities.map((a) => (
-                  <li class="flex items-center gap-3 text-white/75 text-sm">
-                    <span class="material-symbols-outlined text-base text-white/30">{a.icono}</span>
+            <ul class="space-y-3.5">
+              {
+                amenities.map((a) => (
+                  <li class="flex items-center gap-3 text-sm text-white/85">
+                    <span
+                      class="material-symbols-outlined text-base text-white/60"
+                      aria-hidden="true"
+                    >
+                      {a.icono}
+                    </span>
                     {a.texto}
                   </li>
-                ))}
-              </ul>
-            </div>
-
-            <!-- CTA -->
-            <a
-              href={cabana.link}
-              class="inline-flex items-center justify-center gap-2 bg-white text-primario px-7 py-3.5 rounded-pill font-titulo font-bold text-sm hover:scale-105 transition-transform duration-200 shadow-lg"
-            >
-              Reservar Ahora
-              <span class="material-symbols-outlined text-lg">arrow_forward</span>
-            </a>
+                ))
+              }
+            </ul>
           </div>
-        </article>
-      ))}
+
+          <BotonReserva
+            idioma={idioma}
+            texto={t.cabana.cta}
+            unidad="CABANA"
+            variante="claro"
+            tamano="md"
+            bloque
+          />
+        </div>
+      </article>
     </div>
   </div>
 </section>

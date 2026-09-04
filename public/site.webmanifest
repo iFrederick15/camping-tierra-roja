@@ -1,15 +1,27 @@
 {
-  "name": "Tierra Roja - Camping y Parque Acuático",
+  "name": "Camping Tierra Roja - Camping y Parque Acuático",
   "short_name": "Tierra Roja",
-  "description": "Camping y parque acuático en Puerto Iguazú, Misiones.",
+  "description": "Camping, motorhome y cabaña con parque acuático en Puerto Iguazú, Misiones, a 20 minutos de las Cataratas del Iguazú.",
   "lang": "es-AR",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#fdf8f6",
   "theme_color": "#b01c2e",
+  "categories": ["travel", "lifestyle"],
   "icons": [
-    { "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/favicon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/favicon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Reservar",
+      "short_name": "Reservar",
+      "description": "Consultar disponibilidad y reservar",
+      "url": "/reservar",
+      "icons": [{ "src": "/favicon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

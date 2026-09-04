@@ -1,0 +1,160 @@
+---
+// Selector de idioma (🇦🇷 · 🇧🇷 · 🇺🇸).
+//
+// No usa JavaScript para navegar: son enlaces reales al equivalente de la
+// página actual en el otro idioma (ver `rutaEnIdioma`). Así funciona sin JS,
+// Google puede rastrear las tres versiones y el usuario puede abrirlas en
+// una pestaña nueva.
+//
+// Cuando la página no está traducida (legales, 404) el enlace lleva al inicio
+// del idioma destino en vez de a un 404.
+import { IDIOMAS, rutaEnIdioma, type Idioma, type Traducciones } from '../i18n';
+import { EVENTOS } from '../lib/analytics';
+
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+  /** `menu` = desplegable compacto (navbar) · `lista` = fila de enlaces (footer, menú mobile) */
+  variante?: 'menu' | 'lista';
+  tono?: 'oscuro' | 'claro';
+  class?: string;
+}
+
+const { idioma, t, variante = 'menu', tono = 'oscuro', class: clase = '' } = Astro.props;
+const ruta = Astro.url.pathname;
+const actual = IDIOMAS.find((i) => i.codigo === idioma) ?? IDIOMAS[0];
+const claro = tono === 'claro';
+---
+
+{
+  variante === 'lista' ? (
+    <ul class:list={['flex flex-wrap gap-2', clase]}>
+      {IDIOMAS.map((i) => {
+        const esActual = i.codigo === idioma;
+        return (
+          <li>
+            <a
+              href={rutaEnIdioma(ruta, i.codigo)}
+              hreflang={i.hreflang}
+              lang={i.hreflang}
+              data-evento={EVENTOS.IDIOMA}
+              data-evento-detalle={i.codigo}
+              aria-current={esActual ? 'true' : undefined}
+              class:list={[
+                'inline-flex min-h-11 items-center gap-2 rounded-pill px-4 text-sm font-titulo font-medium',
+                'transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40',
+                esActual
+                  ? claro
+                    ? 'bg-white/20 text-white'
+                    : 'bg-primario/10 text-primario font-bold'
+                  : claro
+                    ? 'text-white/70 hover:bg-white/10 hover:text-white'
+                    : 'text-texto-suave hover:bg-fondo-alt hover:text-primario',
+              ]}
+            >
+              <span aria-hidden="true">{i.bandera}</span>
+              {i.nombre}
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  ) : (
+    <div class:list={['relative', clase]} data-selector-idioma>
+      <button
+        type="button"
+        data-selector-boton
+        aria-expanded="false"
+        aria-haspopup="true"
+        aria-label={`${t.nav.elegirIdioma}. ${t.nav.idiomaActual}: ${actual.nombre}`}
+        class="inline-flex min-h-11 items-center gap-1.5 rounded-pill px-3 text-sm font-titulo font-medium text-texto-suave transition-colors hover:bg-fondo-alt hover:text-primario focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+      >
+        <span class="text-base leading-none" aria-hidden="true">
+          {actual.bandera}
+        </span>
+        <span class="uppercase tracking-wide">{actual.codigo}</span>
+        <span class="material-symbols-outlined text-lg" aria-hidden="true">
+          expand_more
+        </span>
+      </button>
+
+      <ul
+        data-selector-menu
+        hidden
+        class="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-borde bg-superficie py-1 shadow-elevada"
+      >
+        {IDIOMAS.map((i) => {
+          const esActual = i.codigo === idioma;
+          return (
+            <li>
+              <a
+                href={rutaEnIdioma(ruta, i.codigo)}
+                hreflang={i.hreflang}
+                lang={i.hreflang}
+                data-evento={EVENTOS.IDIOMA}
+                data-evento-detalle={i.codigo}
+                aria-current={esActual ? 'true' : undefined}
+                class:list={[
+                  'flex min-h-11 items-center gap-3 px-4 text-sm font-titulo transition-colors',
+                  esActual
+                    ? 'bg-primario/8 font-bold text-primario'
+                    : 'text-texto-suave hover:bg-fondo-alt hover:text-primario',
+                ]}
+              >
+                <span class="text-base" aria-hidden="true">
+                  {i.bandera}
+                </span>
+                {i.nombre}
+                {esActual && (
+                  <span class="material-symbols-outlined ml-auto text-base" aria-hidden="true">
+                    check
+                  </span>
+                )}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  )
+}
+
+<script>
+  // Desplegable accesible: se abre con clic o Enter, se cierra con Escape,
+  // con un clic afuera o al perder el foco. Sin JS el botón no hace nada,
+  // pero el selector del footer (variante "lista") siempre está disponible.
+  document.querySelectorAll<HTMLElement>('[data-selector-idioma]').forEach((raiz) => {
+    const boton = raiz.querySelector<HTMLButtonElement>('[data-selector-boton]');
+    const menu = raiz.querySelector<HTMLElement>('[data-selector-menu]');
+    if (!boton || !menu) return;
+
+    const cerrar = () => {
+      menu.hidden = true;
+      boton.setAttribute('aria-expanded', 'false');
+    };
+    const abrir = () => {
+      menu.hidden = false;
+      boton.setAttribute('aria-expanded', 'true');
+    };
+
+    boton.addEventListener('click', () => (menu.hidden ? abrir() : cerrar()));
+
+    document.addEventListener('click', (e) => {
+      if (!raiz.contains(e.target as Node)) cerrar();
+    });
+
+    raiz.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !menu.hidden) {
+        cerrar();
+        boton.focus();
+      }
+    });
+
+    // Al salir con Tab del último enlace, cerrar el menú.
+    raiz.addEventListener('focusout', () => {
+      requestAnimationFrame(() => {
+        if (!raiz.contains(document.activeElement)) cerrar();
+      });
+    });
+  });
+</script>

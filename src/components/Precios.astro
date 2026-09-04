@@ -1,0 +1,149 @@
+---
+// Sección "Precios desde".
+//
+// El precio es la primera objeción de cualquier visitante y hoy no aparecía
+// en ningún lado de la landing: había que entrar al widget de reserva para
+// verlo. Esta sección lo adelanta.
+//
+// IMPORTANTE: los valores salen de `src/lib/precios.ts` y son `null` hasta
+// que el administrador los cargue. Mientras tanto NO se muestra ningún
+// número: se muestra "Consultar precio" con enlaces a WhatsApp y al buscador
+// de disponibilidad, que sí devuelve el precio real desde la base de datos.
+import EncabezadoSeccion from './ui/EncabezadoSeccion.astro';
+import BotonReserva from './ui/BotonReserva.astro';
+import BotonWhatsApp from './ui/BotonWhatsApp.astro';
+import { PRECIOS, HAY_PRECIOS, VIGENCIA_PRECIOS, formatearPrecio } from '../lib/precios';
+import { interpolar, type Idioma, type Traducciones } from '../i18n';
+
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+}
+
+const { idioma, t } = Astro.props;
+
+const tarjetas = [
+  {
+    ...PRECIOS.CAMPING,
+    nombre: t.alojamientos.camping.nombre,
+    detalle: t.alojamientos.camping.detalle,
+    nota: t.precios.notaCamping,
+    alt: 'Parcelas de camping entre árboles en Tierra Roja, Puerto Iguazú',
+  },
+  {
+    ...PRECIOS.MOTORHOME,
+    nombre: t.alojamientos.motorhome.nombre,
+    detalle: t.alojamientos.motorhome.detalle,
+    nota: t.precios.notaMotorhome,
+    alt: 'Parcela con conexiones para motorhome en Tierra Roja, Puerto Iguazú',
+  },
+  {
+    ...PRECIOS.CABANA,
+    nombre: t.alojamientos.cabana.nombre,
+    detalle: t.alojamientos.cabana.detalle,
+    nota: t.precios.notaCabana,
+    alt: 'Cabaña para 8 personas en Tierra Roja, Puerto Iguazú',
+  },
+];
+---
+
+<section id="precios" class="scroll-mt-20 bg-fondo-alt px-6 py-20 lg:py-28">
+  <div class="mx-auto max-w-7xl">
+    <EncabezadoSeccion
+      kicker={t.precios.kicker}
+      titulo={t.precios.titulo}
+      subtitulo={t.precios.subtitulo}
+      class="mb-12"
+    />
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3 lg:gap-8">
+      {
+        tarjetas.map((tarjeta) => (
+          <article class="flex flex-col overflow-hidden rounded-card bg-superficie shadow-suave transition-shadow duration-300 hover:shadow-elevada">
+            <div class="relative aspect-[16/9] overflow-hidden">
+              <img
+                src={tarjeta.imagen}
+                alt={tarjeta.alt}
+                width="800"
+                height="450"
+                class="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+              <span
+                class="absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-superficie text-primario"
+                aria-hidden="true"
+              >
+                <span class="material-symbols-outlined">{tarjeta.icono}</span>
+              </span>
+            </div>
+
+            <div class="flex flex-1 flex-col p-6 lg:p-7">
+              <h3 class="font-titulo text-2xl font-bold text-negro">{tarjeta.nombre}</h3>
+              <p class="mb-5 text-sm text-texto-suave">{tarjeta.detalle}</p>
+
+              {tarjeta.desde !== null ? (
+                <p class="mb-1">
+                  <span class="block font-titulo text-xs font-bold uppercase tracking-wider text-texto-suave">
+                    {t.precios.desde}
+                  </span>
+                  <span class="font-titulo text-3xl font-bold text-primario lg:text-4xl">
+                    {formatearPrecio(tarjeta.desde, idioma)}
+                  </span>
+                  <span class="text-sm text-texto-suave"> {t.precios.porNoche}</span>
+                </p>
+              ) : (
+                <p class="mb-1">
+                  <span class="font-titulo text-xl font-bold text-primario lg:text-2xl">
+                    {t.precios.consultar}
+                  </span>
+                  <span class="mt-1 block text-sm leading-snug text-texto-suave">
+                    {t.precios.consultarDetalle}
+                  </span>
+                </p>
+              )}
+
+              <p class="mb-6 mt-1 flex-1 text-xs text-texto-suave">{tarjeta.nota}</p>
+
+              <BotonReserva
+                idioma={idioma}
+                texto={t.precios.verDisponibilidad}
+                unidad={tarjeta.unidad}
+                variante="contorno"
+                tamano="md"
+                bloque
+              />
+            </div>
+          </article>
+        ))
+      }
+    </div>
+
+    <div class="mt-10 flex flex-col items-center gap-4 text-center">
+      <p class="flex items-center gap-2 text-sm text-texto-suave">
+        <span class="material-symbols-outlined text-lg text-primario" aria-hidden="true">pool</span>
+        {t.precios.incluye}
+      </p>
+
+      {
+        !HAY_PRECIOS && (
+          <p class="max-w-2xl text-sm leading-relaxed text-texto-suave">{t.precios.sinPrecios}</p>
+        )
+      }
+      {
+        HAY_PRECIOS && VIGENCIA_PRECIOS && (
+          <p class="text-xs text-texto-suave/80">
+            {interpolar(t.precios.vigencia, { vigencia: VIGENCIA_PRECIOS })}
+          </p>
+        )
+      }
+
+      <BotonWhatsApp
+        idioma={idioma}
+        texto={t.faq.ctaBoton}
+        contexto={t.precios.kicker}
+        variante="contorno"
+      />
+    </div>
+  </div>
+</section>

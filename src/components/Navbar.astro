@@ -1,147 +1,214 @@
 ---
-const currentPath = Astro.url.pathname;
+// Barra de navegación.
+//
+// Cambios sobre la versión anterior:
+//   • sticky: el CTA de reserva deja de perderse al hacer scroll,
+//   • cubre las tres secciones de alojamiento (camping, motorhome, cabaña),
+//     que antes no tenían enlace propio,
+//   • selector de idioma,
+//   • el menú mobile ocupa toda la pantalla y termina con el CTA de reserva,
+//     que es la acción que queremos que el usuario tome.
+import SelectorIdioma from './SelectorIdioma.astro';
+import BotonReserva from './ui/BotonReserva.astro';
+import { RUTAS, normalizarRuta, type Idioma, type Traducciones } from '../i18n';
 
-const navLinks = [
-  { label: 'Inicio', href: '/' },
-  { label: 'Piscinas', href: '/#piscinas' },
-  { label: 'Camping', href: '/#camping' },
-  { label: 'Cabañas', href: '/#cabanas' },
-  { label: 'Galería', href: '/galeria' },
-  { label: 'Contacto', href: '/contacto' },
-].map((link) => ({
-  ...link,
-  active: link.href === currentPath,
-}));
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+}
+
+const { idioma, t } = Astro.props;
+const rutas = RUTAS[idioma];
+const rutaActual = normalizarRuta(Astro.url.pathname);
+const inicio = normalizarRuta(rutas.home) || '/';
+
+// Los anclajes apuntan al inicio del idioma correspondiente: desde /pt/contato
+// el enlace "Camping" tiene que llevar a /pt#camping, no a #camping.
+const ancla = (id: string) => `${inicio === '/' ? '' : inicio}/#${id}`.replace('//#', '/#');
+
+const enlaces = [
+  { label: t.nav.inicio, href: rutas.home },
+  { label: t.nav.parque, href: ancla('piscinas') },
+  { label: t.nav.camping, href: ancla('camping') },
+  { label: t.nav.cabana, href: ancla('cabanas') },
+  { label: t.nav.galeria, href: rutas.galeria },
+  { label: t.nav.contacto, href: rutas.contacto },
+];
+
+// Sólo los enlaces a otra página se marcan como "página actual". Los
+// anclajes de la landing (`/#camping`) apuntan al home: darles `aria-current`
+// dejaba cinco enlaces marcados a la vez en la portada.
+const esActivo = (href: string) => !href.includes('#') && normalizarRuta(href) === rutaActual;
 ---
 
-<nav id="navbar" class="top-0 w-full z-50 bg-white">
-  <div class="flex justify-between items-center w-full px-6 lg:px-8 py-4 max-w-7xl mx-auto">
+<header
+  id="navbar"
+  class="sticky top-0 z-50 w-full border-b border-transparent bg-superficie transition-shadow duration-300"
+>
+  <div
+    class="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8"
+  >
     <!-- Logo -->
-    <a href="/" class="shrink-0">
+    <a
+      href={rutas.home}
+      class="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+      aria-label={`Camping Tierra Roja — ${t.nav.inicio}`}
+    >
       <img
         src="/images/marca/Logo-Tierra-Roja.webp"
         alt="Camping Tierra Roja"
         width="626"
         height="356"
-        class="h-14 w-auto sm:h-16 lg:h-20"
+        class="h-12 w-auto sm:h-14 xl:h-16"
       />
     </a>
 
-    <!-- Desktop Nav -->
-    <div class="hidden lg:flex gap-8 items-center">
+    <!-- Navegación desktop. Aparece a partir de `xl` porque con ocho enlaces
+         más el selector de idioma y el CTA no entra cómoda en 1024px; entre
+         1024 y 1280 se usa el menú desplegable, que es completo. -->
+    <nav class="hidden xl:flex xl:items-center xl:gap-6" aria-label={t.nav.navPrincipal}>
       {
-        navLinks.map((link) => (
+        enlaces.map((enlace) => (
           <a
-            href={link.href}
+            href={enlace.href}
+            aria-current={esActivo(enlace.href) ? 'page' : undefined}
             class:list={[
-              'font-titulo font-medium text-sm tracking-wide transition-colors duration-200',
-              link.active
-                ? 'text-primario border-b-2 border-primario pb-0.5'
+              'relative flex min-h-9 items-center whitespace-nowrap font-titulo text-sm font-medium tracking-wide transition-colors duration-200',
+              'after:absolute after:bottom-1 after:left-0 after:h-0.5 after:w-full after:origin-left',
+              'after:scale-x-0 after:bg-primario after:transition-transform after:duration-200 hover:after:scale-x-100',
+              'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 rounded',
+              esActivo(enlace.href)
+                ? 'text-primario after:scale-x-100'
                 : 'text-texto-suave hover:text-primario',
             ]}
           >
-            {link.label}
+            {enlace.label}
           </a>
         ))
       }
-    </div>
+    </nav>
 
-    <div class="flex items-center gap-2">
-      <!-- CTA -->
-      <a
-        href="/reservar"
-        class="inline-flex items-center justify-center min-h-11 bg-gradient-to-r from-primario to-acento text-white px-5 text-xs sm:px-7 sm:py-2.5 sm:text-sm rounded-pill font-titulo font-bold tracking-wide hover:shadow-lg hover:scale-105 transition-all duration-200 active:scale-95"
-      >
-        Reservar
-      </a>
+    <div class="flex items-center gap-1 sm:gap-2">
+      <div class="hidden sm:block">
+        <SelectorIdioma idioma={idioma} t={t} />
+      </div>
 
-      <!-- Mobile menu toggle: por debajo de "lg" el único acceso a Galería y
-      Contacto era este botón — antes no existía y esas páginas quedaban
-      inalcanzables desde el celular. -->
+      <BotonReserva idioma={idioma} texto={t.nav.reservar} tamano="sm" icono={false} />
+
+      <!-- Menú mobile / tablet -->
       <button
         id="navbar-toggle"
         type="button"
-        class="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-full text-texto hover:bg-fondo-alt transition-colors"
+        class="inline-flex h-11 w-11 items-center justify-center rounded-full text-texto transition-colors hover:bg-fondo-alt focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 xl:hidden"
         aria-expanded="false"
         aria-controls="navbar-mobile-menu"
-        aria-label="Abrir menú"
+        aria-label={t.nav.menuAbrir}
+        data-abrir={t.nav.menuAbrir}
+        data-cerrar={t.nav.menuCerrar}
       >
         <span class="material-symbols-outlined text-3xl" aria-hidden="true">menu</span>
       </button>
     </div>
   </div>
 
-  <!-- Mobile menu panel -->
+  <!-- Panel del menú mobile -->
   <div
     id="navbar-mobile-menu"
-    class="hidden lg:hidden flex-col gap-1 px-6 pb-6 pt-2 bg-white border-t border-borde/60"
+    hidden
+    class="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-borde/60 bg-superficie px-4 pb-8 pt-3 sm:px-6 xl:hidden"
   >
-    {
-      navLinks.map((link) => (
-        <a
-          href={link.href}
-          class:list={[
-            'font-titulo font-medium text-base tracking-wide py-3 px-3 rounded-lg transition-colors duration-200',
-            link.active
-              ? 'text-primario bg-primario/5'
-              : 'text-texto-suave hover:text-primario hover:bg-fondo-alt',
-          ]}
-        >
-          {link.label}
-        </a>
-      ))
-    }
+    <nav aria-label={t.nav.navPrincipal}>
+      <ul class="flex flex-col gap-0.5">
+        {
+          enlaces.map((enlace) => (
+            <li>
+              <a
+                href={enlace.href}
+                aria-current={esActivo(enlace.href) ? 'page' : undefined}
+                class:list={[
+                  'flex min-h-12 items-center rounded-xl px-3 font-titulo text-base font-medium transition-colors',
+                  esActivo(enlace.href)
+                    ? 'bg-primario/8 text-primario'
+                    : 'text-texto-suave hover:bg-fondo-alt hover:text-primario',
+                ]}
+              >
+                {enlace.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="mt-5 border-t border-borde/60 pt-5">
+      <p class="mb-2 font-titulo text-xs font-bold uppercase tracking-wider text-texto-suave">
+        {t.footer.idioma}
+      </p>
+      <SelectorIdioma idioma={idioma} t={t} variante="lista" />
+    </div>
+
+    <BotonReserva idioma={idioma} texto={t.hero.ctaPrincipal} tamano="lg" bloque class="mt-5" />
   </div>
+</header>
 
-  <script is:inline>
-    // Navbar scroll effect
-    const navbar = document.getElementById('navbar');
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 60) {
-        navbar.classList.add('bg-superficie/90', 'backdrop-blur-xl', 'shadow-sm');
-      } else {
-        navbar.classList.remove('bg-superficie/90', 'backdrop-blur-xl', 'shadow-sm');
-      }
-    });
+<script>
+  // ── Sombra al hacer scroll ──
+  // Con IntersectionObserver sobre un centinela en el tope de la página, en
+  // vez de un listener de `scroll` que corre en cada frame.
+  const navbar = document.getElementById('navbar');
+  if (navbar) {
+    const centinela = document.createElement('div');
+    centinela.setAttribute('aria-hidden', 'true');
+    centinela.style.cssText = 'position:absolute;top:0;height:60px;width:1px;';
+    document.body.prepend(centinela);
+    new IntersectionObserver(
+      ([e]) => {
+        navbar.classList.toggle('shadow-sm', !e.isIntersecting);
+        navbar.classList.toggle('border-borde/60', !e.isIntersecting);
+        navbar.classList.toggle('border-transparent', e.isIntersecting);
+      },
+      { threshold: 0 }
+    ).observe(centinela);
+  }
 
-    // Menú mobile
-    const toggle = document.getElementById('navbar-toggle');
-    const menu = document.getElementById('navbar-mobile-menu');
-    const toggleIcon = toggle.querySelector('.material-symbols-outlined');
+  // ── Menú mobile ──
+  const toggle = document.getElementById('navbar-toggle');
+  const menu = document.getElementById('navbar-mobile-menu');
+  const icono = toggle?.querySelector('.material-symbols-outlined');
 
-    function cerrarMenu() {
-      menu.classList.add('hidden');
-      menu.classList.remove('flex');
+  if (toggle && menu && icono) {
+    const cerrar = () => {
+      menu.hidden = true;
       toggle.setAttribute('aria-expanded', 'false');
-      toggle.setAttribute('aria-label', 'Abrir menú');
-      toggleIcon.textContent = 'menu';
+      toggle.setAttribute('aria-label', toggle.dataset.abrir ?? '');
+      icono.textContent = 'menu';
       document.body.style.overflow = '';
-    }
+    };
 
-    function abrirMenu() {
-      menu.classList.remove('hidden');
-      menu.classList.add('flex');
+    const abrir = () => {
+      menu.hidden = false;
       toggle.setAttribute('aria-expanded', 'true');
-      toggle.setAttribute('aria-label', 'Cerrar menú');
-      toggleIcon.textContent = 'close';
+      toggle.setAttribute('aria-label', toggle.dataset.cerrar ?? '');
+      icono.textContent = 'close';
       document.body.style.overflow = 'hidden';
-    }
+    };
 
-    toggle.addEventListener('click', () => {
-      const abierto = toggle.getAttribute('aria-expanded') === 'true';
-      if (abierto) cerrarMenu();
-      else abrirMenu();
-    });
+    toggle.addEventListener('click', () =>
+      toggle.getAttribute('aria-expanded') === 'true' ? cerrar() : abrir()
+    );
 
-    menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', cerrarMenu));
+    menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', cerrar));
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') cerrarMenu();
+      if (e.key === 'Escape' && !menu.hidden) {
+        cerrar();
+        toggle.focus();
+      }
     });
 
     // Si el usuario agranda la ventana a desktop con el menú abierto, cerrarlo.
     window.addEventListener('resize', () => {
-      if (window.innerWidth >= 1024) cerrarMenu();
+      if (window.innerWidth >= 1280 && !menu.hidden) cerrar();
     });
-  </script>
-</nav>
+  }
+</script>

@@ -1,0 +1,38 @@
+---
+// Composición de la página de inicio, compartida por los tres idiomas.
+//
+// El orden de las secciones ES el embudo de conversión:
+//   Hero (qué es + dónde + reservar)
+//   → Parque acuático (por qué acá y no en otro camping)
+//   → Camping / Motorhome (qué puedo reservar)
+//   → Cabaña
+//   → Ubicación (por qué me sirve como base para Iguazú)
+//   → Reseñas (¿puedo confiar?)
+//   → FAQ (últimas dudas)
+//   → CTA final (reservar)
+import Hero from './Hero.astro';
+import Piscinas from './Piscinas.astro';
+import Camping from './Camping.astro';
+import Cabanas from './Cabanas.astro';
+import Ubicacion from './Ubicacion.astro';
+import Resenas from './Resenas.astro';
+import FAQ from './FAQ.astro';
+import CTA from './CTA.astro';
+import type { Idioma, Traducciones } from '../i18n';
+
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+}
+
+const { idioma, t } = Astro.props;
+---
+
+<Hero idioma={idioma} t={t} />
+<Piscinas idioma={idioma} t={t} />
+<Camping idioma={idioma} t={t} />
+<Cabanas idioma={idioma} t={t} />
+<Ubicacion idioma={idioma} t={t} />
+<Resenas idioma={idioma} t={t} />
+<FAQ idioma={idioma} t={t} />
+<CTA idioma={idioma} t={t} />

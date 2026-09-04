@@ -4,7 +4,14 @@
   /* ── Paleta de marca Tierra Roja ── */
   --color-primario: #b01c2e;
   --color-primario-claro: #d4343f;
+  /* Tono de interacción: los botones de marca pasan de un degradé
+     rojo→naranja a rojo plano, y este es el estado hover/active. */
+  --color-primario-oscuro: #8a1524;
+  /* --acento se usa como color decorativo y en títulos grandes: sobre blanco
+     da 3.7:1, suficiente para texto grande (WCAG AA, ≥18.66px en negrita)
+     pero NO para texto chico. Para texto chico está --acento-texto. */
   --color-acento: #ef493d;
+  --color-acento-texto: #cc3327;
   --color-negro: #1a1a1a;
   --color-fondo: #fdf8f6;
   --color-fondo-alt: #f5efec;
@@ -15,12 +22,20 @@
   --color-texto-suave: #6b5b55;
   --color-borde: #e3d5ce;
 
-  /* ── Estado de pago (Panel Admin/Staff) — colores de marca, no semáforo genérico ── */
-  --color-confirmado: #16a34a;
-  --color-advertencia: #b8842c;
+  /* ── Estado de pago (Panel Admin/Staff) — colores de marca, no semáforo genérico ──
+     Oscurecidos respecto de los originales (#16a34a / #b8842c, 3.3:1 sobre
+     blanco) para llegar al 4.5:1 que exige WCAG AA en texto normal. */
+  --color-confirmado: #137a38;
+  --color-advertencia: #8f6519;
 
   /* ── Reseñas ── */
   --color-estrella: #f5b301;
+
+  /* ── WhatsApp ──
+     El verde oficial de marca (#25D366) da 2:1 con texto blanco encima. Este
+     tono, del mismo sistema de color de WhatsApp, llega a 6.2:1. */
+  --color-whatsapp: #0d6d61;
+  --color-whatsapp-hover: #0b6055;
 
   /* ── Tipografía ──
      Principal (títulos): Ubuntu — según manual de marca.
@@ -35,12 +50,88 @@
   --radius-pill: 9999px;
   --radius-btn: 9999px;
 
-  /* ── Sombras ── */
-  --shadow-suave: 0 4px 24px rgba(176, 28, 46, 0.06);
-  --shadow-elevada: 0 12px 32px rgba(43, 24, 16, 0.08);
-  --shadow-hero: 0 24px 64px rgba(43, 24, 16, 0.12);
+  /* ── Sombras ──
+     Dos capas: una línea de contacto corta y nítida más una difusa con
+     desplazamiento negativo. Una sola capa muy difusa (y teñida de rojo,
+     como estaba) hace que todo flote en el mismo plano. */
+  --shadow-suave: 0 1px 1px rgba(43, 24, 16, 0.05), 0 3px 8px -4px rgba(43, 24, 16, 0.14);
+  --shadow-elevada: 0 2px 3px rgba(43, 24, 16, 0.06), 0 14px 26px -16px rgba(43, 24, 16, 0.28);
+  --shadow-hero: 0 3px 6px rgba(43, 24, 16, 0.07), 0 28px 48px -28px rgba(43, 24, 16, 0.4);
 }
 
 /* ── Fuentes ──
    Ubuntu, Barlow y Material Symbols se cargan desde un único <link> a Google
    Fonts en Layout.astro (con display=swap). */
+
+/* ── Comportamiento base ──────────────────────────────────────────────── */
+
+/* Los anclajes de la landing (#camping, #ubicacion, #faq…) se desplazan
+   suavemente y quedan por debajo del navbar sticky, no tapados por él. */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+/* Quien pidió menos movimiento en su sistema operativo no debería recibir
+   scroll animado, imágenes que hacen zoom ni transiciones largas.
+   (WCAG 2.3.3 — Animation from Interactions.) */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Anillo de foco visible y consistente para quien navega con teclado, sin
+   mostrarlo en clics de mouse. Los componentes que necesitan otro color lo
+   sobrescriben con `focus-visible:ring-*`. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-primario);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Las imágenes reservan su espacio con width/height y no desbordan el
+   contenedor: evita saltos de layout (CLS) al cargar.
+
+   Va dentro de `@layer base` a propósito: el CSS sin capa gana SIEMPRE sobre
+   el CSS en capas, y las utilidades de Tailwind v4 viven en `@layer
+   utilities`. Suelta, esta regla pisaba todos los `h-*` de las imágenes del
+   sitio (el logo del navbar salía a 356px de alto). */
+@layer base {
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* Iconos. La fuente se pide recortada a los iconos que usa el sitio (ver
+   src/lib/iconos.ts) y con `display=block`, para que el navegador no muestre
+   el NOMBRE del icono como texto mientras la descarga. `min-width` evita que
+   el texto de al lado se corra cuando el glifo termina de cargar (CLS). */
+@layer base {
+  .material-symbols-outlined {
+    font-variation-settings:
+      'FILL' 0,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 24;
+    min-width: 1em;
+    line-height: 1;
+    user-select: none;
+  }
+}
+
+/* El contenido no debe quedar tapado por la barra fija de reserva en mobile. */
+@media (max-width: 1023px) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
