@@ -6,15 +6,21 @@
 // también la sección que más peso tiene para el visitante brasileño, que
 // llega por Foz do Iguaçu.
 //
-// Los tiempos de viaje salen de `src/lib/ubicacion.ts`. Los que todavía no
-// están confirmados NO se muestran como número: se muestra el destino con un
-// "consultar", nunca una distancia inventada.
+// La columna izquierda agrupa TODO lo que hay alrededor en una sola lista
+// paginada de 8 tarjetas (2 x 4): primero los tiempos de viaje de
+// `src/lib/ubicacion.ts` y después las 34 fichas del descriptivo oficial de
+// Atractivos Iguazú (ACATI), con el mismo número que llevan en el mapa
+// impreso. Son 40 tarjetas justas, 5 páginas de 8. Tierra Roja es la ficha
+// 26, así que la guía le resuelve el itinerario al huésped y de paso muestra
+// que el camping está en la guía oficial de la ciudad.
 //
-// Debajo del mapa va el descriptivo completo de Atractivos Iguazú (ACATI):
-// las 34 fichas del folleto oficial, con el mismo número que llevan en el
-// mapa impreso. Tierra Roja es la número 26, así que la guía sirve para dos
-// cosas: le resuelve el itinerario al huésped y muestra que el camping está
-// en la guía oficial de la ciudad. Los datos están en `src/lib/atractivos.ts`.
+// Los tiempos de viaje que todavía no están confirmados NO se muestran como
+// número: se muestra el destino con un "consultar", nunca una distancia
+// inventada.
+//
+// La paginación es mejora progresiva: el HTML trae las 40 tarjetas y el
+// `<noscript>` de abajo las muestra todas y esconde los botones, así sin JS
+// no se pierde contenido.
 import EncabezadoSeccion from './ui/EncabezadoSeccion.astro';
 import BotonReserva from './ui/BotonReserva.astro';
 import { PUNTOS_DE_INTERES } from '../lib/ubicacion';
@@ -34,35 +40,42 @@ interface Props {
 }
 
 const { idioma, t } = Astro.props;
-
-const puntos = PUNTOS_DE_INTERES.map((p) => ({ ...p, ...t.ubicacion.puntos[p.clave] }));
-
 const tA = t.ubicacion.atractivos;
+
+const POR_PAGINA = 8; // 2 columnas x 4 filas
 
 // El icono de cada categoría se resuelve acá para no buscarlo dentro del map.
 const iconoCategoria = Object.fromEntries(
   CATEGORIAS_ATRACTIVOS.map((c) => [c.id, c.icono])
 ) as Record<string, string>;
 
-const atractivos = ATRACTIVOS.map((a) => ({
-  ...a,
-  texto: a.descripcion[idioma],
-  icono: iconoCategoria[a.categoria],
-  categoriaNombre: tA.categorias[a.categoria],
-  // Sin logo publicable, la tarjeta muestra el número del mapa.
-  logo: a.sinLogo ? null : logoDeAtractivo(a.numero),
-}));
-
-// Los filtros llevan el total de cada categoría: es un dato del folleto, no
-// un adorno, y le dice al visitante qué tan grande es cada grupo.
-const filtros = [
-  { id: 'todas', nombre: tA.todas, total: atractivos.length },
-  ...CATEGORIAS_ATRACTIVOS.map((c) => ({
-    id: c.id,
-    nombre: tA.categorias[c.id],
-    total: atractivos.filter((a) => a.categoria === c.id).length,
+// Una sola lista: los tiempos de viaje primero (son el argumento de venta) y
+// después el descriptivo completo, en el orden del folleto.
+const tarjetas = [
+  ...PUNTOS_DE_INTERES.map((p) => {
+    const texto = t.ubicacion.puntos[p.clave];
+    return {
+      tipo: 'punto' as const,
+      nombre: texto.nombre,
+      detalle: texto.detalle,
+      icono: p.icono,
+      minutos: p.confirmado && p.minutos !== null ? p.minutos : null,
+    };
+  }),
+  ...ATRACTIVOS.map((a) => ({
+    tipo: 'atractivo' as const,
+    nombre: a.nombre,
+    detalle: a.descripcion[idioma],
+    icono: iconoCategoria[a.categoria],
+    categoriaNombre: tA.categorias[a.categoria],
+    numero: a.numero,
+    nuestro: a.nuestro === true,
+    // Sin logo publicable, la tarjeta muestra el número del mapa.
+    logo: a.sinLogo ? null : logoDeAtractivo(a.numero),
   })),
 ];
+
+const paginas = Math.ceil(tarjetas.length / POR_PAGINA);
 
 // El iframe de Google Maps se carga en el idioma del visitante.
 const hlMapa = idioma === 'pt' ? 'pt-BR' : idioma === 'en' ? 'en' : 'es';
@@ -79,40 +92,148 @@ const mapaEmbed = `https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Ac
     />
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
-      <!-- Puntos de interés -->
-      <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-7 lg:content-start">
-        {
-          puntos.map((punto) => (
-            <li class="flex gap-4 rounded-card border border-borde bg-superficie p-5 shadow-suave transition-shadow duration-300 hover:shadow-elevada">
-              <span
-                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-borde text-primario"
-                aria-hidden="true"
+      <!-- Distancias y atractivos, paginados de a 8 -->
+      <div class="lg:col-span-7">
+        <ul
+          id="ubicacion-tarjetas"
+          class="grid grid-cols-1 gap-4 sm:auto-rows-fr sm:grid-cols-2"
+          aria-label={tA.listaEtiqueta}
+        >
+          {
+            tarjetas.map((tarjeta, i) => (
+              <li
+                class="tarjeta-ubicacion"
+                data-pagina={Math.floor(i / POR_PAGINA)}
+                hidden={i >= POR_PAGINA}
               >
-                <span class="material-symbols-outlined">{punto.icono}</span>
-              </span>
-              <div class="min-w-0">
-                <p class="font-titulo font-bold leading-tight text-negro">{punto.nombre}</p>
-                <p class="mt-0.5 text-sm leading-snug text-texto-suave">{punto.detalle}</p>
-                <p
+                <article
                   class:list={[
-                    'mt-2 inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 font-titulo text-xs font-bold',
-                    punto.confirmado
-                      ? 'bg-primario/8 text-primario'
-                      : 'bg-fondo-alt text-texto-suave',
+                    'flex h-full gap-4 rounded-card border bg-superficie p-4',
+                    tarjeta.tipo === 'atractivo' && tarjeta.nuestro
+                      ? 'border-primario'
+                      : 'border-borde',
                   ]}
                 >
-                  <span class="material-symbols-outlined text-sm" aria-hidden="true">
-                    {punto.confirmado ? 'schedule' : 'chat'}
-                  </span>
-                  {punto.confirmado && punto.minutos !== null
-                    ? interpolar(t.ubicacion.minutos, { minutos: punto.minutos })
-                    : t.ubicacion.sinConfirmar}
-                </p>
-              </div>
-            </li>
-          ))
-        }
-      </ul>
+                  {tarjeta.tipo === 'punto' ? (
+                    <span
+                      class="flex h-12 w-16 shrink-0 items-center justify-center rounded-lg border border-borde bg-fondo-alt text-primario"
+                      aria-hidden="true"
+                    >
+                      <span class="material-symbols-outlined">{tarjeta.icono}</span>
+                    </span>
+                  ) : (
+                    <span
+                      class:list={[
+                        'flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border p-1 font-titulo text-base font-bold',
+                        tarjeta.nuestro ? 'border-primario' : 'border-borde',
+                        tarjeta.logo ? 'bg-white' : 'bg-fondo-alt text-texto-suave',
+                      ]}
+                      aria-hidden={tarjeta.logo ? undefined : 'true'}
+                    >
+                      {tarjeta.logo ? (
+                        <img
+                          src={tarjeta.logo}
+                          alt=""
+                          width="64"
+                          height="48"
+                          loading="lazy"
+                          decoding="async"
+                          class="h-full w-full object-contain"
+                        />
+                      ) : (
+                        tarjeta.numero
+                      )}
+                    </span>
+                  )}
+
+                  <div class="min-w-0">
+                    <p class="font-titulo font-bold leading-tight text-negro">
+                      {tarjeta.nombre}
+                      {tarjeta.tipo === 'atractivo' && tarjeta.nuestro && (
+                        <span class="ml-2 inline-block rounded-pill bg-primario px-2 py-0.5 align-middle text-[11px] font-bold uppercase tracking-wide text-white">
+                          {tA.aqui}
+                        </span>
+                      )}
+                    </p>
+                    <p class="mt-1 text-sm leading-snug text-texto-suave">{tarjeta.detalle}</p>
+
+                    {tarjeta.tipo === 'punto' ? (
+                      <p
+                        class:list={[
+                          'mt-2 inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 font-titulo text-xs font-bold',
+                          tarjeta.minutos !== null
+                            ? 'bg-primario/8 text-primario'
+                            : 'bg-fondo-alt text-texto-suave',
+                        ]}
+                      >
+                        <span class="material-symbols-outlined text-sm" aria-hidden="true">
+                          {tarjeta.minutos !== null ? 'schedule' : 'chat'}
+                        </span>
+                        {tarjeta.minutos !== null
+                          ? interpolar(t.ubicacion.minutos, { minutos: tarjeta.minutos })
+                          : t.ubicacion.sinConfirmar}
+                      </p>
+                    ) : (
+                      <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-texto-suave">
+                        <span class="inline-flex items-center gap-1">
+                          <span class="material-symbols-outlined text-sm" aria-hidden="true">
+                            {tarjeta.icono}
+                          </span>
+                          {tarjeta.categoriaNombre}
+                        </span>
+                        <span>{interpolar(tA.numeroMapa, { numero: tarjeta.numero })}</span>
+                      </p>
+                    )}
+                  </div>
+                </article>
+              </li>
+            ))
+          }
+        </ul>
+
+        <div id="ubicacion-paginacion" class="mt-5 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            id="ubicacion-anterior"
+            disabled
+            class="inline-flex min-h-11 items-center gap-1.5 rounded-pill border border-borde bg-superficie px-4 font-titulo text-sm font-bold text-texto-suave transition-colors hover:border-primario hover:text-primario focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 disabled:pointer-events-none disabled:opacity-40"
+          >
+            <span class="material-symbols-outlined text-lg" aria-hidden="true">chevron_left</span>
+            {tA.verAnterior}
+          </button>
+          <button
+            type="button"
+            id="ubicacion-siguiente"
+            class="inline-flex min-h-11 items-center gap-1.5 rounded-pill border-2 border-primario px-4 font-titulo text-sm font-bold text-primario transition-colors hover:bg-primario hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 disabled:pointer-events-none disabled:opacity-40"
+          >
+            {tA.verMas}
+            <span class="material-symbols-outlined text-lg" aria-hidden="true">chevron_right</span>
+          </button>
+          <p
+            id="ubicacion-pagina"
+            class="font-titulo text-sm text-texto-suave"
+            role="status"
+            aria-live="polite"
+          >
+            {interpolar(tA.pagina, { n: 1, total: paginas })}
+          </p>
+        </div>
+
+        <div class="mt-6 border-t border-borde pt-5">
+          <a
+            href={GUIA_OFICIAL}
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center gap-2 font-titulo font-bold text-primario underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+          >
+            <span class="material-symbols-outlined text-xl" aria-hidden="true">map</span>
+            {tA.verGuia}
+          </a>
+          <p class="mt-2 text-xs leading-relaxed text-texto-suave">
+            {interpolar(tA.fuente, { total: ATRACTIVOS.length })}
+          </p>
+        </div>
+      </div>
 
       <!-- Mapa + dirección -->
       <div class="lg:col-span-5">
@@ -150,154 +271,52 @@ const mapaEmbed = `https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Ac
         </div>
       </div>
     </div>
-
-    <!-- Descriptivo de atractivos (guía oficial ACATI) -->
-    <div class="mt-16 border-t border-borde pt-14 lg:mt-20 lg:pt-16">
-      <div class="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-        <div class="max-w-2xl">
-          <h3 class="font-titulo text-2xl font-bold text-negro sm:text-3xl">{tA.titulo}</h3>
-          <p class="mt-2 leading-relaxed text-texto-suave">
-            {interpolar(tA.subtitulo, { total: atractivos.length })}
-          </p>
-        </div>
-        <a
-          href={GUIA_OFICIAL}
-          target="_blank"
-          rel="noopener"
-          class="inline-flex shrink-0 items-center gap-2 font-titulo font-bold text-primario underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
-        >
-          <span class="material-symbols-outlined text-xl" aria-hidden="true">map</span>
-          {tA.verGuia}
-        </a>
-      </div>
-
-      <div
-        class="mb-6 flex flex-wrap gap-2"
-        id="atractivos-filtros"
-        role="group"
-        aria-label={tA.filtrarPor}
-      >
-        {
-          filtros.map((filtro, i) => (
-            <button
-              type="button"
-              data-categoria={filtro.id}
-              aria-pressed={i === 0 ? 'true' : 'false'}
-              class:list={[
-                'atractivo-filtro min-h-11 rounded-pill border px-4 font-titulo text-sm font-bold transition-colors',
-                'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40',
-                i === 0
-                  ? 'border-primario bg-primario text-white'
-                  : 'border-borde bg-superficie text-texto-suave hover:border-primario hover:text-primario',
-              ]}
-            >
-              {filtro.nombre}
-              <span class="ml-1.5 font-normal opacity-70">{filtro.total}</span>
-            </button>
-          ))
-        }
-      </div>
-
-      <p id="atractivos-estado" class="sr-only" role="status" aria-live="polite"></p>
-
-      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {
-          atractivos.map((a) => (
-            <li class="atractivo-item" data-categoria={a.categoria}>
-              <article
-                class:list={[
-                  'flex h-full gap-3.5 rounded-card border bg-superficie p-4',
-                  a.nuestro ? 'border-primario' : 'border-borde',
-                ]}
-              >
-                <span
-                  class:list={[
-                    'flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border p-1.5 font-titulo text-lg font-bold',
-                    a.nuestro ? 'border-primario' : 'border-borde',
-                    a.logo ? 'bg-white' : 'bg-fondo-alt text-texto-suave',
-                  ]}
-                  aria-hidden={a.logo ? undefined : 'true'}
-                >
-                  {a.logo ? (
-                    <img
-                      src={a.logo}
-                      alt=""
-                      width="80"
-                      height="56"
-                      loading="lazy"
-                      decoding="async"
-                      class="h-full w-full object-contain"
-                    />
-                  ) : (
-                    a.numero
-                  )}
-                </span>
-                <div class="min-w-0">
-                  <p class="font-titulo font-bold leading-tight text-negro">
-                    {a.nombre}
-                    {a.nuestro && (
-                      <span class="ml-2 inline-block rounded-pill bg-primario px-2 py-0.5 align-middle text-[11px] font-bold uppercase tracking-wide text-white">
-                        {tA.aqui}
-                      </span>
-                    )}
-                  </p>
-                  <p class="mt-1 text-sm leading-snug text-texto-suave">{a.texto}</p>
-                  <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-texto-suave">
-                    <span class="inline-flex items-center gap-1">
-                      <span class="material-symbols-outlined text-sm" aria-hidden="true">
-                        {a.icono}
-                      </span>
-                      {a.categoriaNombre}
-                    </span>
-                    <span>{interpolar(tA.numeroMapa, { numero: a.numero })}</span>
-                  </p>
-                </div>
-              </article>
-            </li>
-          ))
-        }
-      </ul>
-
-      <p class="mt-6 text-xs leading-relaxed text-texto-suave">{tA.fuente}</p>
-    </div>
   </div>
 </section>
 
-<script is:inline define:vars={{ textoConteo: tA.conteo }}>
-  // Filtro por categoría del descriptivo. Es mejora progresiva: sin JS se ven
-  // los 34 atractivos, que es el estado por defecto del HTML.
+<noscript>
+  <style>
+    /* Sin JS no hay paginación: se ven las 40 tarjetas y sobran los botones. */
+    .tarjeta-ubicacion[hidden] {
+      display: block !important;
+    }
+    #ubicacion-paginacion {
+      display: none;
+    }
+  </style>
+</noscript>
+
+<script is:inline define:vars={{ textoPagina: tA.pagina }}>
   (function () {
-    const filtros = Array.from(document.querySelectorAll('.atractivo-filtro'));
-    const items = Array.from(document.querySelectorAll('.atractivo-item'));
-    const estado = document.getElementById('atractivos-estado');
-    if (!filtros.length || !items.length) return;
+    const lista = document.getElementById('ubicacion-tarjetas');
+    const anterior = document.getElementById('ubicacion-anterior');
+    const siguiente = document.getElementById('ubicacion-siguiente');
+    const estado = document.getElementById('ubicacion-pagina');
+    if (!lista || !anterior || !siguiente) return;
 
-    filtros.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const categoria = btn.dataset.categoria;
+    const items = Array.from(lista.querySelectorAll('.tarjeta-ubicacion'));
+    const paginas = Math.max(...items.map((el) => +el.dataset.pagina)) + 1;
+    let actual = 0;
 
-        filtros.forEach((b) => {
-          const activo = b === btn;
-          b.setAttribute('aria-pressed', activo ? 'true' : 'false');
-          b.classList.toggle('border-primario', activo);
-          b.classList.toggle('bg-primario', activo);
-          b.classList.toggle('text-white', activo);
-          b.classList.toggle('border-borde', !activo);
-          b.classList.toggle('bg-superficie', !activo);
-          b.classList.toggle('text-texto-suave', !activo);
-          b.classList.toggle('hover:border-primario', !activo);
-          b.classList.toggle('hover:text-primario', !activo);
-        });
-
-        let visibles = 0;
-        items.forEach((item) => {
-          const mostrar = categoria === 'todas' || item.dataset.categoria === categoria;
-          item.hidden = !mostrar;
-          if (mostrar) visibles++;
-        });
-
-        if (estado) estado.textContent = textoConteo.replace('{n}', String(visibles));
+    function mostrar(pagina, mover) {
+      actual = Math.min(Math.max(pagina, 0), paginas - 1);
+      items.forEach((el) => {
+        el.hidden = +el.dataset.pagina !== actual;
       });
-    });
+      anterior.disabled = actual === 0;
+      siguiente.disabled = actual === paginas - 1;
+      if (estado)
+        estado.textContent = textoPagina
+          .replace('{n}', String(actual + 1))
+          .replace('{total}', String(paginas));
+      // Si la lista quedó por encima de la ventana, volver a su inicio.
+      if (mover && lista.getBoundingClientRect().top < 0) {
+        lista.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
+    }
+
+    anterior.addEventListener('click', () => mostrar(actual - 1, true));
+    siguiente.addEventListener('click', () => mostrar(actual + 1, true));
+    mostrar(0, false);
   })();
 </script>
