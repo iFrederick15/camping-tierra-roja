@@ -173,11 +173,7 @@ export const pt: Traducciones = {
     mapaTitulo: 'Localização do Camping Tierra Roja em Puerto Iguazú',
     cta: 'Reservar minha hospedagem',
     atractivos: {
-      titulo: 'Todos os atrativos de Iguaçu',
-      subtitulo:
-        'O guia oficial Atractivos Iguazú (ACATI) reúne {total} opções na cidade e nos arredores. O Tierra Roja é o número 26 do mapa.',
-      filtrarPor: 'Filtrar atrativos por categoria',
-      todas: 'Todos',
+      listaEtiqueta: 'Distâncias e atrativos de Iguaçu',
       categorias: {
         natural: 'Natureza',
         cultural: 'Cultura',
@@ -187,10 +183,12 @@ export const pt: Traducciones = {
       },
       numeroMapa: 'N.º {numero} do mapa',
       aqui: 'Você está aqui',
-      conteo: '{n} atrativos à vista',
-      fuente:
-        'Dados e logos do guia Atractivos Iguazú (ACATI), atualização de 29/06/2026. Cada logo pertence ao seu prestador.',
+      verAnterior: 'Ver anteriores',
+      verMas: 'Ver mais atrativos',
+      pagina: 'Página {n} de {total}',
       verGuia: 'Ver o guia oficial',
+      fuente:
+        'Os {total} atrativos do guia oficial Atractivos Iguazú (ACATI), atualização de 29/06/2026. O Tierra Roja é o número 26 do mapa; cada logo pertence ao seu prestador.',
     },
   },
 
