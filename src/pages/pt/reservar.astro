@@ -1,0 +1,13 @@
+---
+export const prerender = false; // necesita consultar disponibilidad en vivo
+import Layout from '../../layouts/Layout.astro';
+import PaginaReservar from '../../components/PaginaReservar.astro';
+import { traducciones } from '../../i18n';
+
+const idioma = 'pt' as const;
+const t = traducciones(idioma);
+---
+
+<Layout title={t.reservar.metaTitulo} description={t.reservar.metaDescripcion} sinBarraReserva>
+  <PaginaReservar idioma={idioma} t={t} />
+</Layout>

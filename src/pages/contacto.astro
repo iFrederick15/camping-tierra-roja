@@ -2,13 +2,14 @@
 export const prerender = true;
 import Layout from '../layouts/Layout.astro';
 import Contacto from '../components/Contacto.astro';
+import { idiomaActual, traducciones } from '../i18n';
+
+const idioma = idiomaActual(Astro);
+const t = traducciones(idioma);
 ---
 
-<Layout
-  title="Camping Tierra Roja - Contacto"
-  description="Contáctate con Tierra Roja: ubicación en Puerto Iguazú, teléfono, WhatsApp y mapa para llegar a nuestro camping y parque acuático."
->
+<Layout title={t.contacto.metaTitulo} description={t.contacto.metaDescripcion}>
   <div class="pt-8 md:pt-12">
-    <Contacto />
+    <Contacto idioma={idioma} t={t} />
   </div>
 </Layout>

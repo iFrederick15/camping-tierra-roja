@@ -52,3 +52,24 @@ export const CONTACTO_HREF = {
 
 // URLs de redes sociales, en el orden en que se muestran / se listan en sameAs.
 export const REDES = [NEGOCIO.redes.instagram, NEGOCIO.redes.facebook, NEGOCIO.redes.tiktok];
+
+// ── Enlaces de WhatsApp con mensaje pre-cargado ───────────────────────────
+// Un WhatsApp que llega con contexto ("Hola, quiero consultar por el
+// camping") se responde más rápido y se pierden menos consultas. El texto
+// va en el idioma en que el visitante está navegando.
+
+const MENSAJES_WHATSAPP: Record<string, string> = {
+  es: 'Hola Tierra Roja 👋 Quiero consultar disponibilidad para alojarme.',
+  pt: 'Olá Tierra Roja 👋 Gostaria de consultar a disponibilidade para me hospedar.',
+  en: 'Hi Tierra Roja 👋 I would like to check availability for a stay.',
+};
+
+/**
+ * Enlace a WhatsApp con un mensaje inicial en el idioma del visitante.
+ * `extra` permite agregar contexto (ej. el tipo de alojamiento consultado).
+ */
+export function whatsappHref(idioma: string = 'es', extra?: string): string {
+  const base = MENSAJES_WHATSAPP[idioma] ?? MENSAJES_WHATSAPP.es;
+  const texto = extra ? `${base} (${extra})` : base;
+  return `https://wa.me/${NEGOCIO.whatsapp}?text=${encodeURIComponent(texto)}`;
+}

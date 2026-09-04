@@ -1,0 +1,15 @@
+---
+export const prerender = true;
+import Layout from '../../layouts/Layout.astro';
+import Galeria from '../../components/Galeria.astro';
+import { traducciones } from '../../i18n';
+
+const idioma = 'en' as const;
+const t = traducciones(idioma);
+---
+
+<Layout title={t.galeria.metaTitulo} description={t.galeria.metaDescripcion}>
+  <div class="pt-8 md:pt-12">
+    <Galeria idioma={idioma} t={t} />
+  </div>
+</Layout>

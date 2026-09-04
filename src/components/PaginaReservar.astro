@@ -1,0 +1,114 @@
+---
+// Página de reservas, compartida por los tres idiomas.
+//
+// El widget de reserva es el único punto interactivo real: se hidrata con
+// `client:load` porque es lo primero que el usuario va a tocar.
+//
+// Novedad: la página acepta `?unidad=CAMPING|MOTORHOME|CABANA|QUINCHOS`. Los
+// CTA de la landing usan ese parámetro para dejar el widget con el tipo de
+// alojamiento ya elegido — un paso menos en el embudo.
+import BookingWidget from './BookingWidget';
+import BotonWhatsApp from './ui/BotonWhatsApp.astro';
+import { TEXTOS_WIDGET } from '../i18n/reservar-widget';
+import { RUTAS, type Idioma, type Traducciones } from '../i18n';
+
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+}
+
+const { idioma, t } = Astro.props;
+
+// Solo se acepta un valor de la lista blanca: un parámetro arbitrario en la
+// URL no debe llegar al estado del widget.
+const UNIDADES_VALIDAS = ['CAMPING', 'MOTORHOME', 'CABANA', 'QUINCHOS'] as const;
+const parametro = Astro.url.searchParams.get('unidad')?.toUpperCase();
+const unidadInicial = UNIDADES_VALIDAS.find((u) => u === parametro);
+
+const iconosBeneficio = ['search', 'check_circle', 'verified'];
+---
+
+<header class="relative h-[32vh] w-full overflow-hidden md:h-[42vh]">
+  <img
+    src="/images/camping/camping.webp"
+    alt="Parcelas de camping entre la selva misionera en Tierra Roja, Puerto Iguazú"
+    width="1600"
+    height="739"
+    class="absolute inset-0 h-full w-full object-cover"
+    loading="eager"
+    fetchpriority="high"
+  />
+  <div class="absolute inset-0 bg-gradient-to-t from-fondo-alt via-negro/55 to-negro/25"></div>
+  <div class="absolute inset-0 flex items-end">
+    <div class="mx-auto w-full max-w-7xl px-6 pb-10 lg:px-8">
+      <h1
+        class="mb-2 font-titulo text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-6xl"
+      >
+        {t.reservar.titulo}
+      </h1>
+      <p class="max-w-md text-lg text-white/90">{t.reservar.subtitulo}</p>
+    </div>
+  </div>
+</header>
+
+<section class="bg-fondo-alt px-6 pb-20 pt-10 md:pt-0">
+  <div class="relative z-10 md:-mt-4">
+    <BookingWidget
+      client:load
+      idioma={idioma}
+      textos={TEXTOS_WIDGET[idioma]}
+      unidadInicial={unidadInicial}
+    />
+  </div>
+
+  <!-- Contenido estático (server-render): da valor semántico a la URL más
+       allá del widget interactivo y responde dudas frecuentes antes de reservar. -->
+  <div class="mx-auto mt-16 max-w-3xl space-y-10">
+    <div>
+      <h2 class="mb-4 font-titulo text-2xl font-bold text-texto md:text-3xl">
+        {t.reservar.queReservarTitulo}
+      </h2>
+      <ul class="list-disc space-y-2 pl-5 leading-relaxed text-texto-suave">
+        {
+          t.reservar.queReservar.map((item) => (
+            <li>
+              <strong class="text-texto">{item.titulo}:</strong> {item.texto}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div>
+      <h2 class="mb-4 font-titulo text-2xl font-bold text-texto md:text-3xl">
+        {t.reservar.comoFuncionaTitulo}
+      </h2>
+      <p class="leading-relaxed text-texto-suave">
+        <Fragment
+          set:html={t.reservar.comoFunciona
+            .replace(
+              '{terminos}',
+              `<a href="/terminos-y-condiciones" hreflang="es" class="font-semibold text-primario underline underline-offset-2">${t.footer.terminos}</a>`
+            )
+            .replace(
+              '{normas}',
+              `<a href="/normas-del-parque" hreflang="es" class="font-semibold text-primario underline underline-offset-2">${t.footer.normas}</a>`
+            )}
+        />
+      </p>
+    </div>
+
+    <div
+      class="flex flex-col items-center gap-4 rounded-card border border-borde bg-superficie px-6 py-8 text-center"
+    >
+      <h2 class="font-titulo text-xl font-bold text-negro">{t.reservar.ayudaTitulo}</h2>
+      <p class="text-texto-suave">{t.reservar.ayudaTexto}</p>
+      <BotonWhatsApp idioma={idioma} texto={t.reservar.ayudaBoton} contexto={t.reservar.titulo} />
+      <p class="text-xs text-texto-suave">
+        <a href={RUTAS[idioma].contacto} class="underline underline-offset-2 hover:text-primario">
+          {t.nav.contacto}
+        </a>
+      </p>
+    </div>
+  </div>
+</section>

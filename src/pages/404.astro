@@ -1,45 +1,70 @@
 ---
 export const prerender = true;
 import Layout from '../layouts/Layout.astro';
+import BotonReserva from '../components/ui/BotonReserva.astro';
+import { RUTAS, idiomaActual, traducciones } from '../i18n';
+
+// La 404 se sirve para cualquier ruta inexistente, incluidas /pt/… y /en/…:
+// se detecta el idioma por el prefijo para no mandar a un brasileño a una
+// página de error en español.
+const idioma = idiomaActual(Astro);
+const t = traducciones(idioma);
+const rutas = RUTAS[idioma];
 
 const enlaces = [
-  { label: 'Inicio', href: '/' },
-  { label: 'Galería', href: '/galeria' },
-  { label: 'Reservar', href: '/reservar' },
-  { label: 'Contacto', href: '/contacto' },
+  { label: t.nav.inicio, href: rutas.home },
+  { label: t.nav.galeria, href: rutas.galeria },
+  { label: t.nav.contacto, href: rutas.contacto },
 ];
+
+const TEXTOS = {
+  es: {
+    kicker: 'Error 404',
+    titulo: 'Esta página',
+    destacado: 'no existe',
+    texto:
+      'Puede que el enlace esté roto o que la página se haya movido. Prueba con alguna de estas secciones:',
+  },
+  pt: {
+    kicker: 'Erro 404',
+    titulo: 'Esta página',
+    destacado: 'não existe',
+    texto:
+      'O link pode estar quebrado ou a página pode ter mudado de lugar. Tente uma destas seções:',
+  },
+  en: {
+    kicker: 'Error 404',
+    titulo: 'This page',
+    destacado: 'does not exist',
+    texto: 'The link may be broken or the page may have moved. Try one of these sections:',
+  },
+}[idioma];
 ---
 
-<Layout
-  title="Página no encontrada — Tierra Roja"
-  description="La página que buscas no existe. Vuelve al inicio del sitio de Camping Tierra Roja, Puerto Iguazú."
->
-  <section
-    class="max-w-3xl mx-auto px-6 py-24 md:py-32 text-center flex flex-col items-center"
-  >
-    <p class="font-titulo font-bold text-sm tracking-widest uppercase text-primario mb-4">
-      Error 404
+<Layout title={`${TEXTOS.kicker} — Tierra Roja`} description={TEXTOS.texto} noindex sinBarraReserva>
+  <section class="mx-auto flex max-w-3xl flex-col items-center px-6 py-24 text-center md:py-32">
+    <p class="mb-4 font-titulo text-sm font-bold uppercase tracking-widest text-primario">
+      {TEXTOS.kicker}
     </p>
     <h1
-      class="font-titulo font-extrabold text-4xl md:text-6xl text-texto mb-5 tracking-tight leading-tight"
+      class="mb-5 font-titulo text-4xl font-extrabold leading-tight tracking-tight text-texto md:text-6xl"
     >
-      Esta página <span class="text-primario italic">no existe</span>
+      {TEXTOS.titulo}
+      <span class="text-primario">{TEXTOS.destacado}</span>
     </h1>
-    <p class="text-texto-suave text-lg max-w-xl leading-relaxed mb-10">
-      Puede que el enlace esté roto o que la página se haya movido. Prueba con alguna de estas
-      secciones:
-    </p>
-    <div class="flex flex-wrap justify-center gap-3">
+    <p class="mb-10 max-w-xl text-lg leading-relaxed text-texto-suave">{TEXTOS.texto}</p>
+    <div class="mb-8 flex flex-wrap justify-center gap-3">
       {
         enlaces.map((enlace) => (
           <a
             href={enlace.href}
-            class="bg-fondo-alt text-texto-suave hover:bg-primario/10 hover:text-primario font-titulo font-bold text-sm px-6 py-3 rounded-pill transition-all duration-200"
+            class="inline-flex min-h-12 items-center rounded-pill bg-fondo-alt px-6 font-titulo text-sm font-bold text-texto-suave transition-all duration-200 hover:bg-primario/10 hover:text-primario focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
           >
             {enlace.label}
           </a>
         ))
       }
     </div>
+    <BotonReserva idioma={idioma} texto={t.hero.ctaPrincipal} tamano="lg" />
   </section>
 </Layout>

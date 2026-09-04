@@ -1,0 +1,72 @@
+---
+// Capa de medición de conversiones.
+//
+// Estado actual: el sitio NO carga ningún script de terceros. Este componente
+// solo instala un listener delegado que empuja los eventos a
+// `window.dataLayer`, el formato que consumen tanto Google Tag Manager como
+// GA4. Los eventos ya quedan disponibles en la consola del navegador
+// (`window.dataLayer`) para verificarlos antes de conectar la herramienta.
+//
+// PARA ACTIVAR GOOGLE ANALYTICS / GTM:
+//   1. Definir PUBLIC_GTM_ID (contenedor GTM-XXXXXXX) en Vercel.
+//   2. Agregar a `vercel.json` → Content-Security-Policy:
+//        script-src  … https://www.googletagmanager.com
+//        connect-src … https://www.google-analytics.com https://*.analytics.google.com
+//        img-src ya permite https:
+//   3. Nada más: el snippet de abajo se activa solo y los eventos ya
+//      existentes empiezan a llegar.
+//
+// Eventos disponibles: ver `src/lib/analytics.ts`.
+const gtmId = import.meta.env.PUBLIC_GTM_ID;
+---
+
+<script is:inline>
+  // dataLayer siempre existe, haya o no GTM: así los eventos no se pierden y
+  // quedan disponibles para depurar o para conectar otra herramienta después.
+  window.dataLayer = window.dataLayer || [];
+
+  window.trackEvent = function (nombre, detalle) {
+    window.dataLayer.push({
+      event: nombre,
+      detalle: detalle || undefined,
+      idioma: document.documentElement.lang,
+      pagina: location.pathname,
+    });
+  };
+
+  // Un único listener delegado en el documento en lugar de N listeners por
+  // botón: menos memoria, y funciona con elementos agregados después.
+  document.addEventListener(
+    'click',
+    function (e) {
+      const el = e.target instanceof Element ? e.target.closest('[data-evento]') : null;
+      if (!el) return;
+      window.trackEvent(el.getAttribute('data-evento'), el.getAttribute('data-evento-detalle'));
+    },
+    { passive: true }
+  );
+
+  // `tel:` y `mailto:` sin data-evento explícito (por ejemplo dentro de textos
+  // largos) también se miden: son intención de contacto.
+  document.addEventListener(
+    'click',
+    function (e) {
+      const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+      if (!a || a.hasAttribute('data-evento')) return;
+      const href = a.getAttribute('href') || '';
+      if (href.startsWith('tel:')) window.trackEvent('telefono_click', href.slice(4));
+      else if (href.startsWith('mailto:')) window.trackEvent('email_click', href.slice(7));
+      else if (href.includes('wa.me/')) window.trackEvent('whatsapp_click', 'enlace');
+    },
+    { passive: true }
+  );
+</script>
+
+{
+  gtmId && (
+    <script
+      is:inline
+      set:html={`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtmId}');`}
+    />
+  )
+}

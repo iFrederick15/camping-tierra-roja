@@ -9,7 +9,8 @@ interface Props {
 const { reserva, mostrarFechas = false } = Astro.props;
 const estadoPago = calcularEstadoPago(reserva.montoTotal, reserva.montoPagado);
 const estilo = ESTILO_ESTADO_PAGO[estadoPago];
-const fmt = (f: string) => new Date(f + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+const fmt = (f: string) =>
+  new Date(f + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
 ---
 
 <a
@@ -23,7 +24,9 @@ const fmt = (f: string) => new Date(f + 'T00:00:00').toLocaleDateString('es-AR',
       {mostrarFechas && ` · ${fmt(reserva.fechaIngreso)} – ${fmt(reserva.fechaSalida)}`}
     </span>
   </div>
-  <span class={`shrink-0 border rounded-pill px-3 py-1 text-xs font-titulo font-bold ${estilo.className}`}>
+  <span
+    class={`shrink-0 border rounded-pill px-3 py-1 text-xs font-titulo font-bold ${estilo.className}`}
+  >
     {estilo.label}
   </span>
 </a>

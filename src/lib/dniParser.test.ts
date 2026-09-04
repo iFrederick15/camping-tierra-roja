@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseDniPdf417 } from './dniParser';
 
 // Datos sintéticos, ficticios — no corresponden a ninguna persona real.
-const SCAN_VALIDO =
-  '00011122233@GOMEZ PEREZ@JUAN CARLOS@M@40123456@A@01/01/1990@01/01/2015@111';
+const SCAN_VALIDO = '00011122233@GOMEZ PEREZ@JUAN CARLOS@M@40123456@A@01/01/1990@01/01/2015@111';
 
 describe('parseDniPdf417', () => {
   it('parsea un string bien formado con separador @ y confianza alta', () => {

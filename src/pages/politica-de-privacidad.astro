@@ -5,6 +5,11 @@ import { NEGOCIO, CONTACTO_HREF, DIRECCION_COMPLETA } from '../lib/negocio';
 
 const actualizado = '12 de agosto de 2026';
 
+// El dominio se lee de `site` (astro.config.mjs) en vez de escribirse a mano:
+// el texto decía `tierrarojaiguazu.com`, que no es el dominio del sitio
+// (`tierraroja.com.ar`), y un documento legal no puede apuntar a otra web.
+const dominio = (Astro.site ?? new URL('https://tierraroja.com.ar')).host;
+
 const secciones = [
   { id: 'responsable', label: '1. Responsable del tratamiento' },
   { id: 'datos', label: '2. Datos que recopilamos' },
@@ -90,9 +95,7 @@ const secciones = [
           Esta política se rige por la Ley 25.326 de Protección de los Datos Personales de la
           República Argentina y su normativa complementaria, y aplica a los datos que nos brindas al
           reservar, contactarnos o navegar por{' '}
-          <a href="https://tierrarojaiguazu.com" class="text-primario font-semibold"
-            >tierrarojaiguazu.com</a
-          >.
+          <a href={`https://${dominio}`} class="text-primario font-semibold">{dominio}</a>.
         </p>
       </div>
 
@@ -194,9 +197,7 @@ const secciones = [
           De acuerdo con la Ley 25.326, tienes derecho a acceder, rectificar, actualizar o solicitar
           la supresión de tus datos personales de forma gratuita. Para ejercer cualquiera de estos
           derechos, escríbenos a{' '}
-          <a href={CONTACTO_HREF.mailto} class="text-primario font-semibold"
-            >{NEGOCIO.email}</a
-          >.
+          <a href={CONTACTO_HREF.mailto} class="text-primario font-semibold">{NEGOCIO.email}</a>.
         </p>
         <p class="text-texto-suave leading-relaxed">
           La Agencia de Acceso a la Información Pública, en su carácter de Órgano de Control de la

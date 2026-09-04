@@ -1,0 +1,81 @@
+---
+// Botón de reserva reutilizable.
+//
+// Existe para que TODOS los CTA de reserva del sitio compartan destino,
+// medición y accesibilidad: si mañana cambia la ruta de reservas o el evento
+// de analítica, se cambia acá y no en quince lugares.
+//
+// `unidad` genera un deep-link (`/reservar?unidad=CABANA`) que deja el widget
+// de reserva con el tipo de alojamiento ya elegido: un paso menos en el
+// embudo para quien ya sabe qué quiere.
+import { RUTAS, type Idioma } from '../../i18n';
+import { EVENTOS } from '../../lib/analytics';
+
+interface Props {
+  idioma: Idioma;
+  texto: string;
+  /** Preselecciona el tipo de alojamiento en el widget de reserva. */
+  unidad?: 'CAMPING' | 'MOTORHOME' | 'CABANA' | 'QUINCHOS';
+  /** primario = degradé de marca · claro = sobre fondos rojos · contorno = secundario */
+  variante?: 'primario' | 'claro' | 'contorno' | 'contornoClaro';
+  tamano?: 'sm' | 'md' | 'lg';
+  /** Ocupa todo el ancho disponible (útil en mobile y en tarjetas). */
+  bloque?: boolean;
+  icono?: string | false;
+  class?: string;
+}
+
+const {
+  idioma,
+  texto,
+  unidad,
+  variante = 'primario',
+  tamano = 'md',
+  bloque = false,
+  icono = 'arrow_forward',
+  class: clase = '',
+} = Astro.props;
+
+const href = unidad ? `${RUTAS[idioma].reservar}?unidad=${unidad}` : RUTAS[idioma].reservar;
+
+// Rojo plano de marca, no degradé: el degradé rojo→naranja con el botón que
+// se levanta en hover es la firma visual de cualquier plantilla. El hover
+// cambia el color, que es lo que hace un botón de verdad.
+const VARIANTES = {
+  primario: 'bg-primario text-white hover:bg-primario-oscuro',
+  claro: 'bg-white text-primario hover:bg-fondo-alt',
+  contorno: 'border-2 border-primario text-primario hover:bg-primario hover:text-white',
+  contornoClaro: 'border-2 border-white/70 text-white hover:bg-white hover:text-primario',
+};
+
+const TAMANOS = {
+  // min-h-11 = 44px: mínimo recomendado por WCAG 2.5.8 para tocar con el pulgar.
+  sm: 'min-h-11 px-5 py-2.5 text-sm',
+  md: 'min-h-12 px-7 py-3 text-base',
+  lg: 'min-h-14 px-8 py-4 text-base sm:text-lg',
+};
+---
+
+<a
+  href={href}
+  data-evento={EVENTOS.RESERVAR}
+  data-evento-detalle={unidad ?? 'general'}
+  class:list={[
+    'group inline-flex items-center justify-center gap-2 rounded-pill font-titulo font-bold tracking-wide',
+    'transition-colors duration-150',
+    'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 focus-visible:ring-offset-2',
+    VARIANTES[variante],
+    TAMANOS[tamano],
+    bloque ? 'w-full' : '',
+    clase,
+  ]}
+>
+  {texto}
+  {
+    icono && (
+      <span class="material-symbols-outlined text-xl" aria-hidden="true">
+        {icono}
+      </span>
+    )
+  }
+</a>

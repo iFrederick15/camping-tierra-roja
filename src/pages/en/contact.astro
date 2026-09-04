@@ -1,0 +1,15 @@
+---
+export const prerender = true;
+import Layout from '../../layouts/Layout.astro';
+import Contacto from '../../components/Contacto.astro';
+import { traducciones } from '../../i18n';
+
+const idioma = 'en' as const;
+const t = traducciones(idioma);
+---
+
+<Layout title={t.contacto.metaTitulo} description={t.contacto.metaDescripcion}>
+  <div class="pt-8 md:pt-12">
+    <Contacto idioma={idioma} t={t} />
+  </div>
+</Layout>

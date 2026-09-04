@@ -1,21 +1,55 @@
 ---
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
+import WhatsAppFlotante from '../components/WhatsAppFlotante.astro';
+import BarraReservaMobile from '../components/BarraReservaMobile.astro';
+import Analytics from '../components/Analytics.astro';
 import { NEGOCIO, REDES } from '../lib/negocio';
+import { rangoDePrecios } from '../lib/precios';
+import { obtenerResenas } from '../lib/resenas';
+import { ICONOS_MATERIAL } from '../lib/iconos';
+import {
+  IDIOMAS,
+  alternativasDeRuta,
+  idiomaActual,
+  rutaCanonica,
+  traducciones,
+  RUTAS,
+} from '../i18n';
 import '../styles/global.css';
 
 interface Props {
   title?: string;
   description?: string;
   image?: string;
+  /** Oculta la barra de reserva fija (ej. en /reservar, donde estorbaría). */
+  sinBarraReserva?: boolean;
+  /** JSON-LD extra de la página (FAQPage, BreadcrumbList, …). */
+  schemaExtra?: object | object[];
+  /** Marca la página como no indexable (404, páginas técnicas). */
+  noindex?: boolean;
+  /**
+   * Imagen que va a ser el LCP de la página. Se precarga desde el <head>:
+   * el navegador la empieza a bajar sin esperar a parsear el <body>.
+   */
+  preloadImagen?: string;
 }
 
+const idioma = idiomaActual(Astro);
+const t = traducciones(idioma);
+const { resenas, promedio: promedioResenas, cantidad: cantidadResenas } = await obtenerResenas();
+const idiomaMeta = IDIOMAS.find((i) => i.codigo === idioma) ?? IDIOMAS[0];
+
 const {
-  title = 'Tierra Roja | Camping y Parque Acuático - Puerto Iguazú',
-  description = 'Camping y parque acuático en Puerto Iguazú, Misiones. Piscinas, cabañas, parcelas de camping y espacio motorhome en plena selva misionera.',
+  title = t.meta.titulo,
+  description = t.meta.descripcion,
   // JPG (no WebP): el scraper de Open Graph de Facebook/WhatsApp no renderiza
   // la previsualización con WebP, y ese es el canal de difusión principal.
   image = '/images/general/tierra-roja-drone.jpg',
+  sinBarraReserva = false,
+  schemaExtra,
+  noindex = false,
+  preloadImagen,
 } = Astro.props;
 
 // El dominio de marca vive en un solo lugar (astro.config.mjs → site) para
@@ -24,21 +58,34 @@ const sitioUrl = (Astro.site ?? new URL('https://tierraroja.com.ar')).origin;
 const canonicalURL = new URL(Astro.url.pathname, sitioUrl);
 const imagenSocial = new URL(image, sitioUrl);
 
-// Datos estructurados (schema.org) para resultados enriquecidos en Google y
-// Google Maps: dirección, geolocalización, teléfono y redes ya se muestran
-// en el sitio (Footer, Contacto, Normas del Parque); acá solo se estructuran.
+// hreflang: solo se emite cuando la página existe realmente en los tres
+// idiomas. Apuntar el hreflang de una página no traducida al inicio sería
+// una señal falsa para Google.
+const alternativas = alternativasDeRuta(Astro.url.pathname);
+
+// ── Datos estructurados ────────────────────────────────────────────────
+// `Campground` es el tipo específico de schema.org para un camping y hereda
+// de LodgingBusiness → LocalBusiness, así que una sola entidad cubre los tres
+// (declarar los tres por separado duplicaría el negocio en el grafo).
 const schemaNegocio = {
   '@context': 'https://schema.org',
   '@type': 'Campground',
   '@id': `${sitioUrl}/#negocio`,
   name: NEGOCIO.nombre,
-  description:
-    'Camping y parque acuático en Puerto Iguazú, Misiones. Piscinas, cabañas, parcelas de camping y espacio motorhome en plena selva misionera.',
-  url: sitioUrl,
-  image: `${sitioUrl}/images/general/tierra-roja-drone.jpg`,
+  alternateName: 'Camping Tierra Roja',
+  description: t.meta.schemaDescripcion,
+  inLanguage: idiomaMeta.hreflang,
+  url: `${sitioUrl}${RUTAS[idioma].home}`,
+  image: [
+    `${sitioUrl}/images/general/tierra-roja-drone.jpg`,
+    `${sitioUrl}/images/piscinas/piscina-familiar.webp`,
+    `${sitioUrl}/images/camping/camping.webp`,
+  ],
+  logo: `${sitioUrl}/images/marca/Logo-Tierra-Roja.webp`,
   telephone: NEGOCIO.telefonoE164,
   email: NEGOCIO.email,
-  priceRange: '$$',
+  priceRange: rangoDePrecios(),
+  currenciesAccepted: 'ARS',
   address: {
     '@type': 'PostalAddress',
     streetAddress: NEGOCIO.direccion.calle,
@@ -62,7 +109,25 @@ const schemaNegocio = {
   },
   checkoutTime: '10:00:00',
   petsAllowed: true,
+  numberOfRooms: 1,
   sameAs: REDES,
+  // Reseñas reales publicadas en Google y visibles en la página de inicio
+  // (ver src/lib/resenas.ts). El promedio se calcula sobre esas mismas
+  // reseñas: nunca sobre un número inventado.
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: promedioResenas,
+    reviewCount: cantidadResenas,
+    bestRating: 5,
+    worstRating: 1,
+  },
+  review: resenas.map((r) => ({
+    '@type': 'Review',
+    author: { '@type': 'Person', name: r.nombre },
+    reviewRating: { '@type': 'Rating', ratingValue: r.estrellas, bestRating: 5 },
+    reviewBody: r.texto,
+    inLanguage: r.idioma,
+  })),
   amenityFeature: [
     { '@type': 'LocationFeatureSpecification', name: 'Piscinas', value: true },
     { '@type': 'LocationFeatureSpecification', name: 'Parcelas de camping', value: true },
@@ -70,27 +135,84 @@ const schemaNegocio = {
     { '@type': 'LocationFeatureSpecification', name: 'Cabaña', value: true },
     { '@type': 'LocationFeatureSpecification', name: 'Quinchos con parrilla', value: true },
     { '@type': 'LocationFeatureSpecification', name: 'Wi-Fi', value: true },
+    { '@type': 'LocationFeatureSpecification', name: 'Duchas con agua caliente', value: true },
+    { '@type': 'LocationFeatureSpecification', name: 'Se aceptan mascotas', value: true },
+    { '@type': 'LocationFeatureSpecification', name: 'Canchas deportivas', value: true },
   ],
 };
+
+// El sitio como entidad, para que Google entienda la relación entre las
+// versiones de idioma y el buscador interno del sitio (si se agrega).
+const schemaSitio = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': `${sitioUrl}/#sitio`,
+  url: sitioUrl,
+  name: NEGOCIO.nombre,
+  inLanguage: IDIOMAS.map((i) => i.hreflang),
+  publisher: { '@id': `${sitioUrl}/#negocio` },
+};
+
+const schemas = [schemaNegocio, schemaSitio, ...(schemaExtra ? [schemaExtra].flat() : [])];
+
+// Google Fonts — iconos.
+// Dos recortes sobre lo que pedía antes el sitio:
+//   1. `icon_names`: solo los iconos que realmente se usan (ver
+//      src/lib/iconos.ts). Sin esto se descarga la fuente completa de
+//      Material Symbols (~3.500 iconos).
+//   2. ejes fijos `opsz@24` y `wght@400` en vez de los rangos completos: el
+//      sitio usa un único tamaño y un único grosor de icono. FILL queda como
+//      rango porque las estrellas de las reseñas usan FILL 1.
+// Resultado medido: 8,6 KB en vez de 1,1 MB (la fuente variable completa).
+const urlIconos = `https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&icon_names=${ICONOS_MATERIAL.join(',')}&display=block`;
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang={idiomaMeta.hreflang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <title>{title}</title>
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon-192.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#b01c2e" />
     <link rel="canonical" href={canonicalURL} />
 
+    {preloadImagen && <link rel="preload" as="image" href={preloadImagen} fetchpriority="high" />}
+
+    <!-- Versiones en otros idiomas. `x-default` apunta al español, que es la
+         versión principal y la que ve quien no coincide con ningún idioma. -->
+    {
+      alternativas?.map((alt) => (
+        <link
+          rel="alternate"
+          hreflang={alt.hreflang}
+          href={new URL(rutaCanonica(alt.ruta), sitioUrl).href}
+        />
+      ))
+    }
+    {
+      alternativas && (
+        <link
+          rel="alternate"
+          hreflang="x-default"
+          href={new URL(rutaCanonica(alternativas[0].ruta), sitioUrl).href}
+        />
+      )
+    }
+
     <!-- Open Graph (WhatsApp, Instagram, Facebook) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Tierra Roja" />
-    <meta property="og:locale" content="es_AR" />
+    <meta property="og:locale" content={idiomaMeta.ogLocale} />
+    {
+      IDIOMAS.filter((i) => i.codigo !== idioma).map((i) => (
+        <meta property="og:locale:alternate" content={i.ogLocale} />
+      ))
+    }
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
@@ -98,35 +220,47 @@ const schemaNegocio = {
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1440" />
     <meta property="og:image:height" content="812" />
-    <meta property="og:image:alt" content="Vista aérea del camping y parque acuático Tierra Roja en la selva misionera" />
+    <meta property="og:image:alt" content={t.meta.ogAlt} />
 
-    <!-- Twitter Card -->
+    <!-- Twitter / X Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imagenSocial} />
-    <meta name="twitter:image:alt" content="Vista aérea del camping y parque acuático Tierra Roja en la selva misionera" />
+    <meta name="twitter:image:alt" content={t.meta.ogAlt} />
 
-    <script type="application/ld+json" is:inline set:html={JSON.stringify(schemaNegocio)} />
+    {
+      schemas.map((s) => (
+        <script type="application/ld+json" is:inline set:html={JSON.stringify(s)} />
+      ))
+    }
 
-    <!-- Fonts -->
+    <!-- Fuentes: preconnect antes del <link> para adelantar el handshake TLS
+         con el CDN de Google, que está en el camino crítico del render. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&family=Barlow:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Material Symbols -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-      rel="stylesheet"
-    />
+    <link href={urlIconos} rel="stylesheet" />
   </head>
   <body class="bg-fondo font-cuerpo text-texto antialiased overflow-x-hidden">
-    <Navbar />
+    <!-- Salto de navegación: primer elemento enfocable de la página, para
+         quien navega con teclado o lector de pantalla. -->
+    <a
+      href="#contenido"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100 focus:rounded-pill focus:bg-primario focus:px-6 focus:py-3 focus:font-titulo focus:font-bold focus:text-white"
+    >
+      {t.nav.irAlContenido}
+    </a>
+    <Analytics />
+    <Navbar idioma={idioma} t={t} />
     <main id="contenido">
       <slot />
     </main>
-    <Footer />
+    <Footer idioma={idioma} t={t} />
+    <WhatsAppFlotante idioma={idioma} t={t} conBarraMobile={!sinBarraReserva} />
+    {!sinBarraReserva && <BarraReservaMobile idioma={idioma} t={t} />}
   </body>
 </html>

@@ -1,0 +1,65 @@
+---
+// Encabezado de sección: kicker + H2 + bajada.
+//
+// Unifica la jerarquía tipográfica de todas las secciones de la landing, que
+// antes repetían las mismas clases con variaciones (`text-4xl lg:text-5xl` vs
+// `text-4xl lg:text-6xl`) y no tenían un nivel de "kicker" consistente.
+
+interface Props {
+  kicker?: string;
+  titulo: string;
+  subtitulo?: string;
+  /** `claro` para secciones sobre fondo oscuro/rojo. */
+  tono?: 'oscuro' | 'claro';
+  alineacion?: 'centro' | 'izquierda';
+  class?: string;
+}
+
+const {
+  kicker,
+  titulo,
+  subtitulo,
+  tono = 'oscuro',
+  alineacion = 'centro',
+  class: clase = '',
+} = Astro.props;
+
+const claro = tono === 'claro';
+---
+
+<div
+  class:list={['max-w-2xl', alineacion === 'centro' ? 'mx-auto text-center' : 'text-left', clase]}
+>
+  {
+    kicker && (
+      <p
+        class:list={[
+          'font-titulo font-bold text-xs sm:text-sm tracking-[0.14em] uppercase mb-3',
+          claro ? 'text-white/85' : 'text-primario',
+        ]}
+      >
+        {kicker}
+      </p>
+    )
+  }
+  <h2
+    class:list={[
+      'font-titulo font-bold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-balance',
+      claro ? 'text-white' : 'text-negro',
+    ]}
+  >
+    {titulo}
+  </h2>
+  {
+    subtitulo && (
+      <p
+        class:list={[
+          'mt-4 text-base sm:text-lg leading-relaxed text-pretty',
+          claro ? 'text-white/80' : 'text-texto-suave',
+        ]}
+      >
+        {subtitulo}
+      </p>
+    )
+  }
+</div>

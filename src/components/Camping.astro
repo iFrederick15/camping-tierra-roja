@@ -1,77 +1,118 @@
 ---
-// Sección Camping + Motorhome en layout bento asimétrico
+// Camping + Motorhome, en layout bento asimétrico.
+//
+// El sector motorhome pasa a tener su propio ancla (#motorhome) y su propio
+// H2: es una búsqueda con intención muy alta ("motorhome Puerto Iguazú",
+// "motorhome em Puerto Iguazú") y antes vivía como un H3 sin URL propia.
+import BotonReserva from './ui/BotonReserva.astro';
+import type { Idioma, Traducciones } from '../i18n';
+
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+}
+
+const { idioma, t } = Astro.props;
+
+const iconosCamping = ['forest', 'shower', 'outdoor_grill', 'pets'];
+const iconosMotorhome = ['water_drop', 'outdoor_grill', 'verified', 'group'];
 ---
 
-<section id="camping" class="py-16 sm:py-20 lg:py-32 px-6 overflow-hidden">
-  <div class="max-w-7xl mx-auto">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 items-stretch">
-      <!-- Camping Card (principal, 7 cols) -->
-      <div
-        class="lg:col-span-7 rounded-card overflow-hidden relative min-h-95 lg:min-h-130 flex flex-col justify-end p-6 sm:p-8 lg:p-12 group"
+<section class="overflow-hidden px-6 py-20 lg:py-28">
+  <div class="mx-auto max-w-7xl">
+    <div class="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12 lg:gap-8">
+      <!-- Camping (principal) -->
+      <article
+        id="camping"
+        class="group relative flex min-h-[26rem] scroll-mt-20 flex-col justify-end overflow-hidden rounded-card p-6 sm:p-8 lg:col-span-7 lg:min-h-[34rem] lg:p-12"
       >
         <img
           src="/images/camping/camping.webp"
           alt="Parcelas de camping entre árboles en la selva misionera de Tierra Roja, Puerto Iguazú"
           width="1600"
           height="739"
-          class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          class="absolute inset-0 h-full w-full object-cover"
           loading="lazy"
+          decoding="async"
         />
-        <div class="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/40 to-transparent">
-        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-negro/95 via-negro/55 to-negro/10"></div>
 
         <div class="relative z-10">
-          <h2 class="font-titulo font-bold text-4xl lg:text-5xl text-white mb-5">
-            Camping en la Selva
-          </h2>
-          <p class="text-white/75 text-lg mb-8 max-w-lg leading-relaxed">
-            Amplia zona de camping, donde puedes instalar tu carpa y despertar con el sonido de los
-            pájaros.
+          <p class="mb-2 font-titulo text-xs font-bold uppercase tracking-[0.14em] text-white/70">
+            {t.camping.kicker}
           </p>
-          <a
-            href="/reservar"
-            class="inline-flex items-center gap-2 bg-gradient-to-r from-primario to-acento text-white px-8 py-4 rounded-pill font-titulo font-bold hover:shadow-hero hover:scale-105 transition-all duration-300 active:scale-95"
-          >
-            Reservar Ahora
-            <span class="material-symbols-outlined">arrow_forward</span>
-          </a>
+          <h2 class="mb-4 font-titulo text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
+            {t.camping.titulo}
+          </h2>
+          <p class="mb-6 max-w-lg leading-relaxed text-white/85">
+            {t.camping.descripcion}
+          </p>
+          <ul class="mb-8 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {
+              t.camping.lista.map((item, i) => (
+                <li class="flex items-center gap-2 text-sm text-white/85">
+                  <span class="material-symbols-outlined text-base text-acento" aria-hidden="true">
+                    {iconosCamping[i]}
+                  </span>
+                  {item}
+                </li>
+              ))
+            }
+          </ul>
+          <BotonReserva idioma={idioma} texto={t.camping.cta} unidad="CAMPING" tamano="lg" />
         </div>
-      </div>
+      </article>
 
-      <!-- Motorhome Card (secundaria, 5 cols) -->
-      <div
-        class="lg:col-span-5 bg-superficie-elevada rounded-card overflow-hidden flex flex-col shadow-suave"
+      <!-- Motorhome (secundaria) -->
+      <article
+        id="motorhome"
+        class="flex scroll-mt-20 flex-col overflow-hidden rounded-card bg-superficie-elevada shadow-suave lg:col-span-5"
       >
-        <!-- Imagen -->
-        <div class="aspect-video lg:aspect-auto lg:h-1/2 relative overflow-hidden">
+        <div class="relative aspect-video overflow-hidden lg:aspect-auto lg:h-[45%]">
           <img
             src="/images/motorhome/motorhome.webp"
-            alt="Espacio con conexiones para motorhome y casas rodantes en Camping Tierra Roja, Puerto Iguazú"
+            alt="Parcelas con conexiones de agua y luz para motorhome y casas rodantes en Camping Tierra Roja, Puerto Iguazú"
             width="1600"
             height="1200"
-            class="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+            class="h-full w-full object-cover"
             loading="lazy"
+            decoding="async"
           />
         </div>
-        <!-- Contenido -->
-        <div class="lg:h-1/2 p-6 sm:p-8 lg:p-10 flex flex-col justify-between gap-6">
+        <div class="flex flex-1 flex-col justify-between gap-6 p-6 sm:p-8 lg:p-10">
           <div>
-            <h3 class="font-titulo font-bold text-2xl lg:text-3xl text-negro mb-4">
-              Espacio Motorhome
-            </h3>
-            <p class="text-texto-suave leading-relaxed">
-              Conexiones completas, seguridad 24hs y acceso a todas las instalaciones del camping
-              para tu casa rodante.
+            <h2 class="mb-3 font-titulo text-2xl font-bold text-negro lg:text-3xl">
+              {t.camping.motorhomeTitulo}
+            </h2>
+            <p class="mb-5 leading-relaxed text-texto-suave">
+              {t.camping.motorhomeDescripcion}
             </p>
+            <ul class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
+              {
+                t.camping.motorhomeLista.map((item, i) => (
+                  <li class="flex items-center gap-2 text-sm text-texto-suave">
+                    <span
+                      class="material-symbols-outlined text-base text-primario"
+                      aria-hidden="true"
+                    >
+                      {iconosMotorhome[i]}
+                    </span>
+                    {item}
+                  </li>
+                ))
+              }
+            </ul>
           </div>
-          <a
-            href="/reservar"
-            class="w-full border-2 border-primario text-primario px-8 py-4 rounded-pill font-titulo font-bold text-center hover:bg-primario hover:text-white transition-all duration-300"
-          >
-            Reservar Ahora
-          </a>
+          <BotonReserva
+            idioma={idioma}
+            texto={t.camping.motorhomeCta}
+            unidad="MOTORHOME"
+            variante="contorno"
+            tamano="lg"
+            bloque
+          />
         </div>
-      </div>
+      </article>
     </div>
   </div>
 </section>

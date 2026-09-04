@@ -1,0 +1,17 @@
+---
+export const prerender = true;
+import Layout from '../../layouts/Layout.astro';
+import PaginaInicio from '../../components/PaginaInicio.astro';
+import { schemaFaq } from '../../lib/faq';
+import { traducciones } from '../../i18n';
+
+const idioma = 'pt' as const;
+const t = traducciones(idioma);
+---
+
+<Layout
+  preloadImagen="/images/general/tierra-roja-drone.webp"
+  schemaExtra={schemaFaq(t.faq.items, 'pt-BR')}
+>
+  <PaginaInicio idioma={idioma} t={t} />
+</Layout>
