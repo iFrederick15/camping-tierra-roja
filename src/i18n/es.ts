@@ -63,17 +63,17 @@ export const es = {
     incluido: 'Incluidas en la reserva de camping, motorhome y la cabaña',
     lista: [
       {
-        nombre: 'Piscina principal',
+        nombre: 'Diversión',
         descripcion: 'La más grande, con cortina de agua bajo la pérgola, reposeras y juegos.',
         etiqueta: 'Cortina de agua y pérgola',
       },
       {
-        nombre: 'Toboganes',
+        nombre: 'Familiar',
         descripcion: 'Tres toboganes de colores con su propia piscina.',
         etiqueta: 'La zona de los niños',
       },
       {
-        nombre: 'Piscina de adultos',
+        nombre: 'Relax',
         descripcion: 'Con cascada, apartada de los toboganes. Sin acceso para niños.',
         etiqueta: 'Solo adultos',
       },
