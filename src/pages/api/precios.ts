@@ -7,6 +7,7 @@
 
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../lib/supabase';
+import { urlsPublicasImagenes } from '../../lib/imagenes-unidad';
 
 export const GET: APIRoute = async ({ url }) => {
   const unidadTipo = url.searchParams.get('unidad');
@@ -17,7 +18,9 @@ export const GET: APIRoute = async ({ url }) => {
 
   const { data: unidad, error } = await supabaseAdmin
     .from('unidades')
-    .select('opciones_precio(clave, etiqueta, tipo_cargo, precio_por_noche, orden, activo)')
+    .select(
+      'imagenes, opciones_precio(clave, etiqueta, tipo_cargo, precio_por_noche, orden, activo)'
+    )
     .eq('tipo', unidadTipo)
     .single();
 
@@ -35,5 +38,7 @@ export const GET: APIRoute = async ({ url }) => {
       precioPorNoche: Number(o.precio_por_noche),
     }));
 
-  return new Response(JSON.stringify({ opciones }), { status: 200 });
+  const imagenes = urlsPublicasImagenes((unidad as any).imagenes);
+
+  return new Response(JSON.stringify({ opciones, imagenes }), { status: 200 });
 };

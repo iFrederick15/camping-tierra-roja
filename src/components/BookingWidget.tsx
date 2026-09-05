@@ -126,8 +126,11 @@ function etiquetaOpcion(
   return mapa[`${clave}_${unidad}`] ?? mapa[clave] ?? etiquetaBase;
 }
 
-// Fotos reales del predio por tipo de unidad.
-const IMAGENES_UNIDAD: Record<TipoUnidad, string[]> = {
+// Respaldo de las fotos del carrusel por si /api/precios no devuelve
+// `imagenes` (falla de red, fila sin cargar). La fuente de verdad son las
+// imágenes que la dueña sube desde el Panel (Configuración → Imágenes del
+// reservador); ver sql/008_imagenes_unidad.sql.
+const IMAGENES_UNIDAD_FALLBACK: Record<TipoUnidad, string[]> = {
   CAMPING: ['/images/camping/camping.webp'],
   MOTORHOME: [
     '/images/motorhome/motorhome.webp',
@@ -313,6 +316,9 @@ export default function BookingWidget({
   // unidad — antes de fechas, porque QUINCHOS necesita la categoría para
   // poder consultar disponibilidad (cada categoría tiene sus propias parcelas).
   const [opcionesPrecio, setOpcionesPrecio] = useState<OpcionPrecio[]>([]);
+  // Fotos del carrusel de la unidad elegida — las carga el Panel Admin y
+  // llegan junto con los precios en /api/precios.
+  const [imagenesUnidad, setImagenesUnidad] = useState<string[]>([]);
   const [categoria, setCategoria] = useState<string | null>(null);
   const [acompanantes, setAcompanantes] = useState(0); // MOTORHOME
   const [menores, setMenores] = useState(0); // CAMPING (cobra) / CABANA (informativo)
@@ -411,6 +417,7 @@ export default function BookingWidget({
     setMenores(0);
     setMayores(0);
     setOpcionesPrecio([]);
+    setImagenesUnidad([]);
     if (!unidad) return;
     let cancelado = false;
     fetch(`/api/precios?unidad=${unidad}`)
@@ -419,6 +426,7 @@ export default function BookingWidget({
         if (cancelado) return;
         const opciones: OpcionPrecio[] = data.opciones ?? [];
         setOpcionesPrecio(opciones);
+        setImagenesUnidad(Array.isArray(data.imagenes) ? data.imagenes : []);
         if (!categoriaInicialAplicada.current && categoriaInicial && unidad === unidadInicial) {
           categoriaInicialAplicada.current = true;
           setCategoria(categoriaInicial);
@@ -670,7 +678,13 @@ export default function BookingWidget({
 
           {unidad && (
             <div ref={detalleUnidadRef} className="flex flex-col gap-6 scroll-mt-6">
-              <Carousel imagenes={IMAGENES_UNIDAD[unidad]} T={T} alt={T.unidades[unidad].label} />
+              <Carousel
+                imagenes={
+                  imagenesUnidad.length > 0 ? imagenesUnidad : IMAGENES_UNIDAD_FALLBACK[unidad]
+                }
+                T={T}
+                alt={T.unidades[unidad].label}
+              />
 
               {unidad === 'MOTORHOME' && (
                 <div className="flex flex-col gap-4 bg-fondo-alt rounded-card p-5">

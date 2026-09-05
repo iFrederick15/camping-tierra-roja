@@ -2,11 +2,22 @@
 import PanelLayout from '../../../layouts/PanelLayout.astro';
 import { supabaseAdmin } from '../../../lib/supabase';
 import { obtenerConfiguracionPagos } from '../../../lib/reservas';
+import { normalizarImagenes, urlPublicaImagen } from '../../../lib/imagenes-unidad';
 
 const { data: unidades } = await supabaseAdmin
   .from('unidades')
-  .select('id, tipo, nombre, cupo_total')
+  .select('id, tipo, nombre, cupo_total, imagenes')
   .order('tipo');
+
+// { unidadId: [{ raw, url }] } — `raw` es lo que se guarda en la fila,
+// `url` la versión mostrable. El script del cliente re-renderiza desde acá.
+const imagenesPorUnidad: Record<string, { raw: string; url: string }[]> = {};
+for (const u of unidades ?? []) {
+  imagenesPorUnidad[u.id] = normalizarImagenes((u as any).imagenes).map((raw) => ({
+    raw,
+    url: urlPublicaImagen(raw),
+  }));
+}
 
 const { data: opcionesPrecio } = await supabaseAdmin
   .from('opciones_precio')
@@ -63,7 +74,7 @@ for (const p of parcelas ?? []) {
                   >
                     Guardar
                   </button>
-                  <span class="msg text-sm"></span>
+                  <span class="msg text-sm" />
                 </form>
               )}
             </div>
@@ -89,7 +100,7 @@ for (const p of parcelas ?? []) {
                   >
                     Guardar
                   </button>
-                  <span class="msg text-sm"></span>
+                  <span class="msg text-sm" />
                 </form>
               ))}
             </div>
@@ -97,6 +108,46 @@ for (const p of parcelas ?? []) {
         ))
       }
     </div>
+  </section>
+
+  <section class="mb-10">
+    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Imágenes del reservador</h2>
+    <p class="text-sm text-texto-suave mb-4 max-w-2xl">
+      Son las fotos del carrusel que ve el cliente al elegir cada alojamiento en la página de
+      reservas. Subí archivos WebP o JPG de menos de 3&nbsp;MB; la primera de la lista es la que se
+      muestra al abrir. El cambio se ve en el sitio al instante.
+    </p>
+    <div class="flex flex-col gap-6">
+      {
+        (unidades ?? []).map((u) => (
+          <div
+            class="galeria-unidad rounded-card border-2 border-borde px-5 py-4 bg-superficie flex flex-col gap-3"
+            data-id={u.id}
+            data-nombre={u.nombre}
+          >
+            <span class="font-titulo font-bold text-negro text-lg">{u.nombre}</span>
+            <div class="lista-imagenes grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" />
+            <div class="flex items-center gap-3 flex-wrap">
+              <label class="cursor-pointer border-2 border-borde rounded-pill px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors">
+                <input
+                  type="file"
+                  accept="image/webp,image/jpeg,image/png"
+                  class="input-foto sr-only"
+                />
+                Agregar foto
+              </label>
+              <span class="msg text-sm" />
+            </div>
+          </div>
+        ))
+      }
+    </div>
+    <script
+      is:inline
+      id="datos-imagenes-unidad"
+      type="application/json"
+      set:html={JSON.stringify(imagenesPorUnidad)}
+    />
   </section>
 
   <section class="mb-10">
@@ -108,11 +159,19 @@ for (const p of parcelas ?? []) {
             <h3 class="font-titulo font-medium text-texto-suave mb-2">{nombreUnidad}</h3>
             <div class="flex flex-col gap-2">
               {lista.map((p: any) => (
-                <form class="form-parcela flex flex-wrap items-end gap-3 rounded-card border-2 border-borde px-5 py-3 bg-superficie" data-id={p.id}>
+                <form
+                  class="form-parcela flex flex-wrap items-end gap-3 rounded-card border-2 border-borde px-5 py-3 bg-superficie"
+                  data-id={p.id}
+                >
                   <span class="font-titulo font-medium text-negro flex-1 min-w-48">{p.nombre}</span>
                   <label class="flex items-center gap-2.5 text-sm text-texto-suave cursor-pointer select-none">
                     <span class="relative inline-flex items-center shrink-0">
-                      <input type="checkbox" name="activa" checked={p.activa} class="peer sr-only" />
+                      <input
+                        type="checkbox"
+                        name="activa"
+                        checked={p.activa}
+                        class="peer sr-only"
+                      />
                       <span class="w-9 h-5 rounded-pill bg-borde peer-checked:bg-primario transition-colors" />
                       <span class="absolute left-0.5 top-0.5 w-4 h-4 rounded-pill bg-white shadow-sm transition-transform peer-checked:translate-x-4" />
                     </span>
@@ -124,7 +183,7 @@ for (const p of parcelas ?? []) {
                   >
                     Guardar
                   </button>
-                  <span class="msg text-sm"></span>
+                  <span class="msg text-sm" />
                 </form>
               ))}
             </div>
@@ -136,20 +195,41 @@ for (const p of parcelas ?? []) {
 
   <section>
     <h2 class="font-titulo font-bold text-xl text-negro mb-3">Plazos de pago</h2>
-    <form id="form-plazos" class="flex flex-wrap items-end gap-4 rounded-card border-2 border-borde px-5 py-4 bg-superficie max-w-xl">
+    <form
+      id="form-plazos"
+      class="flex flex-wrap items-end gap-4 rounded-card border-2 border-borde px-5 py-4 bg-superficie max-w-xl"
+    >
       <label class="flex flex-col gap-1 text-sm text-texto-suave">
         Plazo largo (hs)
-        <input type="number" name="horasPlazoLargo" value={configPagos.horas_plazo_largo} class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none" />
+        <input
+          type="number"
+          name="horasPlazoLargo"
+          value={configPagos.horas_plazo_largo}
+          class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none"
+        />
       </label>
       <label class="flex flex-col gap-1 text-sm text-texto-suave">
         Plazo corto (hs)
-        <input type="number" name="horasPlazoCorto" value={configPagos.horas_plazo_corto} class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none" />
+        <input
+          type="number"
+          name="horasPlazoCorto"
+          value={configPagos.horas_plazo_corto}
+          class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none"
+        />
       </label>
       <label class="flex flex-col gap-1 text-sm text-texto-suave">
         Umbral anticipación (días)
-        <input type="number" name="diasUmbralAnticipacion" value={configPagos.dias_umbral_anticipacion} class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none" />
+        <input
+          type="number"
+          name="diasUmbralAnticipacion"
+          value={configPagos.dias_umbral_anticipacion}
+          class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none"
+        />
       </label>
-      <button type="submit" class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors">
+      <button
+        type="submit"
+        class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+      >
         Guardar
       </button>
       <span class="msg text-sm"></span>
@@ -234,6 +314,136 @@ for (const p of parcelas ?? []) {
         },
         formPlazos.querySelector('.msg')!
       );
+    });
+
+    // ── Imágenes del reservador ──────────────────────────────────────────
+    // Sube / reordena / borra las fotos del carrusel de cada unidad
+    // (/api/panel/admin/unidades-imagenes). No reusa guardar() porque hace
+    // varias operaciones distintas y re-renderiza la grilla en el acto.
+    type ItemImagen = { raw: string; url: string };
+
+    const datosEl = document.getElementById('datos-imagenes-unidad');
+    const imagenesPorUnidad: Record<string, ItemImagen[]> = datosEl
+      ? JSON.parse(datosEl.textContent || '{}')
+      : {};
+
+    function setMsg(el: HTMLElement, texto: string, tono: 'info' | 'ok' | 'error') {
+      el.textContent = texto;
+      const clase =
+        tono === 'ok'
+          ? 'text-confirmado font-medium'
+          : tono === 'error'
+            ? 'text-primario font-medium'
+            : 'text-texto-suave';
+      el.className = `msg text-sm ${clase}`;
+    }
+
+    document.querySelectorAll<HTMLElement>('.galeria-unidad').forEach((card) => {
+      const unidadId = card.dataset.id!;
+      const nombre = card.dataset.nombre ?? 'esta unidad';
+      const lista = card.querySelector<HTMLElement>('.lista-imagenes')!;
+      const input = card.querySelector<HTMLInputElement>('.input-foto')!;
+      const msg = card.querySelector<HTMLElement>('.msg')!;
+      let items: ItemImagen[] = imagenesPorUnidad[unidadId] ?? [];
+
+      function render() {
+        if (items.length === 0) {
+          lista.innerHTML =
+            '<p class="col-span-full text-sm text-texto-suave">Sin fotos: el carrusel muestra “Fotos próximamente”.</p>';
+          return;
+        }
+        lista.innerHTML = items
+          .map(
+            (it, i) => `
+            <figure class="relative rounded-card overflow-hidden border-2 ${
+              i === 0 ? 'border-primario' : 'border-borde'
+            } bg-fondo-alt">
+              <img src="${it.url}" alt="" class="w-full aspect-video object-cover" />
+              ${i === 0 ? '<figcaption class="absolute top-1 left-1 text-[10px] font-titulo font-bold bg-primario text-white rounded-pill px-2 py-0.5">Portada</figcaption>' : ''}
+              <div class="absolute bottom-1 right-1 flex gap-1">
+                <button type="button" data-accion="izq" data-i="${i}" ${i === 0 ? 'disabled' : ''}
+                  class="w-7 h-7 rounded-full bg-black/55 text-white text-sm flex items-center justify-center disabled:opacity-30" aria-label="Mover antes">‹</button>
+                <button type="button" data-accion="der" data-i="${i}" ${i === items.length - 1 ? 'disabled' : ''}
+                  class="w-7 h-7 rounded-full bg-black/55 text-white text-sm flex items-center justify-center disabled:opacity-30" aria-label="Mover después">›</button>
+                <button type="button" data-accion="borrar" data-i="${i}"
+                  class="w-7 h-7 rounded-full bg-black/55 text-white text-sm flex items-center justify-center hover:bg-primario" aria-label="Quitar foto">✕</button>
+              </div>
+            </figure>`
+          )
+          .join('');
+      }
+
+      async function pedir(method: string, body: BodyInit, headers?: HeadersInit) {
+        const res = await fetch('/api/panel/admin/unidades-imagenes', { method, body, headers });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'No se pudo guardar el cambio');
+        // El endpoint devuelve la lista nueva (raw) y sus URLs, en orden.
+        const raw: string[] = data.imagenes ?? [];
+        const urls: string[] = data.urls ?? [];
+        return raw.map((r, i) => ({ raw: r, url: urls[i] ?? r }));
+      }
+
+      async function reordenar(desde: number, hasta: number) {
+        const copia = items.slice();
+        const [movido] = copia.splice(desde, 1);
+        copia.splice(hasta, 0, movido);
+        setMsg(msg, 'Guardando…', 'info');
+        try {
+          items = await pedir(
+            'PATCH',
+            JSON.stringify({ unidadId, imagenes: copia.map((i) => i.raw) }),
+            { 'Content-Type': 'application/json' }
+          );
+          render();
+          setMsg(msg, 'Orden guardado', 'ok');
+        } catch (e) {
+          setMsg(msg, (e as Error).message, 'error');
+        }
+      }
+
+      async function borrar(indice: number) {
+        const objetivo = items[indice];
+        if (!confirm(`¿Quitar esta foto de ${nombre}? Se elimina del sitio.`)) return;
+        setMsg(msg, 'Quitando…', 'info');
+        try {
+          items = await pedir('DELETE', JSON.stringify({ unidadId, imagen: objetivo.raw }), {
+            'Content-Type': 'application/json',
+          });
+          render();
+          setMsg(msg, 'Foto quitada', 'ok');
+        } catch (e) {
+          setMsg(msg, (e as Error).message, 'error');
+        }
+      }
+
+      lista.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-accion]');
+        if (!btn) return;
+        const i = Number(btn.dataset.i);
+        if (btn.dataset.accion === 'izq') reordenar(i, i - 1);
+        else if (btn.dataset.accion === 'der') reordenar(i, i + 1);
+        else if (btn.dataset.accion === 'borrar') borrar(i);
+      });
+
+      input.addEventListener('change', async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        setMsg(msg, 'Subiendo…', 'info');
+        const fd = new FormData();
+        fd.append('unidadId', unidadId);
+        fd.append('file', file);
+        try {
+          items = await pedir('POST', fd);
+          render();
+          setMsg(msg, 'Foto agregada', 'ok');
+        } catch (e) {
+          setMsg(msg, (e as Error).message, 'error');
+        } finally {
+          input.value = '';
+        }
+      });
+
+      render();
     });
   </script>
 </PanelLayout>
