@@ -58,25 +58,23 @@ export const es = {
   // ── Parque acuático ───────────────────────────────────────────────────
   piscinas: {
     kicker: 'Parque acuático',
-    titulo: 'Nuestras Piscinas',
-    subtitulo: 'Diseñadas para refrescar el alma y encender la diversión.',
+    titulo: 'Las tres piscinas',
+    subtitulo: 'Abiertas todo el año. El acceso va con cualquier reserva, sin cargo aparte.',
     incluido: 'Incluidas en la reserva de camping, motorhome y la cabaña',
     lista: [
       {
-        nombre: 'Diversión',
-        descripcion:
-          'Piscina principal con cortina de agua bajo la pérgola, sillas reclinables y juegos',
+        nombre: 'Piscina principal',
+        descripcion: 'La más grande, con cortina de agua bajo la pérgola, reposeras y juegos.',
         etiqueta: 'Cortina de agua y pérgola',
       },
       {
-        nombre: 'Familiar',
-        descripcion: 'Tres toboganes de colores para vivir la mejor aventura acuática en familia.',
-        etiqueta: 'Aventura Familiar',
+        nombre: 'Toboganes',
+        descripcion: 'Tres toboganes de colores con su propia piscina.',
+        etiqueta: 'La zona de los niños',
       },
       {
-        nombre: 'Relax',
-        descripcion:
-          'Cascada de agua y un ambiente especial para la desconexión total. Un espacio pensado para adultos, sin acceso para niños',
+        nombre: 'Piscina de adultos',
+        descripcion: 'Con cascada, apartada de los toboganes. Sin acceso para niños.',
         etiqueta: 'Solo adultos',
       },
     ],
@@ -248,7 +246,7 @@ export const es = {
       },
       {
         q: '¿Se puede entrar solo por el día?',
-        a: 'Los quinchos con parrilla se pueden reservar para pasar el día. [COMPLETAR: confirmar si existe una entrada por día al parque acuático sin alojarse, su precio y su horario.]',
+        a: 'Si. Pueden abonar la entrada al camping para pasar el día, pueden hacer uso de las parrillas y tendrán acceso a las piscinas habilitadas. En caso de querer un quincho, deben reservarlo a través del botón "Reservar"',
       },
       {
         q: '¿Se puede reservar online?',
@@ -268,11 +266,11 @@ export const es = {
       },
       {
         q: '¿Cómo llego desde Brasil o desde Foz do Iguaçu?',
-        a: 'Se cruza por el Puente Internacional Tancredo Neves hasta Puerto Iguazú y desde allí se llega al camping. Para ingresar a la Argentina hace falta documento de identidad, cédula o pasaporte. [COMPLETAR: tiempo de viaje aproximado desde el centro de Foz do Iguaçu y desde el paso fronterizo.]',
+        a: 'Se cruza por el Puente Internacional Tancredo Neves hasta Puerto Iguazú y desde allí se llega al camping. Para ingresar a la Argentina hace falta documento de identidad, cédula o pasaporte.',
       },
       {
         q: '¿Cómo se paga?',
-        a: 'La seña se abona por transferencia bancaria, con los datos que llegan en el correo de confirmación de la reserva. El saldo se paga al ingresar al predio. [COMPLETAR: confirmar qué medios de pago se aceptan en recepción — efectivo en pesos, reales, tarjetas.]',
+        a: 'La reserva se abona por transferencia bancaria, con los datos que llegan en el correo de confirmación de la reserva.',
       },
     ],
   },

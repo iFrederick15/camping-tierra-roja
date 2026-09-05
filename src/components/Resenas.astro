@@ -82,7 +82,7 @@ const iniciales = (nombre: string) =>
         {
           RESENAS.map((resena) => (
             <li class="shrink-0 basis-[85%] snap-start sm:basis-[47%] lg:basis-[calc((100%-3rem)/3)]">
-              <article class="flex h-full flex-col gap-5 rounded-card bg-superficie p-7 shadow-suave transition-shadow duration-300 hover:shadow-elevada lg:p-8">
+              <article class="flex h-full flex-col gap-5 rounded-card bg-superficie p-7 shadow-suave transition-shadow duration-200 hover:shadow-elevada lg:p-8">
                 <div
                   class="flex gap-1 text-estrella"
                   role="img"
@@ -142,7 +142,10 @@ const iniciales = (nombre: string) =>
                 aria-label={interpolar(t.resenas.irA, { n: i + 1 })}
                 class="flex h-6 w-6 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
               >
-                <span class="h-2.5 w-2.5 rounded-full bg-borde transition-all" aria-hidden="true" />
+                <span
+                  class="h-2.5 w-2.5 rounded-full bg-borde transition-[width,background-color] duration-200 ease-out"
+                  aria-hidden="true"
+                />
               </button>
             ))
           }
@@ -192,8 +195,9 @@ const iniciales = (nombre: string) =>
     if (!pista) return;
 
     const tarjetas = Array.from(pista.children) as HTMLElement[];
+    const menosMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    const indiceActual = () => {
+    const indiceMasCercano = () => {
       const scroll = pista.scrollLeft;
       let mejor = 0;
       let dist = Infinity;
@@ -207,14 +211,35 @@ const iniciales = (nombre: string) =>
       return mejor;
     };
 
+    // Índice objetivo: lo fijan prev/next/dots. Sin esto, pulsar «siguiente»
+    // dos veces rápido recalculaba desde `scrollLeft` en pleno scroll suave y
+    // leía una posición intermedia, así que el segundo toque se perdía.
+    // Mientras `anclado` está activo, el listener de scroll no lo pisa.
+    let indiceObjetivo = indiceMasCercano();
+    let anclado = false;
+    let anclaTimer: number | undefined;
+
     const irA = (i: number) => {
-      const idx = Math.max(0, Math.min(tarjetas.length - 1, i));
-      const tarjeta = tarjetas[idx];
-      pista.scrollTo({ left: tarjeta.offsetLeft - pista.offsetLeft, behavior: 'smooth' });
+      indiceObjetivo = Math.max(0, Math.min(tarjetas.length - 1, i));
+      anclado = true;
+      window.clearTimeout(anclaTimer);
+      anclaTimer = window.setTimeout(() => {
+        anclado = false;
+      }, 600);
+      const tarjeta = tarjetas[indiceObjetivo];
+      pista.scrollTo({
+        left: tarjeta.offsetLeft - pista.offsetLeft,
+        // Respeta «reducir movimiento»: el CSS global anula scroll-behavior
+        // pero este scroll es por JS y hay que pedirlo explícito.
+        behavior: menosMovimiento.matches ? 'auto' : 'smooth',
+      });
     };
 
     const actualizar = () => {
-      const actual = indiceActual();
+      // Si el usuario deslizó a mano, prev/next siguen desde ahí; durante un
+      // scroll programático se respeta el objetivo ya fijado.
+      if (!anclado) indiceObjetivo = indiceMasCercano();
+      const actual = indiceObjetivo;
       dots.forEach((d, i) => {
         const activo = i === actual;
         // El color y el ancho se aplican al indicador visual (el <span>), no
@@ -229,8 +254,8 @@ const iniciales = (nombre: string) =>
       if (next) next.disabled = pista.scrollLeft >= pista.scrollWidth - pista.clientWidth - 1;
     };
 
-    prev?.addEventListener('click', () => irA(indiceActual() - 1));
-    next?.addEventListener('click', () => irA(indiceActual() + 1));
+    prev?.addEventListener('click', () => irA(indiceObjetivo - 1));
+    next?.addEventListener('click', () => irA(indiceObjetivo + 1));
     dots.forEach((d, i) => d.addEventListener('click', () => irA(i)));
     pista.addEventListener('scroll', actualizar, { passive: true });
     window.addEventListener('resize', actualizar);

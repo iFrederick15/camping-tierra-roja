@@ -75,7 +75,7 @@ const esActivo = (href: string) => !href.includes('#') && normalizarRuta(href) =
             class:list={[
               'relative flex min-h-9 items-center whitespace-nowrap font-titulo text-sm font-medium tracking-wide transition-colors duration-200',
               'after:absolute after:bottom-1 after:left-0 after:h-0.5 after:w-full after:origin-left',
-              'after:scale-x-0 after:bg-primario after:transition-transform after:duration-200 hover:after:scale-x-100',
+              'after:scale-x-0 after:bg-primario after:transition-transform after:duration-200 after:ease-out hover:after:scale-x-100',
               'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 rounded',
               esActivo(enlace.href)
                 ? 'text-primario after:scale-x-100'
@@ -106,16 +106,23 @@ const esActivo = (href: string) => !href.includes('#') && normalizarRuta(href) =
         data-abrir={t.nav.menuAbrir}
         data-cerrar={t.nav.menuCerrar}
       >
-        <span class="material-symbols-outlined text-3xl" aria-hidden="true">menu</span>
+        <span
+          class="material-symbols-outlined text-3xl transition-transform duration-200 ease-out"
+          aria-hidden="true">menu</span
+        >
       </button>
     </div>
   </div>
 
-  <!-- Panel del menú mobile -->
+  <!-- Panel del menú mobile.
+       `hidden` se mantiene para el estado sin JS; con JS se anima con
+       `data-open` (opacidad + un pequeño desplazamiento desde arriba) y se
+       vuelve a `hidden` recién cuando termina la transición de salida. -->
   <div
     id="navbar-mobile-menu"
     hidden
-    class="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-borde/60 bg-superficie px-4 pb-8 pt-3 sm:px-6 xl:hidden"
+    data-open="false"
+    class="max-h-[calc(100dvh-4rem)] origin-top overflow-y-auto border-t border-borde/60 bg-superficie px-4 pb-8 pt-3 transition-[opacity,transform] duration-200 ease-out data-[open=false]:pointer-events-none data-[open=false]:-translate-y-2 data-[open=false]:opacity-0 data-[open=true]:translate-y-0 data-[open=true]:opacity-100 sm:px-6 xl:hidden"
   >
     <nav aria-label={t.nav.navPrincipal}>
       <ul class="flex flex-col gap-0.5">
@@ -178,18 +185,30 @@ const esActivo = (href: string) => !href.includes('#') && normalizarRuta(href) =
 
   if (toggle && menu && icono) {
     const cerrar = () => {
-      menu.hidden = true;
+      menu.dataset.open = 'false';
       toggle.setAttribute('aria-expanded', 'false');
       toggle.setAttribute('aria-label', toggle.dataset.abrir ?? '');
       icono.textContent = 'menu';
+      icono.classList.remove('rotate-90');
       document.body.style.overflow = '';
+      // Ocultar del árbol de accesibilidad recién cuando termina la salida.
+      // `setTimeout` y no `transitionend`: este último no dispara si el
+      // usuario pidió menos movimiento y la transición dura ~0ms.
+      window.setTimeout(() => {
+        if (menu.dataset.open === 'false') menu.hidden = true;
+      }, 220);
     };
 
     const abrir = () => {
       menu.hidden = false;
+      // Reflow forzado: sin esto el navegador aplica el estado final sin
+      // transición al quitar `hidden` y setear `data-open` en el mismo frame.
+      void menu.offsetHeight;
+      menu.dataset.open = 'true';
       toggle.setAttribute('aria-expanded', 'true');
       toggle.setAttribute('aria-label', toggle.dataset.cerrar ?? '');
       icono.textContent = 'close';
+      icono.classList.add('rotate-90');
       document.body.style.overflow = 'hidden';
     };
 

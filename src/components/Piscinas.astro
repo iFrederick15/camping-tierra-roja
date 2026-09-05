@@ -58,7 +58,7 @@ const piscinas = t.piscinas.lista.map((p, i) => ({ ...p, ...visuales[i] }));
     <div class="grid grid-cols-1 gap-7 md:grid-cols-3 lg:gap-8">
       {
         piscinas.map((piscina) => (
-          <article class="group flex flex-col overflow-hidden rounded-card bg-superficie shadow-suave transition-shadow duration-300 hover:shadow-elevada">
+          <article class="flex flex-col overflow-hidden rounded-card bg-superficie shadow-suave transition-shadow duration-200 hover:shadow-elevada">
             <div class="relative aspect-[8/5] overflow-hidden">
               <img
                 src={piscina.imagen}

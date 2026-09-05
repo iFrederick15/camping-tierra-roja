@@ -234,7 +234,7 @@ export const en: Traducciones = {
       },
       {
         q: 'Can I visit just for the day?',
-        a: 'The covered barbecue areas (quinchos) can be booked for day use. [COMPLETAR: confirm whether there is a day pass to the water park without staying overnight, its price and opening hours.]',
+        a: 'Yes. You can pay the campsite day-entry fee to spend the day, use the barbecues and access the open pools. If you want a covered barbecue area (quincho), you need to book it through the "Book" button.',
       },
       {
         q: 'Can I book online?',
@@ -254,11 +254,11 @@ export const en: Traducciones = {
       },
       {
         q: 'How do I get here from Brazil or Foz do Iguaçu?',
-        a: 'You cross the Tancredo Neves International Bridge into Puerto Iguazú and continue to the campsite. Entering Argentina requires a national ID card or passport. [COMPLETAR: approximate driving time from downtown Foz do Iguaçu and from the border crossing.]',
+        a: 'You cross the Tancredo Neves International Bridge into Puerto Iguazú and continue to the campsite. Entering Argentina requires a national ID card or passport.',
       },
       {
         q: 'How do I pay?',
-        a: 'The deposit is paid by bank transfer, using the details sent in your booking confirmation email. The balance is paid on arrival. [COMPLETAR: confirm which payment methods are accepted at reception — cash in pesos, Brazilian reais, cards.]',
+        a: 'The booking is paid by bank transfer, using the details sent in your booking confirmation email.',
       },
     ],
   },

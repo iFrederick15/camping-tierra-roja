@@ -43,7 +43,8 @@ const VARIANTES = {
   data-evento-detalle={contexto ?? 'general'}
   class:list={[
     'inline-flex items-center justify-center gap-2.5 rounded-pill font-titulo font-bold',
-    'min-h-12 px-6 py-3 transition-all duration-200 active:scale-[0.98]',
+    // `transition-colors`, no `all`: solo cambia el color de fondo en hover.
+    'min-h-12 px-6 py-3 transition-colors duration-200',
     'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-whatsapp/40 focus-visible:ring-offset-2',
     VARIANTES[variante],
     bloque ? 'w-full' : '',

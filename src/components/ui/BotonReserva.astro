@@ -61,8 +61,12 @@ const TAMANOS = {
   data-evento={EVENTOS.RESERVAR}
   data-evento-detalle={unidad ?? 'general'}
   class:list={[
-    'group inline-flex items-center justify-center gap-2 rounded-pill font-titulo font-bold tracking-wide',
-    'transition-colors duration-150',
+    'inline-flex items-center justify-center gap-2 rounded-pill font-titulo font-bold tracking-wide',
+    // Es el CTA del embudo: `transform` entra en la transición para el
+    // micro-scale de press (0.97, apenas perceptible), y `ease-out` —curva
+    // reforzada, ver global.css— hace que el retorno se sienta inmediato.
+    // El feedback de press se limita A ESTE botón (ver estetica-sin-ia).
+    'transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97]',
     'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 focus-visible:ring-offset-2',
     VARIANTES[variante],
     TAMANOS[tamano],

@@ -235,7 +235,7 @@ export const pt: Traducciones = {
       },
       {
         q: 'Dá para entrar só por um dia?',
-        a: 'Os quinchos com churrasqueira podem ser reservados para passar o dia. [COMPLETAR: confirmar se existe entrada por dia no parque aquático sem hospedagem, o preço e o horário.]',
+        a: 'Sim. Você pode pagar a entrada do camping para passar o dia, usar as churrasqueiras e ter acesso às piscinas habilitadas. Caso queira um quincho, é preciso reservá-lo pelo botão "Reservar".',
       },
       {
         q: 'Dá para reservar online?',
@@ -255,11 +255,11 @@ export const pt: Traducciones = {
       },
       {
         q: 'Como chegar do Brasil ou de Foz do Iguaçu?',
-        a: 'A travessia é pela Ponte Internacional Tancredo Neves até Puerto Iguazú, e de lá se chega ao camping. Para entrar na Argentina é preciso documento de identidade (RG), cédula ou passaporte. [COMPLETAR: tempo de viagem aproximado a partir do centro de Foz do Iguaçu e da fronteira.]',
+        a: 'A travessia é pela Ponte Internacional Tancredo Neves até Puerto Iguazú, e de lá se chega ao camping. Para entrar na Argentina é preciso documento de identidade (RG), cédula ou passaporte.',
       },
       {
         q: 'Como é feito o pagamento?',
-        a: 'A entrada é paga por transferência bancária, com os dados que chegam no e-mail de confirmação da reserva. O saldo é pago na chegada ao camping. [COMPLETAR: confirmar quais meios de pagamento são aceitos na recepção — dinheiro em pesos, reais, cartões.]',
+        a: 'A reserva é paga por transferência bancária, com os dados que chegam no e-mail de confirmação da reserva.',
       },
     ],
   },

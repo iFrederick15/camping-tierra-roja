@@ -57,6 +57,15 @@
   --shadow-suave: 0 1px 1px rgba(43, 24, 16, 0.05), 0 3px 8px -4px rgba(43, 24, 16, 0.14);
   --shadow-elevada: 0 2px 3px rgba(43, 24, 16, 0.06), 0 14px 26px -16px rgba(43, 24, 16, 0.28);
   --shadow-hero: 0 3px 6px rgba(43, 24, 16, 0.07), 0 28px 48px -28px rgba(43, 24, 16, 0.4);
+
+  /* ── Easing ──
+     Las curvas integradas de CSS (`ease`, `ease-out`) son flojas: les falta
+     el arranque rápido que hace que una animación se sienta intencional.
+     Se pisa `--ease-out` (utilidad `ease-out`) con una variante más fuerte
+     —empieza rápido, frena suave— para menús, desplegables y feedback de
+     press: el momento que el usuario mira es el primero, y ahí tiene que
+     haber movimiento. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* ── Fuentes ──
@@ -77,14 +86,19 @@ html {
    (WCAG 2.3.3 — Animation from Interactions.) */
 @media (prefers-reduced-motion: reduce) {
   html {
-    scroll-behavior: auto;
+    scroll-behavior: auto !important;
   }
   *,
   *::before,
   *::after {
+    /* "Menos movimiento", no "cero animación" (WCAG 2.3.3): se conservan las
+       transiciones de color, opacidad y sombra —no hay desplazamiento en
+       ellas y aclaran el cambio de estado— y se anula todo lo demás:
+       `transform`, animaciones con keyframes y sus iteraciones. */
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-property: color, background-color, border-color, outline-color,
+      opacity, box-shadow, fill !important;
     scroll-behavior: auto !important;
   }
 }
@@ -129,9 +143,15 @@ html {
   }
 }
 
-/* El contenido no debe quedar tapado por la barra fija de reserva en mobile. */
+/* El contenido no debe quedar tapado por la barra fija de reserva en mobile.
+   La barra mide ~4rem (alto del botón + padding); sin reservar ese espacio,
+   al final del scroll tapaba la línea de copyright y los enlaces legales del
+   footer —que en mobile solo aparecen ahí—. */
 @media (max-width: 1023px) {
-  body {
+  body.con-barra-reserva {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+  body:not(.con-barra-reserva) {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }

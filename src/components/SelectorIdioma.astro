@@ -67,21 +67,27 @@ const claro = tono === 'claro';
         aria-expanded="false"
         aria-haspopup="true"
         aria-label={`${t.nav.elegirIdioma}. ${t.nav.idiomaActual}: ${actual.nombre}`}
-        class="inline-flex min-h-11 items-center gap-1.5 rounded-pill px-3 text-sm font-titulo font-medium text-texto-suave transition-colors hover:bg-fondo-alt hover:text-primario focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+        class="group inline-flex min-h-11 items-center gap-1.5 rounded-pill px-3 text-sm font-titulo font-medium text-texto-suave transition-colors hover:bg-fondo-alt hover:text-primario focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
       >
         <span class="text-base leading-none" aria-hidden="true">
           {actual.bandera}
         </span>
         <span class="uppercase tracking-wide">{actual.codigo}</span>
-        <span class="material-symbols-outlined text-lg" aria-hidden="true">
+        <span
+          class="material-symbols-outlined text-lg transition-transform duration-150 ease-out group-aria-expanded:rotate-180"
+          aria-hidden="true"
+        >
           expand_more
         </span>
       </button>
 
+      <!-- El desplegable escala desde su esquina (arriba-derecha), no desde
+           el centro: nace del botón que lo abrió. -->
       <ul
         data-selector-menu
         hidden
-        class="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-borde bg-superficie py-1 shadow-elevada"
+        data-open="false"
+        class="absolute right-0 top-full z-50 mt-2 w-48 origin-top-right overflow-hidden rounded-2xl border border-borde bg-superficie py-1 shadow-elevada transition-[opacity,transform] duration-150 ease-out data-[open=false]:pointer-events-none data-[open=false]:scale-95 data-[open=false]:opacity-0 data-[open=true]:scale-100 data-[open=true]:opacity-100"
       >
         {IDIOMAS.map((i) => {
           const esActual = i.codigo === idioma;
@@ -129,22 +135,30 @@ const claro = tono === 'claro';
     if (!boton || !menu) return;
 
     const cerrar = () => {
-      menu.hidden = true;
+      menu.dataset.open = 'false';
       boton.setAttribute('aria-expanded', 'false');
+      window.setTimeout(() => {
+        if (menu.dataset.open === 'false') menu.hidden = true;
+      }, 170);
     };
     const abrir = () => {
       menu.hidden = false;
+      // Reflow forzado para que la entrada anime desde el estado cerrado.
+      void menu.offsetHeight;
+      menu.dataset.open = 'true';
       boton.setAttribute('aria-expanded', 'true');
     };
 
-    boton.addEventListener('click', () => (menu.hidden ? abrir() : cerrar()));
+    const estaAbierto = () => menu.dataset.open === 'true';
+
+    boton.addEventListener('click', () => (estaAbierto() ? cerrar() : abrir()));
 
     document.addEventListener('click', (e) => {
       if (!raiz.contains(e.target as Node)) cerrar();
     });
 
     raiz.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !menu.hidden) {
+      if (e.key === 'Escape' && estaAbierto()) {
         cerrar();
         boton.focus();
       }

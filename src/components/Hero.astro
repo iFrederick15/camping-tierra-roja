@@ -4,14 +4,18 @@
 // Prioridad de conversión: en la primera pantalla el visitante tiene que
 // entender QUÉ es esto, DÓNDE está y CÓMO reservar. Por eso el orden es
 // título → propuesta de valor con la ubicación → prueba social → CTA
-// «RESERVAR AHORA» → los tres atajos de alojamiento.
+// «RESERVAR AHORA».
+//
+// Los atajos por tipo de alojamiento (Camping/Motorhome/Cabaña) NO van acá:
+// piden elegir alojamiento antes de dar un motivo para hacerlo y compiten con
+// el CTA principal. Viven en el cierre de la página (CTA.astro), cuando el
+// visitante ya vio el lugar y decidió.
 //
 // Performance: antes se descargaban dos copias de la misma foto aérea (el
 // .webp de fondo y el .jpg de la tarjeta). Ahora ambas usan el .webp, así que
 // el navegador baja un solo archivo. La precarga se declara desde el <head>
 // (prop `preloadImagen` del Layout), que es donde el navegador la descubre
 // antes de empezar a parsear el cuerpo de la página.
-import AtajosAlojamiento from './ui/AtajosAlojamiento.astro';
 import BotonReserva from './ui/BotonReserva.astro';
 import BotonWhatsApp from './ui/BotonWhatsApp.astro';
 import { obtenerResenas } from '../lib/resenas';
@@ -78,6 +82,10 @@ const promedio = promedioNum.toLocaleString(idioma === 'en' ? 'en-US' : 'es-AR',
           {t.hero.subtitulo}
         </p>
 
+        <!-- Dos señales, no tres: el subtítulo ya dice "a unos 20 minutos del
+             Parque Nacional Iguazú", así que el chip de distancia repetía el
+             dato en la misma pantalla. Quedan la valoración (prueba social) y
+             "abierto todo el año" (dato operativo que no está en otro lado). -->
         <ul
           class="mb-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start"
         >
@@ -93,12 +101,6 @@ const promedio = promedioNum.toLocaleString(idioma === 'en' ? 'en-US' : 'es-AR',
           </li>
           <li class="flex items-center gap-1.5">
             <span class="material-symbols-outlined text-lg text-white/60" aria-hidden="true"
-              >near_me</span
-            >
-            <span class="text-sm font-medium text-white/85">{t.hero.aTiempo}</span>
-          </li>
-          <li class="flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-lg text-white/60" aria-hidden="true"
               >schedule</span
             >
             <span class="text-sm font-medium text-white/85">{t.hero.todoElAno}</span>
@@ -111,19 +113,6 @@ const promedio = promedioNum.toLocaleString(idioma === 'en' ? 'en-US' : 'es-AR',
         >
           <BotonReserva idioma={idioma} texto={t.hero.ctaPrincipal} tamano="lg" />
           <BotonWhatsApp idioma={idioma} texto={t.hero.ctaSecundario} variante="verde" />
-        </div>
-
-        <!-- Atajos por tipo de alojamiento -->
-        <div class="mt-7">
-          <p
-            class="mb-3 text-center font-titulo text-sm font-medium text-white/70 lg:text-left"
-            id="hero-atajos"
-          >
-            {t.hero.elegiTuLugar}
-          </p>
-          <nav aria-labelledby="hero-atajos">
-            <AtajosAlojamiento idioma={idioma} t={t} tono="claro" />
-          </nav>
         </div>
       </div>
 

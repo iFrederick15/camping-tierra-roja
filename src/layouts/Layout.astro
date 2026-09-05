@@ -245,7 +245,14 @@ const urlIconos = `https://fonts.googleapis.com/css2?family=Material+Symbols+Out
     />
     <link href={urlIconos} rel="stylesheet" />
   </head>
-  <body class="bg-fondo font-cuerpo text-texto antialiased overflow-x-hidden">
+  <body
+    class:list={[
+      'bg-fondo font-cuerpo text-texto antialiased overflow-x-hidden',
+      // Reserva el alto de la barra fija de reserva en mobile (ver global.css)
+      // solo en las páginas que la muestran.
+      !sinBarraReserva && 'con-barra-reserva',
+    ]}
+  >
     <!-- Salto de navegación: primer elemento enfocable de la página, para
          quien navega con teclado o lector de pantalla. -->
     <a
