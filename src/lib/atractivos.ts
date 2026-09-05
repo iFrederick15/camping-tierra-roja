@@ -52,6 +52,13 @@ export interface Atractivo {
    * hay que borrar además `public/images/atractivos/NN.webp`.
    */
   sinLogo?: boolean;
+  /**
+   * Sitio web propio del prestador. Es la excepción prevista a la regla de no
+   * copiar datos de terceros (ver arriba): se agrega solo para atractivos
+   * destacados en la home y con la URL verificada a mano contra el sitio o el
+   * folleto oficial. Si cambia o deja de responder, se borra este campo.
+   */
+  sitio?: string;
 }
 
 /** Categorías de la leyenda del mapa, con su icono de Material Symbols. */
@@ -64,6 +71,38 @@ export const CATEGORIAS_ATRACTIVOS: { id: CategoriaAtractivo; icono: string }[] 
 ];
 
 export const GUIA_OFICIAL = 'https://www.atractivosiguazu.com';
+
+/** Edición del descriptivo de la que salen estas fichas, el folleto y los logos. */
+export const EDICION_FOLLETO = '29/06/2026';
+
+/**
+ * Las dos páginas del descriptivo oficial y el PDF liviano para descargar,
+ * que es lo que muestra la página `/atractivos`. Los archivos los genera
+ * `scripts/folleto-atractivos.mjs` a partir del PDF de imprenta (18 MB, que
+ * no se puede publicar tal cual).
+ */
+export const FOLLETO = {
+  pdf: '/documentos/atractivos-iguazu.pdf',
+  // Las dos páginas salen del mismo pliego, así que comparten proporción.
+  ancho: 1600,
+  alto: 1420,
+  paginas: [
+    { clave: 'descriptivo', imagen: '/images/atractivos/folleto-descriptivo.webp' },
+    { clave: 'mapa', imagen: '/images/atractivos/folleto-mapa.webp' },
+  ],
+} as const;
+
+/** Versión a 3000 px de una página del folleto, para verla en tamaño completo. */
+export function folletoGrande(imagen: string): string {
+  return imagen.replace('.webp', '-grande.webp');
+}
+
+/**
+ * Los dos atractivos que la sección de la home muestra junto a los tiempos de
+ * viaje: completan las 8 tarjetas y son los que más se consultan en el
+ * mostrador. El resto vive en `/atractivos`.
+ */
+export const DESTACADOS_HOME = [18, 13]; // La Aripuca · Duty Free Shop
 
 /**
  * Logo de la ficha, recortado del descriptivo oficial. El archivo lleva el
@@ -248,6 +287,7 @@ export const ATRACTIVOS: Atractivo[] = [
     numero: 18,
     nombre: 'La Aripuca',
     categoria: 'cultural',
+    sitio: 'https://www.aripuca.com.ar/',
     descripcion: {
       es: 'Gran construcción de madera recuperada en homenaje a la selva misionera, con artesanías y restaurante.',
       pt: 'Grande construção de madeira recuperada em homenagem à selva missioneira, com artesanato e restaurante.',

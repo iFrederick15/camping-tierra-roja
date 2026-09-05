@@ -147,7 +147,7 @@ ya se disparan a `window.dataLayer` (se pueden ver en la consola del navegador):
 
 Para activar Google Tag Manager:
 
-1. Definir `PUBLIC_GTM_ID` (formato `GTM-XXXXXXX`) en Vercel.
+1. Definir `GTM_ID` (formato `GTM-XXXXXXX`) en Vercel. Sin prefijo `PUBLIC_`.
 2. Agregar a `vercel.json` → `Content-Security-Policy`:
    - `script-src` … `https://www.googletagmanager.com`
    - `connect-src` … `https://www.google-analytics.com https://*.analytics.google.com`

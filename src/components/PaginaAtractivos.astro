@@ -1,0 +1,297 @@
+---
+// Guía de atractivos de Puerto Iguazú (`/atractivos`).
+//
+// Es el descriptivo completo de la ACATI —34 fichas y el mapa— que antes
+// vivía paginado dentro de la sección "Ubicación" de la home. Acá tiene
+// espacio para verse entero: todas las fichas a la vez, filtrables por
+// categoría, y las dos páginas del folleto oficial para mirar y descargar.
+//
+// No está en el menú a propósito: se llega desde el botón de la sección
+// "Ubicación" (`RUTAS[idioma].atractivos`). Sí es indexable, porque "qué
+// hacer en Puerto Iguazú" es exactamente lo que busca el huésped antes de
+// elegir dónde dormir.
+//
+// El filtro es mejora progresiva: sin JS se ven las 34 fichas y los botones
+// simplemente no hacen nada, así que no se pierde contenido.
+import BotonReserva from './ui/BotonReserva.astro';
+import {
+  ATRACTIVOS,
+  CATEGORIAS_ATRACTIVOS,
+  EDICION_FOLLETO,
+  FOLLETO,
+  GUIA_OFICIAL,
+  folletoGrande,
+  logoDeAtractivo,
+} from '../lib/atractivos';
+import { interpolar, RUTAS, type Idioma, type Traducciones } from '../i18n';
+
+interface Props {
+  idioma: Idioma;
+  t: Traducciones;
+}
+
+const { idioma, t } = Astro.props;
+const tp = t.atractivos;
+const tA = t.ubicacion.atractivos;
+
+const fichas = ATRACTIVOS.map((a) => {
+  const categoria = CATEGORIAS_ATRACTIVOS.find((c) => c.id === a.categoria);
+  return {
+    ...a,
+    icono: categoria?.icono ?? 'place',
+    categoriaNombre: tA.categorias[a.categoria],
+    detalle: a.descripcion[idioma],
+    // Sin logo publicable, la ficha muestra el número del mapa.
+    logo: a.sinLogo ? null : logoDeAtractivo(a.numero),
+  };
+});
+
+const filtros = [
+  { id: 'todas', label: tp.todas },
+  ...CATEGORIAS_ATRACTIVOS.map((c) => ({ id: c.id, label: tA.categorias[c.id] })),
+];
+---
+
+<!-- Encabezado -->
+<section class="mx-auto mb-10 max-w-7xl px-6">
+  <a
+    href={`${RUTAS[idioma].home}#ubicacion`}
+    class="mb-6 inline-flex items-center gap-1.5 font-titulo text-sm font-bold text-texto-suave transition-colors hover:text-primario focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+  >
+    <span class="material-symbols-outlined text-lg" aria-hidden="true">arrow_back</span>
+    {tp.volver}
+  </a>
+  <p
+    class="mb-3 font-titulo text-xs font-bold uppercase tracking-[0.14em] text-primario sm:text-sm"
+  >
+    {tp.kicker}
+  </p>
+  <h1
+    class="mb-5 font-titulo text-4xl font-extrabold leading-tight tracking-tight text-texto sm:text-5xl md:text-6xl"
+  >
+    {tp.titulo}
+    <span class="text-primario">{tp.tituloDestacado}</span>
+  </h1>
+  <p class="max-w-3xl text-lg leading-relaxed text-texto-suave">{tp.intro}</p>
+</section>
+
+<!-- Filtros por categoría -->
+<section class="mx-auto mb-10 max-w-7xl px-6">
+  <div
+    class="flex flex-wrap gap-2.5"
+    id="atractivos-filtros"
+    role="group"
+    aria-label={tp.filtrarPor}
+  >
+    {
+      filtros.map((filtro, i) => (
+        <button
+          type="button"
+          data-categoria={filtro.id}
+          class:list={[
+            'filtro-atractivo min-h-11 rounded-pill px-5 font-titulo text-sm font-bold transition-all duration-200',
+            'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40',
+            i === 0
+              ? 'bg-primario text-white shadow-suave'
+              : 'bg-fondo-alt text-texto-suave hover:bg-primario/10 hover:text-primario',
+          ]}
+          aria-pressed={i === 0 ? 'true' : 'false'}
+        >
+          {filtro.label}
+        </button>
+      ))
+    }
+  </div>
+  <p id="atractivos-estado" class="sr-only" role="status" aria-live="polite"></p>
+</section>
+
+<!-- Fichas del descriptivo -->
+<section class="mx-auto mb-20 max-w-7xl px-6">
+  <ul
+    class="grid grid-cols-1 gap-4 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-3"
+    aria-label={tA.listaEtiqueta}
+  >
+    {
+      fichas.map((ficha) => (
+        <li class="ficha-atractivo" data-categoria={ficha.categoria}>
+          <article
+            class:list={[
+              'flex h-full gap-4 rounded-card border bg-superficie p-4',
+              ficha.nuestro ? 'border-primario' : 'border-borde',
+            ]}
+          >
+            <span
+              class:list={[
+                'flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border p-1 font-titulo text-base font-bold',
+                ficha.nuestro ? 'border-primario' : 'border-borde',
+                ficha.logo ? 'bg-white' : 'bg-fondo-alt text-texto-suave',
+              ]}
+              aria-hidden={ficha.logo ? undefined : 'true'}
+            >
+              {ficha.logo ? (
+                <img
+                  src={ficha.logo}
+                  alt=""
+                  width="64"
+                  height="48"
+                  loading="lazy"
+                  decoding="async"
+                  class="h-full w-full object-contain"
+                />
+              ) : (
+                ficha.numero
+              )}
+            </span>
+
+            <div class="min-w-0">
+              <h2 class="font-titulo font-bold leading-tight text-negro">
+                {ficha.nombre}
+                {ficha.nuestro && (
+                  <span class="ml-2 inline-block rounded-pill bg-primario px-2 py-0.5 align-middle text-[11px] font-bold uppercase tracking-wide text-white">
+                    {tA.aqui}
+                  </span>
+                )}
+              </h2>
+              <p class="mt-1 text-sm leading-snug text-texto-suave">{ficha.detalle}</p>
+              <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-texto-suave">
+                <span class="inline-flex items-center gap-1">
+                  <span class="material-symbols-outlined text-sm" aria-hidden="true">
+                    {ficha.icono}
+                  </span>
+                  {ficha.categoriaNombre}
+                </span>
+                <span>{interpolar(tA.numeroMapa, { numero: ficha.numero })}</span>
+              </p>
+            </div>
+          </article>
+        </li>
+      ))
+    }
+  </ul>
+  <p id="atractivos-vacio" hidden class="py-16 text-center text-texto-suave">{tp.sinResultados}</p>
+</section>
+
+<!-- Folleto oficial: las dos páginas del descriptivo impreso -->
+<section class="mx-auto mb-20 max-w-7xl px-6">
+  <div class="rounded-card border border-borde bg-fondo-alt p-6 md:p-10">
+    <h2 class="font-titulo text-2xl font-bold text-negro md:text-3xl">{tp.folletoTitulo}</h2>
+    <p class="mt-3 max-w-3xl leading-relaxed text-texto-suave">{tp.folletoTexto}</p>
+
+    <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {
+        FOLLETO.paginas.map(({ clave, imagen }) => (
+          <figure class="overflow-hidden rounded-card border border-borde bg-white">
+            <a
+              href={folletoGrande(imagen)}
+              target="_blank"
+              rel="noopener"
+              class="block focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+            >
+              <img
+                src={imagen}
+                alt={tp.paginas[clave]}
+                width={FOLLETO.ancho}
+                height={FOLLETO.alto}
+                loading="lazy"
+                decoding="async"
+                class="w-full"
+              />
+            </a>
+            <figcaption class="flex flex-wrap items-center justify-between gap-3 border-t border-borde px-4 py-3">
+              <span class="font-titulo text-sm font-bold text-negro">{tp.paginas[clave]}</span>
+              <a
+                href={folletoGrande(imagen)}
+                target="_blank"
+                rel="noopener"
+                class="inline-flex items-center gap-1.5 font-titulo text-sm font-bold text-primario underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+              >
+                <span class="material-symbols-outlined text-lg" aria-hidden="true">
+                  zoom_in
+                </span>
+                {tp.verGrande}
+              </a>
+            </figcaption>
+          </figure>
+        ))
+      }
+    </div>
+
+    <div class="mt-8 flex flex-wrap items-center gap-4">
+      <a
+        href={FOLLETO.pdf}
+        target="_blank"
+        rel="noopener"
+        class="inline-flex min-h-12 items-center gap-2 rounded-pill bg-primario px-6 font-titulo font-bold text-white transition-colors hover:bg-primario-oscuro focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+      >
+        <span class="material-symbols-outlined text-xl" aria-hidden="true">download</span>
+        {tp.descargarPdf}
+      </a>
+      <a
+        href={GUIA_OFICIAL}
+        target="_blank"
+        rel="noopener"
+        class="inline-flex min-h-12 items-center gap-2 rounded-pill border-2 border-primario px-6 font-titulo font-bold text-primario transition-colors hover:bg-primario hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+      >
+        <span class="material-symbols-outlined text-xl" aria-hidden="true">open_in_new</span>
+        {tp.verGuia}
+      </a>
+    </div>
+
+    <p class="mt-6 max-w-3xl text-xs leading-relaxed text-texto-suave">
+      {interpolar(tp.fuente, { edicion: EDICION_FOLLETO })}
+    </p>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="mx-auto mb-24 max-w-7xl px-6">
+  <div class="relative overflow-hidden rounded-card bg-primario px-8 py-14 text-center md:py-16">
+    <div
+      class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,_white_1px,_transparent_1px)] bg-[length:40px_40px] opacity-5"
+    >
+    </div>
+    <div class="relative z-10">
+      <h2 class="mb-4 font-titulo text-3xl font-bold text-white md:text-4xl">{tp.ctaTitulo}</h2>
+      <p class="mx-auto mb-8 max-w-xl text-white/85">{tp.ctaTexto}</p>
+      <div class="flex justify-center">
+        <BotonReserva idioma={idioma} texto={tp.ctaBoton} variante="claro" tamano="lg" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<script is:inline define:vars={{ textoContador: tp.contador }}>
+  (function () {
+    const filtros = Array.from(document.querySelectorAll('#atractivos-filtros .filtro-atractivo'));
+    const fichas = Array.from(document.querySelectorAll('.ficha-atractivo'));
+    const vacio = document.getElementById('atractivos-vacio');
+    const estado = document.getElementById('atractivos-estado');
+    if (!filtros.length || !fichas.length) return;
+
+    filtros.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const categoria = btn.dataset.categoria;
+
+        filtros.forEach((b) => {
+          const activo = b === btn;
+          b.classList.toggle('bg-primario', activo);
+          b.classList.toggle('text-white', activo);
+          b.classList.toggle('shadow-suave', activo);
+          b.classList.toggle('bg-fondo-alt', !activo);
+          b.classList.toggle('text-texto-suave', !activo);
+          b.setAttribute('aria-pressed', String(activo));
+        });
+
+        fichas.forEach((el) => {
+          el.hidden = !(categoria === 'todas' || el.dataset.categoria === categoria);
+        });
+
+        const cantidad = fichas.filter((el) => !el.hidden).length;
+        if (vacio) vacio.hidden = cantidad > 0;
+        // El filtro no se anuncia solo: los lectores de pantalla no ven que
+        // la grilla cambió.
+        if (estado) estado.textContent = textoContador.replace('{cantidad}', String(cantidad));
+      });
+    });
+  })();
+</script>

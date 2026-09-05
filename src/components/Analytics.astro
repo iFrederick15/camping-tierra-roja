@@ -8,7 +8,9 @@
 // (`window.dataLayer`) para verificarlos antes de conectar la herramienta.
 //
 // PARA ACTIVAR GOOGLE ANALYTICS / GTM:
-//   1. Definir PUBLIC_GTM_ID (contenedor GTM-XXXXXXX) en Vercel.
+//   1. Definir GTM_ID (contenedor GTM-XXXXXXX) en Vercel. No lleva prefijo
+//      PUBLIC_: solo se lee acá en el frontmatter (servidor), nunca en el JS
+//      del navegador.
 //   2. Agregar a `vercel.json` → Content-Security-Policy:
 //        script-src  … https://www.googletagmanager.com
 //        connect-src … https://www.google-analytics.com https://*.analytics.google.com
@@ -17,7 +19,7 @@
 //      existentes empiezan a llegar.
 //
 // Eventos disponibles: ver `src/lib/analytics.ts`.
-const gtmId = import.meta.env.PUBLIC_GTM_ID;
+const gtmId = process.env.GTM_ID ?? import.meta.env.GTM_ID;
 ---
 
 <script is:inline>

@@ -24,10 +24,10 @@ export const PUNTOS_DE_INTERES: PuntoDeInteres[] = [
   { clave: 'centro', minutos: 20, confirmado: true, icono: 'storefront' },
   // ⚠️ COMPLETAR: minutos reales hasta el paso fronterizo (Puente Tancredo
   // Neves) y hasta el centro de Foz do Iguaçu.
-  { clave: 'brasil', minutos: null, confirmado: false, icono: 'swap_horiz' },
-  { clave: 'foz', minutos: null, confirmado: false, icono: 'public' },
+  { clave: 'brasil', minutos: 15, confirmado: true, icono: 'swap_horiz' },
+  { clave: 'foz', minutos: 40, confirmado: true, icono: 'public' },
   // ⚠️ COMPLETAR: minutos hasta el Aeropuerto Internacional de Puerto Iguazú
   // (IGR) y hasta el Hito Tres Fronteras.
-  { clave: 'aeropuerto', minutos: null, confirmado: false, icono: 'flight' },
-  { clave: 'tresFronteras', minutos: null, confirmado: false, icono: 'flag' },
+  { clave: 'aeropuerto', minutos: 30, confirmado: true, icono: 'flight' },
+  { clave: 'tresFronteras', minutos: 20, confirmado: true, icono: 'flag' },
 ];

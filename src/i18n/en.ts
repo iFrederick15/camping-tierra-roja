@@ -181,13 +181,12 @@ export const en: Traducciones = {
         compras: 'Shopping',
       },
       numeroMapa: 'No. {numero} on the map',
+      sitioWeb: 'Website',
+      abreSitio: 'Open the {nombre} website in a new tab',
       aqui: 'You are here',
-      verAnterior: 'See previous',
-      verMas: 'See more attractions',
-      pagina: 'Page {n} of {total}',
-      verGuia: 'View the official guide',
-      fuente:
-        'The {total} attractions in the official Atractivos Iguazú (ACATI) guide, updated 29/06/2026. Tierra Roja is number 26 on the map; each logo belongs to its operator.',
+      verTodos: 'See all {total} Iguazú attractions',
+      verTodosDetalle:
+        'The full Puerto Iguazú guide: every listing from the official brochure plus the city map to view and download.',
     },
   },
 
@@ -296,6 +295,37 @@ export const en: Traducciones = {
     aria: 'Chat on WhatsApp',
     burbuja: 'Questions? Chat with us',
     cerrarBurbuja: 'Close message',
+  },
+
+  atractivos: {
+    metaTitulo: 'What to do in Puerto Iguazú — Attractions guide | Tierra Roja',
+    metaDescripcion:
+      'The {total} Puerto Iguazú attractions from the official Atractivos Iguazú (ACATI) brochure, with the city map to view and download. Camping Tierra Roja is number 26 on the map.',
+    kicker: 'Iguazú guide',
+    titulo: 'What to do in',
+    tituloDestacado: 'Puerto Iguazú',
+    intro:
+      'Waterfalls, rainforest, adventure and shopping: everything there is to do around the campsite, exactly as listed in the city\u2019s official brochure. Tierra Roja is number 26 on the map, so every attraction here is within reach.',
+    filtrarPor: 'Filter attractions by category',
+    todas: 'All',
+    contador: '{cantidad} attractions',
+    sinResultados: 'No attractions in this category.',
+    folletoTitulo: 'The official brochure',
+    folletoTexto:
+      'Both sides of the printed guide handed out around town: the operator listings and the map showing where each one is. Download it before you travel and keep it on your phone.',
+    paginas: {
+      descriptivo: 'Attraction listings',
+      mapa: 'Map of Puerto Iguazú',
+    },
+    verGrande: 'View full size',
+    descargarPdf: 'Download the brochure (PDF)',
+    verGuia: 'View the official guide',
+    fuente:
+      'Atractivos Iguazú brochure and map, published by ACATI (Asociación Civil Atractivos Turísticos de Iguazú), {edicion} edition. Reproduced as a guide for our guests; every logo and service belongs to its operator.',
+    volver: 'Back to location',
+    ctaTitulo: 'Your base for all of it',
+    ctaTexto: 'Camping, motorhome or cabin 20 minutes from the falls, pools included.',
+    ctaBoton: 'Book now',
   },
 
   galeria: {

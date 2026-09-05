@@ -32,14 +32,34 @@ export const IDIOMAS: {
 ];
 
 /** Claves de página que existen traducidas en los tres idiomas. */
-export type ClaveRuta = 'home' | 'galeria' | 'contacto' | 'reservar';
+export type ClaveRuta = 'home' | 'galeria' | 'contacto' | 'reservar' | 'atractivos';
 
 // Mapa único de rutas: el selector de idioma, el footer, el navbar y los
 // `hreflang` del <head> leen todos de acá, así no pueden desincronizarse.
+// `atractivos` es la guía de Iguazú: no está en el menú a propósito, se llega
+// desde el botón de la sección "Ubicación" de la home (y desde el buscador).
 export const RUTAS: Record<Idioma, Record<ClaveRuta, string>> = {
-  es: { home: '/', galeria: '/galeria', contacto: '/contacto', reservar: '/reservar' },
-  pt: { home: '/pt', galeria: '/pt/galeria', contacto: '/pt/contato', reservar: '/pt/reservar' },
-  en: { home: '/en', galeria: '/en/gallery', contacto: '/en/contact', reservar: '/en/book' },
+  es: {
+    home: '/',
+    galeria: '/galeria',
+    contacto: '/contacto',
+    reservar: '/reservar',
+    atractivos: '/atractivos',
+  },
+  pt: {
+    home: '/pt',
+    galeria: '/pt/galeria',
+    contacto: '/pt/contato',
+    reservar: '/pt/reservar',
+    atractivos: '/pt/atracoes',
+  },
+  en: {
+    home: '/en',
+    galeria: '/en/gallery',
+    contacto: '/en/contact',
+    reservar: '/en/book',
+    atractivos: '/en/attractions',
+  },
 };
 
 // Páginas legales y reglamento: por ahora solo existen en español (son textos

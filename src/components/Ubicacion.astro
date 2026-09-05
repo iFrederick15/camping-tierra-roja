@@ -6,33 +6,28 @@
 // también la sección que más peso tiene para el visitante brasileño, que
 // llega por Foz do Iguaçu.
 //
-// La columna izquierda agrupa TODO lo que hay alrededor en una sola lista
-// paginada de 8 tarjetas (2 x 4): primero los tiempos de viaje de
-// `src/lib/ubicacion.ts` y después las 34 fichas del descriptivo oficial de
-// Atractivos Iguazú (ACATI), con el mismo número que llevan en el mapa
-// impreso. Son 40 tarjetas justas, 5 páginas de 8. Tierra Roja es la ficha
-// 26, así que la guía le resuelve el itinerario al huésped y de paso muestra
-// que el camping está en la guía oficial de la ciudad.
+// La columna izquierda muestra 8 tarjetas fijas (2 x 4): los seis tiempos de
+// viaje de `src/lib/ubicacion.ts` y los dos atractivos de `DESTACADOS_HOME`
+// (La Aripuca y el Duty Free). El descriptivo completo de la ACATI —34
+// fichas— vive en la página `/atractivos`, a la que se llega solo desde el
+// botón de abajo: en la home ocupaba cinco páginas de tarjetas y tapaba el
+// resto de la sección.
 //
 // Los tiempos de viaje que todavía no están confirmados NO se muestran como
 // número: se muestra el destino con un "consultar", nunca una distancia
 // inventada.
-//
-// La paginación es mejora progresiva: el HTML trae las 40 tarjetas y el
-// `<noscript>` de abajo las muestra todas y esconde los botones, así sin JS
-// no se pierde contenido.
 import EncabezadoSeccion from './ui/EncabezadoSeccion.astro';
 import BotonReserva from './ui/BotonReserva.astro';
 import { PUNTOS_DE_INTERES } from '../lib/ubicacion';
 import {
   ATRACTIVOS,
   CATEGORIAS_ATRACTIVOS,
-  GUIA_OFICIAL,
+  DESTACADOS_HOME,
   logoDeAtractivo,
 } from '../lib/atractivos';
 import { NEGOCIO, DIRECCION_COMPLETA } from '../lib/negocio';
 import { EVENTOS } from '../lib/analytics';
-import { interpolar, type Idioma, type Traducciones } from '../i18n';
+import { interpolar, RUTAS, type Idioma, type Traducciones } from '../i18n';
 
 interface Props {
   idioma: Idioma;
@@ -42,15 +37,13 @@ interface Props {
 const { idioma, t } = Astro.props;
 const tA = t.ubicacion.atractivos;
 
-const POR_PAGINA = 8; // 2 columnas x 4 filas
-
 // El icono de cada categoría se resuelve acá para no buscarlo dentro del map.
 const iconoCategoria = Object.fromEntries(
   CATEGORIAS_ATRACTIVOS.map((c) => [c.id, c.icono])
 ) as Record<string, string>;
 
-// Una sola lista: los tiempos de viaje primero (son el argumento de venta) y
-// después el descriptivo completo, en el orden del folleto.
+// Los tiempos de viaje primero (son el argumento de venta) y después los dos
+// atractivos destacados, en el orden en que los lista `DESTACADOS_HOME`.
 const tarjetas = [
   ...PUNTOS_DE_INTERES.map((p) => {
     const texto = t.ubicacion.puntos[p.clave];
@@ -62,20 +55,24 @@ const tarjetas = [
       minutos: p.confirmado && p.minutos !== null ? p.minutos : null,
     };
   }),
-  ...ATRACTIVOS.map((a) => ({
-    tipo: 'atractivo' as const,
-    nombre: a.nombre,
-    detalle: a.descripcion[idioma],
-    icono: iconoCategoria[a.categoria],
-    categoriaNombre: tA.categorias[a.categoria],
-    numero: a.numero,
-    nuestro: a.nuestro === true,
-    // Sin logo publicable, la tarjeta muestra el número del mapa.
-    logo: a.sinLogo ? null : logoDeAtractivo(a.numero),
-  })),
+  ...DESTACADOS_HOME.map((numero) => {
+    const a = ATRACTIVOS.find((x) => x.numero === numero);
+    if (!a) throw new Error(`DESTACADOS_HOME apunta al atractivo ${numero}, que no existe`);
+    return {
+      tipo: 'atractivo' as const,
+      nombre: a.nombre,
+      detalle: a.descripcion[idioma],
+      icono: iconoCategoria[a.categoria],
+      categoriaNombre: tA.categorias[a.categoria],
+      numero: a.numero,
+      // Sin logo publicable, la tarjeta muestra el número del mapa.
+      logo: a.sinLogo ? null : logoDeAtractivo(a.numero),
+      // Solo los atractivos con sitio verificado (ver `atractivos.ts`)
+      // convierten la tarjeta en un enlace.
+      sitio: a.sitio ?? null,
+    };
+  }),
 ];
-
-const paginas = Math.ceil(tarjetas.length / POR_PAGINA);
 
 // El iframe de Google Maps se carga en el idioma del visitante.
 const hlMapa = idioma === 'pt' ? 'pt-BR' : idioma === 'en' ? 'en' : 'es';
@@ -92,27 +89,35 @@ const mapaEmbed = `https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Ac
     />
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
-      <!-- Distancias y atractivos, paginados de a 8 -->
+      <!-- Distancias y los dos atractivos destacados -->
       <div class="lg:col-span-7">
         <ul
-          id="ubicacion-tarjetas"
           class="grid grid-cols-1 gap-4 sm:auto-rows-fr sm:grid-cols-2"
           aria-label={tA.listaEtiqueta}
         >
           {
-            tarjetas.map((tarjeta, i) => (
-              <li
-                class="tarjeta-ubicacion"
-                data-pagina={Math.floor(i / POR_PAGINA)}
-                hidden={i >= POR_PAGINA}
-              >
-                <article
+            tarjetas.map((tarjeta) => {
+              // La tarjeta es un enlace solo si el atractivo trae sitio propio.
+              const enlace = tarjeta.tipo === 'atractivo' ? tarjeta.sitio : null;
+              const Contenedor = enlace ? 'a' : 'article';
+              return (
+              <li>
+                <Contenedor
                   class:list={[
-                    'flex h-full gap-4 rounded-card border bg-superficie p-4',
-                    tarjeta.tipo === 'atractivo' && tarjeta.nuestro
-                      ? 'border-primario'
-                      : 'border-borde',
+                    'group flex h-full gap-4 rounded-card border border-borde bg-superficie p-4',
+                    enlace &&
+                      'transition-colors hover:border-primario focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40',
                   ]}
+                  {...(enlace
+                    ? {
+                        href: enlace,
+                        target: '_blank',
+                        rel: 'noopener',
+                        'aria-label': interpolar(tA.abreSitio, { nombre: tarjeta.nombre }),
+                        'data-evento': EVENTOS.ATRACTIVO,
+                        'data-evento-detalle': tarjeta.nombre,
+                      }
+                    : {})}
                 >
                   {tarjeta.tipo === 'punto' ? (
                     <span
@@ -124,8 +129,7 @@ const mapaEmbed = `https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Ac
                   ) : (
                     <span
                       class:list={[
-                        'flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border p-1 font-titulo text-base font-bold',
-                        tarjeta.nuestro ? 'border-primario' : 'border-borde',
+                        'flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-borde p-1 font-titulo text-base font-bold',
                         tarjeta.logo ? 'bg-white' : 'bg-fondo-alt text-texto-suave',
                       ]}
                       aria-hidden={tarjeta.logo ? undefined : 'true'}
@@ -147,13 +151,13 @@ const mapaEmbed = `https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Ac
                   )}
 
                   <div class="min-w-0">
-                    <p class="font-titulo font-bold leading-tight text-negro">
+                    <p
+                      class:list={[
+                        'font-titulo font-bold leading-tight text-negro',
+                        enlace && 'transition-colors group-hover:text-primario',
+                      ]}
+                    >
                       {tarjeta.nombre}
-                      {tarjeta.tipo === 'atractivo' && tarjeta.nuestro && (
-                        <span class="ml-2 inline-block rounded-pill bg-primario px-2 py-0.5 align-middle text-[11px] font-bold uppercase tracking-wide text-white">
-                          {tA.aqui}
-                        </span>
-                      )}
                     </p>
                     <p class="mt-1 text-sm leading-snug text-texto-suave">{tarjeta.detalle}</p>
 
@@ -182,56 +186,34 @@ const mapaEmbed = `https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Ac
                           {tarjeta.categoriaNombre}
                         </span>
                         <span>{interpolar(tA.numeroMapa, { numero: tarjeta.numero })}</span>
+                        {tarjeta.sitio && (
+                          <span class="inline-flex items-center gap-1 font-titulo font-bold text-primario">
+                            <span class="material-symbols-outlined text-sm" aria-hidden="true">
+                              open_in_new
+                            </span>
+                            {tA.sitioWeb}
+                          </span>
+                        )}
                       </p>
                     )}
                   </div>
-                </article>
+                </Contenedor>
               </li>
-            ))
+              );
+            })
           }
         </ul>
 
-        <div id="ubicacion-paginacion" class="mt-5 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            id="ubicacion-anterior"
-            disabled
-            class="inline-flex min-h-11 items-center gap-1.5 rounded-pill border border-borde bg-superficie px-4 font-titulo text-sm font-bold text-texto-suave transition-colors hover:border-primario hover:text-primario focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 disabled:pointer-events-none disabled:opacity-40"
-          >
-            <span class="material-symbols-outlined text-lg" aria-hidden="true">chevron_left</span>
-            {tA.verAnterior}
-          </button>
-          <button
-            type="button"
-            id="ubicacion-siguiente"
-            class="inline-flex min-h-11 items-center gap-1.5 rounded-pill border-2 border-primario px-4 font-titulo text-sm font-bold text-primario transition-colors hover:bg-primario hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 disabled:pointer-events-none disabled:opacity-40"
-          >
-            {tA.verMas}
-            <span class="material-symbols-outlined text-lg" aria-hidden="true">chevron_right</span>
-          </button>
-          <p
-            id="ubicacion-pagina"
-            class="font-titulo text-sm text-texto-suave"
-            role="status"
-            aria-live="polite"
-          >
-            {interpolar(tA.pagina, { n: 1, total: paginas })}
-          </p>
-        </div>
-
-        <div class="mt-6 border-t border-borde pt-5">
+        <!-- Única puerta de entrada a la guía completa de Iguazú -->
+        <div class="mt-6 border-t border-borde pt-6">
           <a
-            href={GUIA_OFICIAL}
-            target="_blank"
-            rel="noopener"
-            class="inline-flex items-center gap-2 font-titulo font-bold text-primario underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
+            href={RUTAS[idioma].atractivos}
+            class="inline-flex min-h-12 items-center gap-2 rounded-pill border-2 border-primario px-6 font-titulo font-bold text-primario transition-colors hover:bg-primario hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40"
           >
             <span class="material-symbols-outlined text-xl" aria-hidden="true">map</span>
-            {tA.verGuia}
+            {interpolar(tA.verTodos, { total: ATRACTIVOS.length })}
           </a>
-          <p class="mt-2 text-xs leading-relaxed text-texto-suave">
-            {interpolar(tA.fuente, { total: ATRACTIVOS.length })}
-          </p>
+          <p class="mt-3 text-sm leading-relaxed text-texto-suave">{tA.verTodosDetalle}</p>
         </div>
       </div>
 
@@ -273,50 +255,3 @@ const mapaEmbed = `https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Ac
     </div>
   </div>
 </section>
-
-<noscript>
-  <style>
-    /* Sin JS no hay paginación: se ven las 40 tarjetas y sobran los botones. */
-    .tarjeta-ubicacion[hidden] {
-      display: block !important;
-    }
-    #ubicacion-paginacion {
-      display: none;
-    }
-  </style>
-</noscript>
-
-<script is:inline define:vars={{ textoPagina: tA.pagina }}>
-  (function () {
-    const lista = document.getElementById('ubicacion-tarjetas');
-    const anterior = document.getElementById('ubicacion-anterior');
-    const siguiente = document.getElementById('ubicacion-siguiente');
-    const estado = document.getElementById('ubicacion-pagina');
-    if (!lista || !anterior || !siguiente) return;
-
-    const items = Array.from(lista.querySelectorAll('.tarjeta-ubicacion'));
-    const paginas = Math.max(...items.map((el) => +el.dataset.pagina)) + 1;
-    let actual = 0;
-
-    function mostrar(pagina, mover) {
-      actual = Math.min(Math.max(pagina, 0), paginas - 1);
-      items.forEach((el) => {
-        el.hidden = +el.dataset.pagina !== actual;
-      });
-      anterior.disabled = actual === 0;
-      siguiente.disabled = actual === paginas - 1;
-      if (estado)
-        estado.textContent = textoPagina
-          .replace('{n}', String(actual + 1))
-          .replace('{total}', String(paginas));
-      // Si la lista quedó por encima de la ventana, volver a su inicio.
-      if (mover && lista.getBoundingClientRect().top < 0) {
-        lista.scrollIntoView({ block: 'start', behavior: 'smooth' });
-      }
-    }
-
-    anterior.addEventListener('click', () => mostrar(actual - 1, true));
-    siguiente.addEventListener('click', () => mostrar(actual + 1, true));
-    mostrar(0, false);
-  })();
-</script>

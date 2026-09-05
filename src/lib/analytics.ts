@@ -11,9 +11,10 @@
 //   • Cuando se instale GA4/GTM, ese dataLayer ya tendrá los eventos: solo
 //     hay que agregar el snippet y mapear los nombres en la herramienta.
 //
-// ⚠️ PARA COMPLETAR: cargar `PUBLIC_GTM_ID` o `PUBLIC_GA_ID` en las variables
-// de entorno de Vercel. Sin eso el sitio no carga ningún script de terceros
-// (mejor performance y nada de cookies innecesarias).
+// ⚠️ PARA COMPLETAR: cargar `GTM_ID` (formato GTM-XXXXXXX) en las variables
+// de entorno de Vercel. Sin prefijo PUBLIC_: solo lo lee el frontmatter de
+// Analytics.astro (servidor). Sin eso el sitio no carga ningún script de
+// terceros (mejor performance y nada de cookies innecesarias).
 //
 // ⚠️ Al activar GTM/GA hay que sumar sus dominios al Content-Security-Policy
 // de `vercel.json` (`script-src` y `connect-src`), o el navegador los
@@ -39,6 +40,8 @@ export const EVENTOS = {
   FAQ_ABIERTA: 'faq_abierta',
   /** Clic en "cómo llegar" / mapa. */
   MAPA: 'mapa_click',
+  /** Clic en el enlace al sitio propio de un atractivo. El detalle es el atractivo. */
+  ATRACTIVO: 'atractivo_click',
 } as const;
 
 export type Evento = (typeof EVENTOS)[keyof typeof EVENTOS];

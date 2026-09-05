@@ -193,13 +193,12 @@ export const es = {
         compras: 'Compras',
       },
       numeroMapa: 'N.º {numero} del mapa',
+      sitioWeb: 'Sitio web',
+      abreSitio: 'Abrir el sitio de {nombre} en una pestaña nueva',
       aqui: 'Estás aquí',
-      verAnterior: 'Ver anteriores',
-      verMas: 'Ver más atractivos',
-      pagina: 'Página {n} de {total}',
-      verGuia: 'Ver la guía oficial',
-      fuente:
-        'Los {total} atractivos del descriptivo oficial Atractivos Iguazú (ACATI), actualizado el 29/06/2026. Tierra Roja es el número 26 del mapa; cada logo pertenece a su prestador.',
+      verTodos: 'Ver los {total} atractivos de Iguazú',
+      verTodosDetalle:
+        'La guía completa de Puerto Iguazú: las fichas del descriptivo oficial y el mapa de la ciudad para ver y descargar.',
     },
   },
 
@@ -314,6 +313,39 @@ export const es = {
     aria: 'Consultar por WhatsApp',
     burbuja: '¿Consultas? Escríbenos',
     cerrarBurbuja: 'Cerrar mensaje',
+  },
+
+  // ── Página de atractivos (guía de Iguazú) ─────────────────────────────
+  atractivos: {
+    metaTitulo: 'Qué hacer en Puerto Iguazú — Guía de atractivos | Tierra Roja',
+    metaDescripcion:
+      'Los {total} atractivos de Puerto Iguazú del descriptivo oficial Atractivos Iguazú (ACATI), con el mapa de la ciudad para ver y descargar. Camping Tierra Roja es el número 26 del mapa.',
+    kicker: 'Guía de Iguazú',
+    titulo: 'Qué hacer en',
+    tituloDestacado: 'Puerto Iguazú',
+    intro:
+      'Cataratas, selva, aventura y compras: esto es todo lo que hay para hacer alrededor del camping, tal como figura en el descriptivo oficial de la ciudad. Tierra Roja es el número 26 del mapa, así que desde acá tienes cada atractivo a mano.',
+    filtrarPor: 'Filtrar atractivos por categoría',
+    todas: 'Todos',
+    contador: '{cantidad} atractivos',
+    sinResultados: 'No hay atractivos en esta categoría.',
+    folletoTitulo: 'El folleto oficial',
+    folletoTexto:
+      'Las dos caras del descriptivo impreso que reparte la ciudad: las fichas de los prestadores y el mapa con la ubicación de cada uno. Descárgalo antes de viajar y llévalo en el teléfono.',
+    paginas: {
+      descriptivo: 'Descriptivo de atractivos',
+      mapa: 'Mapa de Puerto Iguazú',
+    },
+    verGrande: 'Ver en tamaño completo',
+    descargarPdf: 'Descargar el folleto (PDF)',
+    verGuia: 'Ver la guía oficial',
+    fuente:
+      'Descriptivo y mapa Atractivos Iguazú, editado por la ACATI (Asociación Civil Atractivos Turísticos de Iguazú), actualización del {edicion}. Se reproduce como guía para nuestros huéspedes; cada logo y cada servicio pertenecen a su prestador.',
+    volver: 'Volver a la ubicación',
+    ctaTitulo: 'Tu base para recorrer todo esto',
+    ctaTexto:
+      'Camping, motorhome o cabaña a 20 minutos de las Cataratas, con las piscinas incluidas.',
+    ctaBoton: 'Reservar ahora',
   },
 
   // ── Página de galería ─────────────────────────────────────────────────

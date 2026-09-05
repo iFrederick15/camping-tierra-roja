@@ -1,0 +1,19 @@
+---
+export const prerender = true;
+import Layout from '../../layouts/Layout.astro';
+import PaginaAtractivos from '../../components/PaginaAtractivos.astro';
+import { ATRACTIVOS } from '../../lib/atractivos';
+import { interpolar, traducciones } from '../../i18n';
+
+const idioma = 'pt' as const;
+const t = traducciones(idioma);
+---
+
+<Layout
+  title={t.atractivos.metaTitulo}
+  description={interpolar(t.atractivos.metaDescripcion, { total: ATRACTIVOS.length })}
+>
+  <div class="pt-8 md:pt-12">
+    <PaginaAtractivos idioma={idioma} t={t} />
+  </div>
+</Layout>

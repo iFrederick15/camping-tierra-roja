@@ -40,6 +40,7 @@ Ambas partes están **conectadas en tiempo real**: una reserva hecha por un visi
 | **Inicio** (`/`) | Presentación del predio: piscinas, camping, motorhome y cabaña, con llamados a la acción hacia la reserva |
 | **Reservar** (`/reservar`) | Reserva online en 4 pasos, sin necesidad de cuenta ni contraseña |
 | **Galería** (`/galeria`) | Fotos del predio organizadas por categoría (Naturaleza, Piscinas, Camping, Cabañas) |
+| **Atractivos de Iguazú** (`/atractivos`) | Guía de qué hacer en Puerto Iguazú: las 34 fichas del descriptivo oficial de la ACATI y el mapa de la ciudad para ver y descargar. Se llega desde el botón de la sección "Ubicación" del inicio; no está en el menú |
 | **Contacto** (`/contacto`) | Datos de contacto, formulario de consultas, ubicación y horarios |
 | **Política de Privacidad** (`/politica-de-privacidad`) | Cómo se usan y protegen los datos de los huéspedes |
 
