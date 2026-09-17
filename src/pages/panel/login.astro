@@ -1,4 +1,5 @@
 ---
+import Fuentes from '../../components/Fuentes.astro';
 import '../../styles/global.css';
 import { createSupabaseServerClient } from '../../lib/supabase-server';
 import { supabaseAdmin } from '../../lib/supabase';
@@ -52,6 +53,7 @@ if (Astro.request.method === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ingresar — Camping Tierra Roja</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <Fuentes />
   </head>
   <body
     class="bg-fondo-alt font-cuerpo text-texto min-h-screen flex items-center justify-center px-6"
@@ -89,7 +91,7 @@ if (Astro.request.method === 'POST') {
 
         <button
           type="submit"
-          class="mt-2 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primario to-acento text-white px-6 py-3 rounded-pill font-titulo font-bold hover:shadow-hero transition-all"
+          class="mt-2 inline-flex items-center justify-center gap-2 bg-primario text-white px-6 py-3 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors"
         >
           Ingresar
         </button>

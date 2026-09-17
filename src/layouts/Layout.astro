@@ -7,7 +7,7 @@ import Analytics from '../components/Analytics.astro';
 import { NEGOCIO, REDES } from '../lib/negocio';
 import { rangoDePrecios } from '../lib/precios';
 import { obtenerResenas } from '../lib/resenas';
-import { ICONOS_MATERIAL } from '../lib/iconos';
+import Fuentes from '../components/Fuentes.astro';
 import {
   IDIOMAS,
   alternativasDeRuta,
@@ -154,17 +154,6 @@ const schemaSitio = {
 };
 
 const schemas = [schemaNegocio, schemaSitio, ...(schemaExtra ? [schemaExtra].flat() : [])];
-
-// Google Fonts — iconos.
-// Dos recortes sobre lo que pedía antes el sitio:
-//   1. `icon_names`: solo los iconos que realmente se usan (ver
-//      src/lib/iconos.ts). Sin esto se descarga la fuente completa de
-//      Material Symbols (~3.500 iconos).
-//   2. ejes fijos `opsz@24` y `wght@400` en vez de los rangos completos: el
-//      sitio usa un único tamaño y un único grosor de icono. FILL queda como
-//      rango porque las estrellas de las reseñas usan FILL 1.
-// Resultado medido: 8,6 KB en vez de 1,1 MB (la fuente variable completa).
-const urlIconos = `https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&icon_names=${ICONOS_MATERIAL.join(',')}&display=block`;
 ---
 
 <!doctype html>
@@ -235,15 +224,7 @@ const urlIconos = `https://fonts.googleapis.com/css2?family=Material+Symbols+Out
       ))
     }
 
-    <!-- Fuentes: preconnect antes del <link> para adelantar el handshake TLS
-         con el CDN de Google, que está en el camino crítico del render. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&family=Barlow:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link href={urlIconos} rel="stylesheet" />
+    <Fuentes />
   </head>
   <body
     class:list={[

@@ -28,7 +28,7 @@ const unidadInicial = UNIDADES_VALIDAS.find((u) => u === parametro);
 const iconosBeneficio = ['search', 'check_circle', 'verified'];
 ---
 
-<header class="relative h-[32vh] w-full overflow-hidden md:h-[42vh]">
+<header class="relative h-[34vh] min-h-56 w-full overflow-hidden md:h-[42vh]">
   <img
     src="/images/camping/camping.webp"
     alt="Parcelas de camping entre la selva misionera en Tierra Roja, Puerto Iguazú"
@@ -38,21 +38,25 @@ const iconosBeneficio = ['search', 'check_circle', 'verified'];
     loading="eager"
     fetchpriority="high"
   />
-  <div class="absolute inset-0 bg-gradient-to-t from-fondo-alt via-negro/55 to-negro/25"></div>
+  <!-- La base queda oscura porque ahí van el título y la bajada: el fundido a
+       `fondo-alt` que había dejaba la bajada blanca sobre un fondo casi blanco. -->
+  <div class="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/45 to-negro/15"></div>
   <div class="absolute inset-0 flex items-end">
-    <div class="mx-auto w-full max-w-7xl px-6 pb-10 lg:px-8">
+    <div class="mx-auto w-full max-w-7xl px-6 pb-8 md:pb-20 lg:px-8">
       <h1
         class="mb-2 font-titulo text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-6xl"
       >
         {t.reservar.titulo}
       </h1>
-      <p class="max-w-md text-lg text-white/90">{t.reservar.subtitulo}</p>
+      <p class="max-w-md text-base text-white/90 sm:text-lg">{t.reservar.subtitulo}</p>
     </div>
   </div>
 </header>
 
-<section class="bg-fondo-alt px-6 pb-20 pt-10 md:pt-0">
-  <div class="relative z-10 md:-mt-4">
+<section class="bg-fondo-alt px-4 pb-20 pt-6 sm:px-6 md:pt-0">
+  <!-- En desktop la tarjeta se monta sobre la foto: el reservador queda a la
+       vista en la primera pantalla. -->
+  <div class="relative z-10 md:-mt-12">
     <BookingWidget
       client:load
       idioma={idioma}

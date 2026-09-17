@@ -45,6 +45,7 @@ export const ICONOS_MATERIAL = [
   'close',
   'cottage',
   'download',
+  'error',
   'expand_more',
   'family_restroom',
   'flag',

@@ -182,7 +182,8 @@ export const es = {
     mapaTitulo: 'Ubicación de Camping Tierra Roja en Puerto Iguazú',
     cta: 'Reservar mi estadía',
     atractivos: {
-      listaEtiqueta: 'Distancias y atractivos de Iguazú',
+      listaDistancias: 'Tiempos de viaje desde el camping',
+      listaDestacados: 'Atractivos destacados de Iguazú',
       categorias: {
         natural: 'Naturaleza',
         cultural: 'Cultura',

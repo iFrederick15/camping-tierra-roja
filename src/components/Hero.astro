@@ -28,10 +28,16 @@ interface Props {
 
 const { idioma, t } = Astro.props;
 
-const { promedio: promedioNum, cantidad } = await obtenerResenas();
-const promedio = promedioNum.toLocaleString(idioma === 'en' ? 'en-US' : 'es-AR', {
+const { promedio: promedioNum, cantidad: cantidadNum } = await obtenerResenas();
+// Mismo locale que Resenas.astro, para que el hero y la sección de reseñas
+// muestren la valoración igual. `maximumFractionDigits` evita un "4,657" si
+// Places devuelve más decimales, y la cantidad lleva separador de miles.
+const localeNumero = idioma === 'en' ? 'en-US' : idioma === 'pt' ? 'pt-BR' : 'es-AR';
+const promedio = promedioNum.toLocaleString(localeNumero, {
   minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
 });
+const cantidad = cantidadNum.toLocaleString(localeNumero);
 ---
 
 <section class="relative flex min-h-[calc(100dvh-4.5rem)] items-center overflow-hidden">
@@ -40,7 +46,6 @@ const promedio = promedioNum.toLocaleString(idioma === 'en' ? 'en-US' : 'es-AR',
     <img
       src="/images/general/tierra-roja-drone.webp"
       alt=""
-      role="presentation"
       class="h-full w-full object-cover object-center"
       width="1440"
       height="812"
@@ -52,21 +57,21 @@ const promedio = promedioNum.toLocaleString(idioma === 'en' ? 'en-US' : 'es-AR',
     <!-- Los dos overlays se multiplican entre sí: con /90 + /70 el ángulo
          inferior izquierdo quedaba en 0,97 de negro y la foto no se leía.
          Con estos valores baja a ~0,87, suficiente para el texto blanco. -->
-    <div class="absolute inset-0 bg-gradient-to-r from-negro/72 via-negro/50 to-negro/15"></div>
-    <div class="absolute inset-0 bg-gradient-to-t from-negro/55 via-transparent to-negro/15"></div>
+    <div class="absolute inset-0 bg-linear-to-r from-negro/72 via-negro/50 to-negro/15"></div>
+    <div class="absolute inset-0 bg-linear-to-t from-negro/55 via-transparent to-negro/15"></div>
   </div>
 
   <div class="relative z-10 mx-auto w-full max-w-7xl px-6 pb-16 pt-10 sm:pt-14 lg:px-8 lg:pb-20">
     <div class="lg:flex lg:items-center lg:gap-14">
       <div class="mx-auto max-w-2xl lg:mx-0">
         <p
-          class="mb-4 text-center font-titulo text-xs font-bold uppercase tracking-[0.14em] text-white/75 sm:text-sm lg:text-left"
+          class="mb-4 text-balance text-center font-titulo text-xs font-bold uppercase tracking-[0.14em] text-white/85 sm:text-sm lg:text-left"
         >
           {t.hero.kicker}
         </p>
 
         <h1
-          class="mb-5 break-words text-center font-titulo text-[2.1rem] font-bold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-left lg:text-6xl xl:text-7xl"
+          class="mb-5 text-balance wrap-break-word text-center font-titulo text-[2.1rem] font-bold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-left lg:text-6xl xl:text-7xl"
         >
           {t.hero.tituloLinea1}
           <!-- `acento` (#ef493d) y no `primario-claro` (#d4343f): sobre el
@@ -77,7 +82,7 @@ const promedio = promedioNum.toLocaleString(idioma === 'en' ? 'en-US' : 'es-AR',
         </h1>
 
         <p
-          class="mx-auto mb-6 max-w-xl text-center text-base leading-relaxed text-white/85 sm:text-lg lg:mx-0 lg:text-left"
+          class="mx-auto mb-6 max-w-xl text-pretty text-center text-base leading-relaxed text-white/85 sm:text-lg lg:mx-0 lg:text-left"
         >
           {t.hero.subtitulo}
         </p>
@@ -117,12 +122,15 @@ const promedio = promedioNum.toLocaleString(idioma === 'en' ? 'en-US' : 'es-AR',
       </div>
 
       <!-- Tarjeta con la foto nítida. En desktop es un elemento de composición;
-           en mobile se muestra debajo del contenido, sin competir con el CTA. -->
-      <div class="relative mt-10 flex-1 lg:mt-0 lg:max-w-lg">
-        <div class="aspect-[4/3] overflow-hidden rounded-card shadow-hero">
+           en mobile se muestra debajo del contenido, sin competir con el CTA.
+           Debajo de lg toma el ancho de la columna de texto (max-w-2xl): a ancho
+           completo, en tablet era una foto de ~580px de alto que desbordaba la
+           columna. El alt es el de la imagen OG (la misma foto), traducido. -->
+      <div class="relative mx-auto mt-10 max-w-2xl flex-1 lg:mx-0 lg:mt-0 lg:max-w-lg">
+        <div class="aspect-4/3 overflow-hidden rounded-card shadow-hero">
           <img
             src="/images/general/tierra-roja-drone.webp"
-            alt="Vista aérea del predio de Camping Tierra Roja rodeado de selva, en Puerto Iguazú, Misiones"
+            alt={t.meta.ogAlt}
             class="h-full w-full object-cover object-center"
             width="1440"
             height="812"

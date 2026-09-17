@@ -165,29 +165,39 @@ function Carousel({ imagenes, alt, T }: { imagenes: string[]; alt: string; T: Te
             type="button"
             aria-label={T.fotoAnterior}
             onClick={() => setIndice((i) => (i - 1 + imagenes.length) % imagenes.length)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-negro/55 text-white flex items-center justify-center hover:bg-negro/75 transition-colors"
           >
-            ‹
+            <span className="material-symbols-outlined" aria-hidden="true">
+              chevron_left
+            </span>
           </button>
           <button
             type="button"
             aria-label={T.fotoSiguiente}
             onClick={() => setIndice((i) => (i + 1) % imagenes.length)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-negro/55 text-white flex items-center justify-center hover:bg-negro/75 transition-colors"
           >
-            ›
+            <span className="material-symbols-outlined" aria-hidden="true">
+              chevron_right
+            </span>
           </button>
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex">
             {imagenes.map((_, i) => (
               <button
                 key={i}
                 type="button"
                 aria-label={T.irAFoto.replace('{n}', String(i + 1))}
+                aria-current={i === indice ? 'true' : undefined}
                 onClick={() => setIndice(i)}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  i === indice ? 'bg-white' : 'bg-white/50'
-                }`}
-              />
+                // El punto mide 8px pero el botón tiene 24px de área táctil.
+                className="w-6 h-6 flex items-center justify-center"
+              >
+                <span
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    i === indice ? 'bg-white' : 'bg-white/55'
+                  }`}
+                />
+              </button>
             ))}
           </div>
         </>
@@ -217,7 +227,7 @@ function Stepper({
     <div className="flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave">
       <span>{label}</span>
       {sublabel && (
-        <span className="text-xs text-texto-suave/70 font-normal font-cuerpo">{sublabel}</span>
+        <span className="text-xs text-texto-suave font-normal font-cuerpo">{sublabel}</span>
       )}
       <div className="flex items-center justify-between gap-3 bg-superficie border-2 border-transparent rounded-card px-2 py-1.5">
         <button
@@ -227,9 +237,13 @@ function Stepper({
           disabled={value <= min}
           className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center bg-fondo-alt text-negro hover:bg-primario hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
         >
-          <span className="material-symbols-outlined text-[20px]">remove</span>
+          <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+            remove
+          </span>
         </button>
-        <span className="font-cuerpo font-bold text-negro text-lg tabular-nums">{value}</span>
+        <span className="font-cuerpo font-bold text-negro text-lg tabular-nums" aria-live="polite">
+          {value}
+        </span>
         <button
           type="button"
           aria-label={T.sumar.replace('{label}', label)}
@@ -237,7 +251,9 @@ function Stepper({
           disabled={value >= max}
           className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center bg-fondo-alt text-negro hover:bg-primario hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
         >
-          <span className="material-symbols-outlined text-[20px]">add</span>
+          <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+            add
+          </span>
         </button>
       </div>
     </div>
@@ -289,12 +305,14 @@ export default function BookingWidget({
   // scrollear para encontrar el paso siguiente.
   const contenedorRef = useRef<HTMLDivElement>(null);
   const primerRender = useRef(true);
+  const comportamientoScroll = (): ScrollBehavior =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
   useEffect(() => {
     if (primerRender.current) {
       primerRender.current = false;
       return;
     }
-    contenedorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    contenedorRef.current?.scrollIntoView({ behavior: comportamientoScroll(), block: 'start' });
   }, [paso]);
 
   // Al elegir la unidad, baja automáticamente hasta las fotos y las
@@ -308,7 +326,7 @@ export default function BookingWidget({
       return;
     }
     if (!unidad) return;
-    detalleUnidadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    detalleUnidadRef.current?.scrollIntoView({ behavior: comportamientoScroll(), block: 'start' });
   }, [unidad]);
 
   // Ítems de precio de la unidad elegida (ver sql/003_precios_itemizados.sql)
@@ -319,6 +337,7 @@ export default function BookingWidget({
   // Fotos del carrusel de la unidad elegida — las carga el Panel Admin y
   // llegan junto con los precios en /api/precios.
   const [imagenesUnidad, setImagenesUnidad] = useState<string[]>([]);
+  const [estadoPrecios, setEstadoPrecios] = useState<'cargando' | 'listo' | 'error'>('listo');
   const [categoria, setCategoria] = useState<string | null>(null);
   const [acompanantes, setAcompanantes] = useState(0); // MOTORHOME
   const [menores, setMenores] = useState(0); // CAMPING (cobra) / CABANA (informativo)
@@ -420,10 +439,15 @@ export default function BookingWidget({
     setImagenesUnidad([]);
     if (!unidad) return;
     let cancelado = false;
+    setEstadoPrecios('cargando');
     fetch(`/api/precios?unidad=${unidad}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
       .then((data) => {
         if (cancelado) return;
+        setEstadoPrecios('listo');
         const opciones: OpcionPrecio[] = data.opciones ?? [];
         setOpcionesPrecio(opciones);
         setImagenesUnidad(Array.isArray(data.imagenes) ? data.imagenes : []);
@@ -437,7 +461,9 @@ export default function BookingWidget({
           if (fijo) setCategoria(fijo.clave);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelado) setEstadoPrecios('error');
+      });
     return () => {
       cancelado = true;
     };
@@ -518,6 +544,16 @@ export default function BookingWidget({
       (disponibilidad.tipo === 'lista' && parcelaSeleccionada));
 
   const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datosCliente.email.trim());
+  // El aviso aparece recién al salir del campo: marcar error mientras la
+  // persona todavía escribe la dirección es ruido.
+  const [emailTocado, setEmailTocado] = useState(false);
+  const emailConError = emailTocado && datosCliente.email.trim() !== '' && !emailValido;
+  const claseScan =
+    scanEstado === 'ok'
+      ? 'border-confirmado'
+      : scanEstado === 'baja-confianza'
+        ? 'border-advertencia'
+        : '';
 
   const datosCompletos =
     datosCliente.nombreCliente.trim() !== '' &&
@@ -560,11 +596,14 @@ export default function BookingWidget({
   }
 
   const btnPrimario =
-    'inline-flex items-center justify-center gap-2 bg-primario text-white px-8 py-4 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors duration-150 disabled:opacity-40 disabled:pointer-events-none';
+    'inline-flex items-center justify-center gap-2 bg-primario text-white px-5 sm:px-8 py-4 rounded-pill font-titulo font-bold text-center leading-tight hover:bg-primario-oscuro transition-colors duration-150 disabled:opacity-40 disabled:pointer-events-none';
   const btnSecundario =
-    'inline-flex items-center justify-center gap-2 border-2 border-borde text-texto-suave px-8 py-4 rounded-pill font-titulo font-bold hover:border-primario-claro transition-colors duration-300';
+    'inline-flex items-center justify-center gap-2 border-2 border-borde text-texto-suave px-5 sm:px-8 py-4 rounded-pill font-titulo font-bold hover:border-primario hover:text-primario transition-colors duration-150 disabled:opacity-40 disabled:pointer-events-none';
   const input =
-    'w-full bg-fondo-alt border-2 border-transparent rounded-card px-5 py-3 font-cuerpo text-texto placeholder:text-texto-suave/60 focus:bg-superficie focus:border-primario focus:outline-none transition-colors';
+    'w-full bg-fondo-alt border-2 border-transparent rounded-card px-5 py-3 font-cuerpo text-texto placeholder:text-texto-suave focus:bg-superficie focus:border-primario focus:outline-none transition-colors';
+  const labelCampo = 'flex flex-col gap-1 text-sm font-titulo font-medium text-texto-suave min-w-0';
+  const avisoError =
+    'flex items-start gap-2 rounded-card bg-primario/10 px-4 py-3 text-sm font-medium text-primario';
   const opcionBase = (activa: boolean) =>
     `text-left rounded-card p-4 border-2 transition-colors ${
       activa
@@ -587,6 +626,44 @@ export default function BookingWidget({
   ];
   const indicePaso = PASOS.findIndex((p) => p.paso === paso);
 
+  // Desglose de precio. En "Fechas" muestra ítems y total; en "Tus datos"
+  // además el alojamiento y las noches, como resumen antes de confirmar.
+  const resumen = (completo: boolean) => (
+    <div className="bg-fondo-alt rounded-card p-5 flex flex-col gap-2 text-sm">
+      {completo && unidadElegida && (
+        <div className="flex justify-between gap-4">
+          <span className="text-texto-suave">{T.alojamiento}</span>
+          <span className="font-medium text-negro">{T.unidades[unidadElegida.tipo].label}</span>
+        </div>
+      )}
+      {completo && noches && (
+        <div className="flex justify-between gap-4">
+          <span className="text-texto-suave">{unidad === 'QUINCHOS' ? T.dias : T.noches}</span>
+          <span className="font-medium text-negro tabular-nums">{noches}</span>
+        </div>
+      )}
+      {detalle.map((d) => (
+        <div key={d.clave} className="flex justify-between gap-4">
+          <span className="text-texto-suave">
+            {etiquetaOpcion(T, unidad, d.clave, d.etiqueta)}
+            {d.cantidad > 1 ? ` × ${d.cantidad}` : ''}
+          </span>
+          <span className="font-medium text-negro tabular-nums whitespace-nowrap">
+            {moneda(d.subtotal)}
+          </span>
+        </div>
+      ))}
+      {total != null && (
+        <div className="flex justify-between items-center gap-4 pt-2 border-t border-borde">
+          <span className="font-titulo font-bold text-negro">{T.total}</span>
+          <span className="font-titulo font-bold text-xl text-primario tabular-nums">
+            {moneda(total)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div
       ref={contenedorRef}
@@ -595,7 +672,11 @@ export default function BookingWidget({
       {paso !== 'confirmado' && (
         <div className="flex items-center gap-2 mb-8 relative z-10">
           {PASOS.map((p, i) => (
-            <div key={p.paso} className="flex items-center gap-2 flex-1 last:flex-none">
+            <div
+              key={p.paso}
+              aria-current={i === indicePaso ? 'step' : undefined}
+              className="flex items-center gap-2 flex-1 last:flex-none"
+            >
               <div
                 className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center font-titulo font-bold text-sm transition-colors ${
                   i < indicePaso
@@ -612,9 +693,9 @@ export default function BookingWidget({
                 )}
               </div>
               <span
-                className={`hidden sm:inline font-titulo text-sm font-medium ${
-                  i <= indicePaso ? 'text-negro' : 'text-texto-suave'
-                }`}
+                className={`font-titulo text-sm font-medium ${
+                  i === indicePaso ? 'inline' : 'hidden sm:inline'
+                } ${i <= indicePaso ? 'text-negro' : 'text-texto-suave'}`}
               >
                 {p.label}
               </span>
@@ -639,8 +720,10 @@ export default function BookingWidget({
               return (
                 <button
                   key={u.tipo}
+                  type="button"
+                  aria-pressed={seleccionada}
                   onClick={() => setUnidad(u.tipo)}
-                  className={`text-left rounded-card p-5 h-full transition-all duration-300 ${
+                  className={`text-left rounded-card p-5 h-full transition-[background-color,box-shadow] duration-150 ${
                     seleccionada
                       ? 'bg-fondo-alt shadow-suave ring-2 ring-primario/30'
                       : 'bg-fondo-alt/50 hover:bg-fondo-alt'
@@ -653,6 +736,7 @@ export default function BookingWidget({
                       }`}
                     >
                       <span
+                        aria-hidden="true"
                         className="material-symbols-outlined"
                         style={{ fontVariationSettings: `'FILL' ${seleccionada ? 1 : 0}` }}
                       >
@@ -660,6 +744,7 @@ export default function BookingWidget({
                       </span>
                     </div>
                     <span
+                      aria-hidden="true"
                       className={`material-symbols-outlined text-primario transition-opacity ${
                         seleccionada ? 'opacity-100' : 'opacity-0'
                       }`}
@@ -678,6 +763,14 @@ export default function BookingWidget({
 
           {unidad && (
             <div ref={detalleUnidadRef} className="flex flex-col gap-6 scroll-mt-6">
+              {estadoPrecios === 'error' && (
+                <p role="alert" className={avisoError}>
+                  <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+                    error
+                  </span>
+                  {T.errorPrecios}
+                </p>
+              )}
               <Carousel
                 imagenes={
                   imagenesUnidad.length > 0 ? imagenesUnidad : IMAGENES_UNIDAD_FALLBACK[unidad]
@@ -695,6 +788,7 @@ export default function BookingWidget({
                         <button
                           key={op.clave}
                           type="button"
+                          aria-pressed={categoria === op.clave}
                           onClick={() => setCategoria(op.clave)}
                           className={opcionBase(categoria === op.clave)}
                         >
@@ -777,6 +871,7 @@ export default function BookingWidget({
                       <button
                         key={op.clave}
                         type="button"
+                        aria-pressed={categoria === op.clave}
                         onClick={() => setCategoria(op.clave)}
                         className={opcionBase(categoria === op.clave)}
                       >
@@ -799,8 +894,9 @@ export default function BookingWidget({
           )}
 
           <button
+            type="button"
             className={btnPrimario}
-            disabled={!puedeContinuarDesdeUnidad}
+            disabled={!puedeContinuarDesdeUnidad || estadoPrecios === 'cargando'}
             onClick={() => setPaso('fechas')}
           >
             {T.continuar}
@@ -826,7 +922,7 @@ export default function BookingWidget({
                   onChange={(e) => setFechaIngreso(e.target.value)}
                 />
                 {!fechaIngreso && !tocadoIngreso && (
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave/60 font-cuerpo pointer-events-none">
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave font-cuerpo pointer-events-none">
                     {T.formatoFecha}
                   </span>
                 )}
@@ -850,7 +946,7 @@ export default function BookingWidget({
                     }}
                   />
                   {!fechaIngreso && !tocadoIngreso && (
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave/60 font-cuerpo pointer-events-none">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave font-cuerpo pointer-events-none">
                       {T.formatoFecha}
                     </span>
                   )}
@@ -868,7 +964,7 @@ export default function BookingWidget({
                     onChange={(e) => setFechaSalida(e.target.value)}
                   />
                   {!fechaSalida && !tocadoSalida && (
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave/60 font-cuerpo pointer-events-none">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-texto-suave font-cuerpo pointer-events-none">
                       {T.formatoFecha}
                     </span>
                   )}
@@ -877,61 +973,66 @@ export default function BookingWidget({
             </div>
           )}
 
-          {rangoFechasInvalido && (
-            <p className="text-[#DC2626] text-sm font-medium">{T.rangoInvalido}</p>
-          )}
+          <div aria-live="polite" className="flex flex-col gap-3 empty:hidden">
+            {rangoFechasInvalido && <p className={avisoError}>{T.rangoInvalido}</p>}
 
-          {cargandoDisponibilidad && (
-            <p className="text-texto-suave text-sm flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px] animate-spin">
-                progress_activity
-              </span>
-              {T.consultando}
-            </p>
-          )}
+            {cargandoDisponibilidad && (
+              <p className="text-texto-suave text-sm flex items-center gap-2">
+                <span
+                  className="material-symbols-outlined text-[18px] animate-spin"
+                  aria-hidden="true"
+                >
+                  progress_activity
+                </span>
+                {T.consultando}
+              </p>
+            )}
 
-          {error && <p className="text-[#DC2626] text-sm font-medium">{error}</p>}
+            {error && <p className={avisoError}>{error}</p>}
 
-          {disponibilidad?.tipo === 'cupo' && (
-            <div
-              className={`flex items-center gap-2 rounded-card px-4 py-3 font-medium text-sm ${
-                disponibilidad.disponible
-                  ? 'bg-confirmado/10 text-confirmado'
-                  : 'bg-fondo-alt text-[#DC2626]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                {disponibilidad.disponible ? 'check_circle' : 'cancel'}
-              </span>
-              {disponibilidad.disponible ? T.hayLugar : T.sinLugar}
-            </div>
-          )}
-          {disponibilidad?.tipo === 'unica' && (
-            <div
-              className={`flex items-center gap-2 rounded-card px-4 py-3 font-medium text-sm ${
-                disponibilidad.disponible
-                  ? 'bg-confirmado/10 text-confirmado'
-                  : 'bg-fondo-alt text-[#DC2626]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                {disponibilidad.disponible ? 'check_circle' : 'cancel'}
-              </span>
-              {disponibilidad.disponible ? T.cabanaDisponible : T.cabanaNoDisponible}
-            </div>
-          )}
+            {disponibilidad?.tipo === 'cupo' && (
+              <div
+                className={`flex items-center gap-2 rounded-card px-4 py-3 font-medium text-sm ${
+                  disponibilidad.disponible
+                    ? 'bg-confirmado/10 text-confirmado'
+                    : 'bg-primario/10 text-primario'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+                  {disponibilidad.disponible ? 'check_circle' : 'cancel'}
+                </span>
+                {disponibilidad.disponible ? T.hayLugar : T.sinLugar}
+              </div>
+            )}
+            {disponibilidad?.tipo === 'unica' && (
+              <div
+                className={`flex items-center gap-2 rounded-card px-4 py-3 font-medium text-sm ${
+                  disponibilidad.disponible
+                    ? 'bg-confirmado/10 text-confirmado'
+                    : 'bg-primario/10 text-primario'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+                  {disponibilidad.disponible ? 'check_circle' : 'cancel'}
+                </span>
+                {disponibilidad.disponible ? T.cabanaDisponible : T.cabanaNoDisponible}
+              </div>
+            )}
+          </div>
           {disponibilidad?.tipo === 'lista' && (
             <div className="flex flex-col gap-2">
               {disponibilidad.opciones.length === 0 && (
-                <p className="text-[#DC2626] text-sm">{T.sinParcelas}</p>
+                <p className={avisoError}>{T.sinParcelas}</p>
               )}
               {disponibilidad.opciones.map((p: OpcionParcela) => {
                 const seleccionada = parcelaSeleccionada === p.id;
                 return (
                   <button
                     key={p.id}
+                    type="button"
+                    aria-pressed={seleccionada}
                     onClick={() => setParcelaSeleccionada(p.id)}
-                    className={`flex items-center justify-between text-left rounded-card px-5 py-3 transition-all ${
+                    className={`flex items-center justify-between text-left rounded-card px-5 py-3 transition-[background-color,box-shadow] duration-150 ${
                       seleccionada
                         ? 'bg-fondo-alt shadow-suave ring-2 ring-primario/30'
                         : 'bg-fondo-alt/50 hover:bg-fondo-alt'
@@ -944,6 +1045,7 @@ export default function BookingWidget({
                       )}
                     </div>
                     <span
+                      aria-hidden="true"
                       className={`material-symbols-outlined text-primario transition-opacity ${
                         seleccionada ? 'opacity-100' : 'opacity-0'
                       }`}
@@ -956,25 +1058,18 @@ export default function BookingWidget({
             </div>
           )}
 
-          {detalle.length > 0 && (
-            <div className="bg-fondo-alt rounded-card p-5 flex flex-col gap-2 text-sm">
-              {detalle.map((d) => (
-                <div key={d.clave} className="flex justify-between">
-                  <span className="text-texto-suave">
-                    {etiquetaOpcion(T, unidad, d.clave, d.etiqueta)}
-                    {d.cantidad > 1 ? ` × ${d.cantidad}` : ''}
-                  </span>
-                  <span className="font-medium text-negro">{moneda(d.subtotal)}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          {detalle.length > 0 && resumen(false)}
 
-          <div className="flex gap-3">
-            <button className={`${btnSecundario} flex-1`} onClick={() => setPaso('unidad')}>
+          <div className="flex flex-col-reverse gap-3 sm:flex-row">
+            <button
+              type="button"
+              className={`${btnSecundario} flex-1`}
+              onClick={() => setPaso('unidad')}
+            >
               {T.volver}
             </button>
             <button
+              type="button"
               className={`${btnPrimario} flex-1`}
               disabled={!puedeContinuarDesdeFechas}
               onClick={() => setPaso('datos')}
@@ -1000,96 +1095,73 @@ export default function BookingWidget({
               No se pudo leer el DNI, complete los datos manualmente.
             </p>
           )}
-          <input
-            className={`${input} ${
-              scanEstado === 'ok'
-                ? 'border-confirmado'
-                : scanEstado === 'baja-confianza'
-                  ? 'border-advertencia'
-                  : ''
-            }`}
-            placeholder={T.nombrePlaceholder}
-            value={datosCliente.nombreCliente}
-            onChange={(e) => {
-              setScanEstado('idle');
-              setDatosCliente({ ...datosCliente, nombreCliente: e.target.value });
-            }}
-          />
-          <input
-            className={`${input} ${
-              scanEstado === 'ok'
-                ? 'border-confirmado'
-                : scanEstado === 'baja-confianza'
-                  ? 'border-advertencia'
-                  : ''
-            }`}
-            placeholder={T.dniPlaceholder}
-            value={datosCliente.dni}
-            onChange={(e) => {
-              setScanEstado('idle');
-              setDatosCliente({ ...datosCliente, dni: e.target.value });
-            }}
-          />
-          <input
-            className={input}
-            placeholder={modo === 'staff' ? 'Email (opcional)' : T.emailPlaceholder}
-            type="email"
-            value={datosCliente.email}
-            onChange={(e) => setDatosCliente({ ...datosCliente, email: e.target.value })}
-          />
-          <input
-            className={input}
-            placeholder={modo === 'staff' ? 'Teléfono (opcional)' : T.telefonoPlaceholder}
-            type="tel"
-            inputMode="numeric"
-            value={datosCliente.telefono}
-            onChange={(e) =>
-              setDatosCliente({ ...datosCliente, telefono: e.target.value.replace(/\D/g, '') })
-            }
-          />
+          <label className={labelCampo}>
+            {T.nombrePlaceholder}
+            <input
+              className={`${input} ${claseScan}`}
+              autoComplete="name"
+              value={datosCliente.nombreCliente}
+              onChange={(e) => {
+                setScanEstado('idle');
+                setDatosCliente({ ...datosCliente, nombreCliente: e.target.value });
+              }}
+            />
+          </label>
+          <label className={labelCampo}>
+            {T.dniPlaceholder}
+            <input
+              className={`${input} ${claseScan}`}
+              value={datosCliente.dni}
+              onChange={(e) => {
+                setScanEstado('idle');
+                setDatosCliente({ ...datosCliente, dni: e.target.value });
+              }}
+            />
+          </label>
+          <label className={labelCampo}>
+            {modo === 'staff' ? 'Email (opcional)' : T.emailPlaceholder}
+            <input
+              className={input}
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              aria-invalid={emailConError}
+              aria-describedby={emailConError ? 'reserva-email-error' : undefined}
+              value={datosCliente.email}
+              onChange={(e) => setDatosCliente({ ...datosCliente, email: e.target.value })}
+              onBlur={() => setEmailTocado(true)}
+            />
+            {emailConError && (
+              <span id="reserva-email-error" className="font-cuerpo text-sm text-primario">
+                {T.emailInvalido}
+              </span>
+            )}
+          </label>
+          <label className={labelCampo}>
+            {modo === 'staff' ? 'Teléfono (opcional)' : T.telefonoPlaceholder}
+            <input
+              className={input}
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              value={datosCliente.telefono}
+              onChange={(e) =>
+                setDatosCliente({ ...datosCliente, telefono: e.target.value.replace(/\D/g, '') })
+              }
+            />
+          </label>
 
-          {(unidadElegida || noches || detalle.length > 0) && (
-            <div className="bg-fondo-alt rounded-card p-5 flex flex-col gap-2 text-sm">
-              {unidadElegida && (
-                <div className="flex justify-between">
-                  <span className="text-texto-suave">{T.alojamiento}</span>
-                  <span className="font-medium text-negro">
-                    {T.unidades[unidadElegida.tipo].label}
-                  </span>
-                </div>
-              )}
-              {noches && (
-                <div className="flex justify-between">
-                  <span className="text-texto-suave">
-                    {unidad === 'QUINCHOS' ? T.dias : T.noches}
-                  </span>
-                  <span className="font-medium text-negro">{noches}</span>
-                </div>
-              )}
-              {detalle.map((d) => (
-                <div key={d.clave} className="flex justify-between">
-                  <span className="text-texto-suave">
-                    {etiquetaOpcion(T, unidad, d.clave, d.etiqueta)}
-                    {d.cantidad > 1 ? ` × ${d.cantidad}` : ''}
-                  </span>
-                  <span className="font-medium text-negro">{moneda(d.subtotal)}</span>
-                </div>
-              ))}
-              {total != null && (
-                <div className="flex justify-between items-center pt-2 border-t border-borde">
-                  <span className="font-titulo font-bold text-negro">{T.total}</span>
-                  <span className="font-titulo font-black text-xl text-primario">
-                    {moneda(total)}
-                  </span>
-                </div>
-              )}
-            </div>
+          {(unidadElegida || noches || detalle.length > 0) && resumen(true)}
+
+          {error && (
+            <p role="alert" className={avisoError}>
+              {error}
+            </p>
           )}
 
-          {error && <p className="text-[#DC2626] text-sm font-medium">{error}</p>}
-
-          <div className="flex gap-3">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row">
             <button
+              type="button"
               className={`${btnSecundario} flex-1`}
               disabled={enviando}
               onClick={() => setPaso('fechas')}
@@ -1097,6 +1169,7 @@ export default function BookingWidget({
               {T.volver}
             </button>
             <button
+              type="button"
               className={`${btnPrimario} flex-1`}
               disabled={!datosCompletos || enviando}
               onClick={confirmarReserva}
@@ -1109,7 +1182,10 @@ export default function BookingWidget({
 
       {paso === 'confirmado' && (
         <section className="flex flex-col items-center gap-3 text-center my-15 relative z-10">
-          <div className="w-16 h-16 rounded-full bg-primario text-white flex items-center justify-center mb-2 mt-10">
+          <div
+            className="w-16 h-16 rounded-full bg-primario text-white flex items-center justify-center mb-2 mt-10"
+            aria-hidden="true"
+          >
             <span
               className="material-symbols-outlined text-4xl leading-none flex items-center justify-center"
               style={{ fontVariationSettings: "'FILL' 1" }}
@@ -1121,7 +1197,7 @@ export default function BookingWidget({
           <p className="text-texto-suave max-w-sm">{T.confirmadaTexto}</p>
           <a
             href={idioma === 'es' ? '/' : `/${idioma}`}
-            className="font-titulo font-bold text-acento mt-8 underline underline-offset-4"
+            className="font-titulo font-bold text-primario hover:text-primario-oscuro mt-8 underline underline-offset-4 transition-colors"
           >
             {T.volverInicio}
           </a>

@@ -266,7 +266,7 @@ export default function EditarReserva(props: Props) {
     return (
       <button
         onClick={() => setAbierto(true)}
-        className="inline-flex items-center gap-2 border-2 border-primario rounded-pill px-5 py-2.5 font-titulo font-bold text-primario hover:bg-primario-claro hover:text-fondo transition-colors"
+        className="inline-flex items-center gap-2 border-2 border-primario rounded-pill px-5 py-2.5 font-titulo font-bold text-primario hover:bg-primario hover:text-white transition-colors"
       >
         Editar reserva
       </button>
@@ -488,7 +488,7 @@ export default function EditarReserva(props: Props) {
           ))}
           <div className="flex justify-between items-center pt-2 mt-1 border-t border-borde">
             <span className="font-titulo font-bold text-negro">Nuevo total</span>
-            <span className="font-titulo font-black text-lg text-primario">{fmtMoneda(total)}</span>
+            <span className="font-titulo font-bold text-lg text-primario">{fmtMoneda(total)}</span>
           </div>
         </div>
       )}
@@ -504,7 +504,7 @@ export default function EditarReserva(props: Props) {
         <button
           onClick={guardar}
           disabled={!puedeGuardar}
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-primario to-acento text-white px-6 py-2.5 rounded-pill font-titulo font-bold hover:shadow-hero transition-all disabled:opacity-40 disabled:pointer-events-none"
+          className="inline-flex items-center gap-2 bg-primario text-white px-6 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors disabled:opacity-40 disabled:pointer-events-none"
         >
           {enviando ? 'Guardando…' : 'Guardar cambios'}
         </button>

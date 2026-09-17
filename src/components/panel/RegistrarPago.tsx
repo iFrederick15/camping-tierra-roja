@@ -72,7 +72,7 @@ export default function RegistrarPago({ reservaId }: Props) {
       <button
         type="submit"
         disabled={enviando}
-        className="self-start inline-flex items-center gap-2 bg-gradient-to-r from-primario to-acento text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:shadow-hero transition-all disabled:opacity-40"
+        className="self-start inline-flex items-center gap-2 bg-primario text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors disabled:opacity-40"
       >
         {enviando ? 'Registrando…' : 'Registrar pago'}
       </button>

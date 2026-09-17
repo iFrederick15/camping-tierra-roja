@@ -173,7 +173,8 @@ export const pt: Traducciones = {
     mapaTitulo: 'Localização do Camping Tierra Roja em Puerto Iguazú',
     cta: 'Reservar minha hospedagem',
     atractivos: {
-      listaEtiqueta: 'Distâncias e atrativos de Iguaçu',
+      listaDistancias: 'Tempos de viagem a partir do camping',
+      listaDestacados: 'Atrativos em destaque de Iguaçu',
       categorias: {
         natural: 'Natureza',
         cultural: 'Cultura',

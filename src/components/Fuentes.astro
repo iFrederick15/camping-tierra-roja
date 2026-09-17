@@ -1,0 +1,32 @@
+---
+// Fuentes del sitio: Ubuntu (títulos), Barlow (cuerpo) y Material Symbols.
+//
+// Va en el <head> de TODOS los layouts (web pública, Panel y login del
+// Panel). Antes el Panel solo pedía los iconos: `font-titulo` y `font-cuerpo`
+// caían a la fuente del sistema y el Panel no se veía como Tierra Roja.
+//
+// Pesos: Ubuntu 400/500/700 y Barlow 400/500/600/700. Ubuntu no tiene 600 ni
+// 800 en Google Fonts: con `font-titulo` usar `font-medium` o `font-bold`.
+import { ICONOS_MATERIAL } from '../lib/iconos';
+
+// Iconos. Dos recortes sobre la hoja completa de Material Symbols:
+//   1. `icon_names`: solo los iconos que realmente se usan (ver
+//      src/lib/iconos.ts). Sin esto se descarga la fuente completa
+//      (~3.500 iconos).
+//   2. ejes fijos `opsz@24` y `wght@400` en vez de los rangos completos: el
+//      sitio usa un único tamaño y un único grosor de icono. FILL queda como
+//      rango porque las estrellas de las reseñas y las fotos seleccionadas del
+//      reservador usan FILL 1.
+// Resultado medido: 8,6 KB en vez de 1,1 MB (la fuente variable completa).
+const urlIconos = `https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&icon_names=${ICONOS_MATERIAL.join(',')}&display=block`;
+---
+
+<!-- Preconnect antes del <link> para adelantar el handshake TLS con el CDN de
+     Google, que está en el camino crítico del render. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&family=Barlow:wght@400;500;600;700&display=swap"
+  rel="stylesheet"
+/>
+<link href={urlIconos} rel="stylesheet" />

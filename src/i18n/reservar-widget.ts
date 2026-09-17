@@ -54,6 +54,8 @@ export interface TextosWidget {
   volverInicio: string;
   errorDisponibilidad: string;
   errorReserva: string;
+  errorPrecios: string;
+  emailInvalido: string;
   fotoAnterior: string;
   fotoSiguiente: string;
   irAFoto: string;
@@ -119,6 +121,9 @@ const es: TextosWidget = {
   volverInicio: 'Volver al inicio',
   errorDisponibilidad: 'No pudimos consultar la disponibilidad. Prueba de nuevo.',
   errorReserva: 'No pudimos confirmar la reserva',
+  errorPrecios:
+    'No pudimos cargar las opciones de este alojamiento. Recarga la página o escríbenos por WhatsApp.',
+  emailInvalido: 'Revisa el email: falta la @ o el dominio.',
   fotoAnterior: 'Foto anterior',
   fotoSiguiente: 'Foto siguiente',
   irAFoto: 'Ir a la foto {n}',
@@ -175,6 +180,9 @@ const pt: TextosWidget = {
   volverInicio: 'Voltar ao início',
   errorDisponibilidad: 'Não conseguimos consultar a disponibilidade. Tente novamente.',
   errorReserva: 'Não conseguimos confirmar a reserva',
+  errorPrecios:
+    'Não conseguimos carregar as opções desta hospedagem. Recarregue a página ou fale conosco pelo WhatsApp.',
+  emailInvalido: 'Confira o e-mail: falta o @ ou o domínio.',
   // Claves definidas en sql/003_precios_itemizados.sql.
   fotoAnterior: 'Foto anterior',
   fotoSiguiente: 'Próxima foto',
@@ -247,6 +255,9 @@ const en: TextosWidget = {
   volverInicio: 'Back to home',
   errorDisponibilidad: 'We could not check availability. Please try again.',
   errorReserva: 'We could not confirm the booking',
+  errorPrecios:
+    'We could not load the options for this stay. Reload the page or message us on WhatsApp.',
+  emailInvalido: 'Check the email: the @ or the domain is missing.',
   fotoAnterior: 'Previous photo',
   fotoSiguiente: 'Next photo',
   irAFoto: 'Go to photo {n}',

@@ -1,4 +1,5 @@
 ---
+import Fuentes from '../components/Fuentes.astro';
 import '../styles/global.css';
 
 interface Props {
@@ -37,12 +38,7 @@ const navAdmin = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title} — Panel Tierra Roja</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-      rel="stylesheet"
-    />
+    <Fuentes />
   </head>
   <body class="bg-fondo font-cuerpo text-texto antialiased min-h-screen flex flex-col">
     <!-- Topbar: logo, búsqueda global (solo desktop) y accesos rápidos. -->
@@ -76,7 +72,7 @@ const navAdmin = [
 
         <a
           href="/panel/reservas/nueva"
-          class="hidden lg:inline-flex items-center gap-1.5 bg-primario text-white rounded-pill pl-3.5 pr-4 py-2 font-titulo font-semibold text-sm hover:bg-primario-claro transition-colors"
+          class="hidden lg:inline-flex items-center gap-1.5 bg-primario text-white rounded-pill pl-3.5 pr-4 py-2 font-titulo font-bold text-sm hover:bg-primario-oscuro transition-colors"
         >
           <span class="material-symbols-outlined text-[18px]">add</span>
           Nueva reserva
@@ -119,7 +115,7 @@ const navAdmin = [
               class:list={[
                 'font-titulo font-medium text-sm px-3.5 py-1.5 rounded-pill whitespace-nowrap transition-colors',
                 activo === item.key
-                  ? 'bg-superficie-elevada text-primario font-semibold'
+                  ? 'bg-superficie-elevada text-primario font-bold'
                   : 'text-texto-suave hover:bg-superficie-elevada hover:text-primario',
               ]}
             >
@@ -138,7 +134,7 @@ const navAdmin = [
                   class:list={[
                     'font-titulo font-medium text-sm px-3.5 py-1.5 rounded-pill whitespace-nowrap transition-colors',
                     activo === item.key
-                      ? 'bg-superficie-elevada text-primario font-semibold'
+                      ? 'bg-superficie-elevada text-primario font-bold'
                       : 'text-texto-suave hover:bg-superficie-elevada hover:text-primario',
                   ]}
                 >
