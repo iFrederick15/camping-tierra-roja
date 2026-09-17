@@ -121,6 +121,8 @@ if (destino) {
       from:
         process.env.EMAIL_FROM_PRUEBA ||
         env.EMAIL_FROM_PRUEBA ||
+        process.env.EMAIL_FROM ||
+        env.EMAIL_FROM ||
         'Tierra Roja <reservas@tierraroja.com.ar>',
       to: destino,
       subject: `[PRUEBA ${nombre}] ${subject}`,

@@ -89,6 +89,20 @@ function datosCuenta(
   ].filter((fila) => fila.valor);
 }
 
+/**
+ * Remitente de los emails transaccionales.
+ *
+ * Sale de env porque Resend solo entrega si el dominio del remitente está
+ * verificado en su panel: mientras `tierraroja.com.ar` no lo esté, poniendo
+ * `EMAIL_FROM="Tierra Roja <onboarding@resend.dev>"` se puede probar el flujo
+ * completo en producción (ese remitente presta Resend y solo entrega a la
+ * casilla dueña de la cuenta). Verificado el dominio, se borra la variable y
+ * vuelve a usarse el remitente propio sin tocar el código.
+ */
+function remitente(porDefecto: string): string {
+  return import.meta.env.EMAIL_FROM || porDefecto;
+}
+
 /** Porcentaje del total que se pide como seña si no se configuró otro. */
 const PORCENTAJE_SENA_DEFECTO = 50;
 
@@ -331,7 +345,7 @@ export async function enviarEmailConfirmacion(datos: DatosConfirmacion) {
     const { subject, html, text } = construirEmailConfirmacion(datos);
 
     const { error } = await resend.emails.send({
-      from: 'Tierra Roja <reservas@tierraroja.com.ar>',
+      from: remitente('Tierra Roja <reservas@tierraroja.com.ar>'),
       to: datos.email,
       replyTo: NEGOCIO.email,
       subject,
@@ -452,7 +466,7 @@ export async function enviarEmailContacto(datos: DatosContacto) {
   const destino = import.meta.env.CONTACTO_EMAIL_DESTINO || NEGOCIO.email;
 
   const { error } = await resend.emails.send({
-    from: 'Web Tierra Roja <web@tierraroja.com.ar>',
+    from: remitente('Web Tierra Roja <web@tierraroja.com.ar>'),
     to: destino,
     replyTo: datos.email,
     subject: `Consulta web (${datos.tipoConsulta}) — ${datos.nombre}`,

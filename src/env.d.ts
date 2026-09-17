@@ -10,6 +10,13 @@ interface ImportMetaEnv {
   readonly CONTACTO_EMAIL_DESTINO: string;
   /** Host de las imágenes del email (el logo). Por defecto, el `site` de astro.config. */
   readonly EMAIL_BASE_URL: string;
+  /**
+   * Remitente de los emails transaccionales. Por defecto, las casillas de
+   * `tierraroja.com.ar`. Mientras ese dominio no esté verificado en Resend,
+   * `EMAIL_FROM="Tierra Roja <onboarding@resend.dev>"` deja probar en
+   * producción: Resend solo lo entrega a la casilla dueña de la cuenta.
+   */
+  readonly EMAIL_FROM: string;
   // Datos de la cuenta para transferir la reserva. Van en env y no en el
   // código: son datos bancarios del negocio y cambian sin deploy. Si faltan,
   // el email de confirmación los pide por WhatsApp en vez de dejar un hueco.

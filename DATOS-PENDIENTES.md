@@ -182,6 +182,18 @@ Siguen abiertos y requieren accesos externos:
 - **Resend**: `RESEND_API_KEY` y dominio verificado para que funcionen el
   formulario de contacto (`/api/contacto`) y los emails de confirmación de
   reserva (web y manuales del Panel).
+  Estado al 17/09/2026: el único dominio cargado en Resend es
+  `tierrarojaiguazu.com` y está en `failed` (faltan los registros DKIM, SPF y
+  el CNAME de tracking en el DNS, que hoy está en Hostinger), mientras que el
+  código envía desde `reservas@tierraroja.com.ar` — un dominio que no está en
+  la cuenta. Con esa combinación Resend rechaza todo envío real: la reserva se
+  crea y el email nunca sale (queda en los logs de Vercel, no tira error al
+  cliente). Para probar en producción antes de arreglar el DNS, poner en Vercel
+  `EMAIL_FROM=Tierra Roja <onboarding@resend.dev>`: es el remitente prestado de
+  Resend y solo entrega a la casilla dueña de la cuenta, así que la reserva de
+  prueba hay que hacerla con ese email. Verificado el dominio definitivo, se
+  borra `EMAIL_FROM` (o se le pone la casilla propia) y vuelve a salir de
+  `reservas@…`.
 - **Datos bancarios para transferir**: cargar `PAGO_TITULAR`, `PAGO_CBU`,
   `PAGO_ALIAS` y (opcional) `PAGO_BANCO` en Vercel → Environment Variables (y
   en `.env` para las pruebas locales). Mínimo para que el email los muestre:
