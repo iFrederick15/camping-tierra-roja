@@ -255,7 +255,7 @@ export const pt: Traducciones = {
       },
       {
         q: 'Quais são os horários?',
-        a: 'O Tierra Roja funciona o ano todo. Uma diária vai do dia da entrada até as 10h do dia seguinte. Entradas entre 00h e 06h pagam meia diária, válida até as 10h do mesmo dia. O horário de silêncio em todo o camping vai das 00h às 07h.',
+        a: 'O Tierra Roja funciona o ano todo. Uma diária vai do dia da entrada até as 10h do dia seguinte. O horário de silêncio em todo o camping vai das 22h às 07h.',
       },
       {
         q: 'Como chegar do Brasil ou de Foz do Iguaçu?',

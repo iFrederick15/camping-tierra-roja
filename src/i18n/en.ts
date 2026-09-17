@@ -254,7 +254,7 @@ export const en: Traducciones = {
       },
       {
         q: 'What are the opening hours?',
-        a: 'Tierra Roja is open all year round. A stay runs from your arrival day until 10:00 the following morning. Arrivals between 00:00 and 06:00 are charged half a night, valid until 10:00 that same day. Quiet hours across the site run from 00:00 to 07:00.',
+        a: 'Tierra Roja is open all year round. A stay runs from your arrival day until 10:00 the following morning. Quiet hours across the site run from 22:00 to 07:00.',
       },
       {
         q: 'How do I get here from Brazil or Foz do Iguaçu?',

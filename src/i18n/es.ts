@@ -270,7 +270,7 @@ export const es = {
       },
       {
         q: '¿Cuáles son los horarios?',
-        a: 'Tierra Roja opera todo el año. Una estadía va desde el día de ingreso hasta las 10:00 hs del día siguiente. Los ingresos entre las 00:00 y las 06:00 hs abonan media estadía, válida hasta las 10:00 hs de ese mismo día. El horario de descanso, con silencio en todo el predio, va de 00:00 a 07:00 hs.',
+        a: 'Tierra Roja opera todo el año. Una estadía va desde el día de ingreso hasta las 10:00 hs del día siguiente. El horario de descanso, con silencio en todo el predio, va de 22:00 a 07:00 hs.',
       },
       {
         q: '¿Cómo llego desde Brasil o desde Foz do Iguaçu?',
