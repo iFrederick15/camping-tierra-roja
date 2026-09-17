@@ -151,7 +151,7 @@ export function construirEmailConfirmacion(datos: DatosConfirmacion): {
   // ── Encabezado ────────────────────────────────────────────────────────
   const encabezado = bloque(`
       <p style="margin:0 0 10px;font-family:${FUENTE_CUERPO};font-size:16px;color:${C.texto};">Hola ${nombre},</p>
-      <h1 style="margin:0 0 12px;font-family:${FUENTE_TITULO};font-size:27px;line-height:1.2;font-weight:700;color:${C.texto};">Tu reserva está confirmada</h1>
+      <h1 style="margin:0 0 12px;font-family:${FUENTE_TITULO};font-size:27px;line-height:1.2;font-weight:700;color:${C.texto};">Tu reserva se realizó con éxito.</h1>
       <p style="margin:0;font-family:${FUENTE_CUERPO};font-size:15px;line-height:23px;color:${C.textoSuave};">
         Te esperamos en Puerto Iguazú. Guarda este correo: el código de reserva es lo único que necesitas al llegar.
       </p>`);
@@ -313,7 +313,7 @@ export function construirEmailConfirmacion(datos: DatosConfirmacion): {
   return {
     // El asunto lleva alojamiento y fecha para que se distinga en la bandeja
     // sin abrirlo (y para que se encuentre buscando "Camping" meses después).
-    subject: `Reserva confirmada — ${datos.unidadNombre}, ${fmtFechaCorta(datos.fechaIngreso)}`,
+    subject: `Reserva realiazada — ${datos.unidadNombre}, ${fmtFechaCorta(datos.fechaIngreso)}`,
     html,
     // Alternativa en texto plano. No es un detalle estético: un email solo
     // en HTML puntúa peor en los filtros de spam y se lee mal en relojes y
