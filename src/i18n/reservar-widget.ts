@@ -116,7 +116,7 @@ const es: TextosWidget = {
   total: 'Total',
   confirmar: 'Confirmar reserva',
   confirmando: 'Confirmando…',
-  confirmadaTitulo: '¡Reserva confirmada!',
+  confirmadaTitulo: '¡Reserva realizada!',
   confirmadaTexto: 'Te enviamos los detalles y los datos para transferir a tu email.',
   volverInicio: 'Volver al inicio',
   errorDisponibilidad: 'No pudimos consultar la disponibilidad. Prueba de nuevo.',
