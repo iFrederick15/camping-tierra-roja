@@ -54,13 +54,39 @@ interface DatosConfirmacion {
  * el email pide los datos por WhatsApp en vez de mostrar un hueco: la regla
  * del proyecto es no inventar datos ni mostrar marcadores de posición al
  * cliente (ver PRODUCT.md § Reglas de contenido).
+ *
+ * Alcanza con el titular y UNA forma de transferir (CBU o alias): con el alias
+ * solo ya se transfiere desde cualquier banco o billetera. Antes se exigían
+ * las tres variables y un CBU sin cargar borraba todo el bloque del email,
+ * que es exactamente el hueco que se quería evitar.
  */
 function datosBancarios(): { titular: string; cbu: string; alias: string; banco: string } | null {
   const titular = import.meta.env.PAGO_TITULAR;
   const cbu = import.meta.env.PAGO_CBU;
   const alias = import.meta.env.PAGO_ALIAS;
-  if (!titular || !cbu || !alias) return null;
-  return { titular, cbu, alias, banco: import.meta.env.PAGO_BANCO || '' };
+  if (!titular || (!cbu && !alias)) return null;
+  return {
+    titular,
+    cbu: cbu || '',
+    alias: alias || '',
+    banco: import.meta.env.PAGO_BANCO || '',
+  };
+}
+
+/**
+ * Las filas de la cuenta a mostrar, en orden y sin las que no tengan dato.
+ * Una sola fuente para el HTML y para el texto plano: así no puede pasar que
+ * una versión del email muestre el alias y la otra no.
+ */
+function datosCuenta(
+  banco: NonNullable<ReturnType<typeof datosBancarios>>
+): Array<{ etiqueta: string; valor: string }> {
+  return [
+    { etiqueta: 'Titular', valor: banco.titular },
+    { etiqueta: 'Banco', valor: banco.banco },
+    { etiqueta: 'CBU', valor: banco.cbu },
+    { etiqueta: 'Alias', valor: banco.alias },
+  ].filter((fila) => fila.valor);
 }
 
 /** Porcentaje del total que se pide como seña si no se configuró otro. */
@@ -192,12 +218,17 @@ export function construirEmailConfirmacion(datos: DatosConfirmacion): {
     : '';
 
   const banco = datosBancarios();
-  const filasBanco = banco
+  // Solo las filas que tienen dato cargado: el banco es opcional y el CBU y el
+  // alias son alternativas entre sí. El borde inferior se le saca a la última
+  // fila que quedó, sea cual sea (si falta el alias, la última es el CBU).
+  const filasCuenta = banco
+    ? datosCuenta(banco).map((fila, i, todas) =>
+        filaDato(fila.etiqueta, escaparHtml(fila.valor), i === todas.length - 1)
+      )
+    : [];
+  const filasBanco = filasCuenta.length
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;">
-          ${filaDato('Titular', escaparHtml(banco.titular))}
-          ${banco.banco ? filaDato('Banco', escaparHtml(banco.banco)) : ''}
-          ${filaDato('CBU', escaparHtml(banco.cbu))}
-          ${filaDato('Alias', escaparHtml(banco.alias), true)}
+          ${filasCuenta.join('')}
         </table>`
     : `<p style="margin:14px 0 0;font-family:${FUENTE_CUERPO};font-size:14px;line-height:22px;color:${C.texto};">
           Escríbenos por WhatsApp y te pasamos los datos para transferir.
@@ -369,12 +400,7 @@ function textoConfirmacion(
       );
     }
     if (banco) {
-      lineas.push(
-        `Titular: ${banco.titular}`,
-        ...(banco.banco ? [`Banco: ${banco.banco}`] : []),
-        `CBU: ${banco.cbu}`,
-        `Alias: ${banco.alias}`
-      );
+      lineas.push(...datosCuenta(banco).map((fila) => `${fila.etiqueta}: ${fila.valor}`));
     } else {
       lineas.push('Escríbenos por WhatsApp y te pasamos los datos para transferir.');
     }

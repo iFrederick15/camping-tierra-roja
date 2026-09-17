@@ -183,9 +183,12 @@ Siguen abiertos y requieren accesos externos:
   formulario de contacto (`/api/contacto`) y los emails de confirmación de
   reserva (web y manuales del Panel).
 - **Datos bancarios para transferir**: cargar `PAGO_TITULAR`, `PAGO_CBU`,
-  `PAGO_ALIAS` y (opcional) `PAGO_BANCO` en Vercel → Environment Variables.
-  Mientras falten, el email de confirmación no muestra un hueco: pide los
-  datos por WhatsApp. El teléfono ya sale de `NEGOCIO.telefono`.
+  `PAGO_ALIAS` y (opcional) `PAGO_BANCO` en Vercel → Environment Variables (y
+  en `.env` para las pruebas locales). Mínimo para que el email los muestre:
+  `PAGO_TITULAR` más `PAGO_CBU` o `PAGO_ALIAS`; las filas sin dato no se
+  imprimen. Si falta el titular o las dos formas de transferir, el email no
+  deja un hueco: pide los datos por WhatsApp. El teléfono ya sale de
+  `NEGOCIO.telefono`.
 - **Porcentaje de la seña**: `PAGO_SENA_PORCENTAJE` (por defecto 50). Es el
   monto mínimo que el email pide transferir dentro del plazo; el saldo se
   abona al ingresar. Cambiarlo por temporada no requiere deploy.

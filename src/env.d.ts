@@ -13,6 +13,8 @@ interface ImportMetaEnv {
   // Datos de la cuenta para transferir la reserva. Van en env y no en el
   // código: son datos bancarios del negocio y cambian sin deploy. Si faltan,
   // el email de confirmación los pide por WhatsApp en vez de dejar un hueco.
+  // Mínimo para que el email los muestre: PAGO_TITULAR + PAGO_CBU o PAGO_ALIAS
+  // (las demás son opcionales y las filas vacías no se imprimen).
   readonly PAGO_TITULAR: string;
   readonly PAGO_CBU: string;
   readonly PAGO_ALIAS: string;
