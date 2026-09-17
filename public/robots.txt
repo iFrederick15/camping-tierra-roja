@@ -1,5 +1,5 @@
 # Camping Tierra Roja — Puerto Iguazú, Misiones, Argentina
-# https://tierraroja.com.ar
+# https://tierrarojaiguazu.com
 
 User-agent: *
 Allow: /
@@ -17,4 +17,4 @@ Disallow: /reservar?
 Disallow: /pt/reservar?
 Disallow: /en/book?
 
-Sitemap: https://tierraroja.com.ar/sitemap-index.xml
+Sitemap: https://tierrarojaiguazu.com/sitemap-index.xml

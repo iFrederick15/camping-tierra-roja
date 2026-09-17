@@ -123,7 +123,7 @@ if (destino) {
         env.EMAIL_FROM_PRUEBA ||
         process.env.EMAIL_FROM ||
         env.EMAIL_FROM ||
-        'Tierra Roja <reservas@tierraroja.com.ar>',
+        'Tierra Roja <reservas@tierrarojaiguazu.com>',
       to: destino,
       subject: `[PRUEBA ${nombre}] ${subject}`,
       html,

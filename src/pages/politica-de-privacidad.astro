@@ -7,8 +7,8 @@ const actualizado = '12 de agosto de 2026';
 
 // El dominio se lee de `site` (astro.config.mjs) en vez de escribirse a mano:
 // el texto decía `tierrarojaiguazu.com`, que no es el dominio del sitio
-// (`tierraroja.com.ar`), y un documento legal no puede apuntar a otra web.
-const dominio = (Astro.site ?? new URL('https://tierraroja.com.ar')).host;
+// (`tierrarojaiguazu.com`), y un documento legal no puede apuntar a otra web.
+const dominio = (Astro.site ?? new URL('https://tierrarojaiguazu.com')).host;
 
 const secciones = [
   { id: 'responsable', label: '1. Responsable del tratamiento' },
@@ -51,9 +51,7 @@ const secciones = [
   <section class="max-w-7xl mx-auto px-6 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
     <!-- Índice -->
     <nav class="lg:col-span-4 lg:sticky lg:top-28 order-2 lg:order-1">
-      <div
-        class="bg-superficie p-6 md:p-8 rounded-card shadow-elevada border border-borde/10"
-      >
+      <div class="bg-superficie p-6 md:p-8 rounded-card shadow-elevada border border-borde/10">
         <h2 class="font-titulo font-bold text-lg text-texto mb-4">En esta página</h2>
         <ul class="space-y-2.5">
           {
@@ -72,7 +70,12 @@ const secciones = [
         <div class="mt-6 pt-6 border-t border-borde/60">
           <p class="text-texto-suave text-xs leading-relaxed">
             ¿Tienes dudas sobre tus datos? Escríbenos por{' '}
-            <a href={whatsappHref('es')} target="_blank" rel="noopener" class="text-primario font-semibold">
+            <a
+              href={whatsappHref('es')}
+              target="_blank"
+              rel="noopener"
+              class="text-primario font-semibold"
+            >
               WhatsApp
             </a>
           </p>
@@ -90,8 +93,11 @@ const secciones = [
           El responsable del tratamiento de los datos personales recogidos a través de este sitio es <strong
             class="text-texto">Tierra Roja – Camping y Parque Acuático</strong
           >, con domicilio en{' '}
-          <a href={NEGOCIO.mapaUrl} target="_blank" rel="noopener" class="text-primario font-semibold"
-            >{DIRECCION_COMPLETA}</a
+          <a
+            href={NEGOCIO.mapaUrl}
+            target="_blank"
+            rel="noopener"
+            class="text-primario font-semibold">{DIRECCION_COMPLETA}</a
           >.
         </p>
         <p class="text-texto-suave leading-relaxed">
@@ -200,7 +206,12 @@ const secciones = [
           De acuerdo con la Ley 25.326, tienes derecho a acceder, rectificar, actualizar o solicitar
           la supresión de tus datos personales de forma gratuita. Para ejercer cualquiera de estos
           derechos, escríbenos por{' '}
-          <a href={whatsappHref('es')} target="_blank" rel="noopener" class="text-primario font-semibold">WhatsApp</a>.
+          <a
+            href={whatsappHref('es')}
+            target="_blank"
+            rel="noopener"
+            class="text-primario font-semibold">WhatsApp</a
+          >.
         </p>
         <p class="text-texto-suave leading-relaxed">
           La Agencia de Acceso a la Información Pública, en su carácter de Órgano de Control de la

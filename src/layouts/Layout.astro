@@ -54,7 +54,7 @@ const {
 
 // El dominio de marca vive en un solo lugar (astro.config.mjs → site) para
 // que canonical, Open Graph y el JSON-LD de más abajo no puedan desincronizarse.
-const sitioUrl = (Astro.site ?? new URL('https://tierraroja.com.ar')).origin;
+const sitioUrl = (Astro.site ?? new URL('https://tierrarojaiguazu.com')).origin;
 const canonicalURL = new URL(Astro.url.pathname, sitioUrl);
 const imagenSocial = new URL(image, sitioUrl);
 

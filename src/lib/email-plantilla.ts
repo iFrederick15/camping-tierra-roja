@@ -24,7 +24,7 @@ import { NEGOCIO, DIRECCION_COMPLETA } from './negocio';
 const BASE_URL = (
   import.meta.env.EMAIL_BASE_URL ||
   import.meta.env.SITE ||
-  'https://tierraroja.com.ar'
+  'https://tierrarojaiguazu.com'
 ).replace(/\/$/, '');
 
 export const LOGO_URL = `${BASE_URL}/images/marca/logo-email.png`;
@@ -231,7 +231,7 @@ ${contenido}
                 &nbsp;·&nbsp;
                 <a href="${NEGOCIO.redes.facebook}" style="color:${C.primario};text-decoration:none;font-weight:600;">Facebook</a>
                 &nbsp;·&nbsp;
-                <a href="${BASE_URL}" style="color:${C.primario};text-decoration:none;font-weight:600;">tierraroja.com.ar</a>
+                <a href="${BASE_URL}" style="color:${C.primario};text-decoration:none;font-weight:600;">tierrarojaiguazu.com</a>
               </p>
               <p style="margin:0;font-family:${FUENTE_CUERPO};font-size:11px;line-height:17px;color:${C.textoSuave};">
                 Recibes este correo porque hiciste una reserva en Tierra Roja. No es un correo publicitario y no hace falta darse de baja.

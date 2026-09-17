@@ -22,9 +22,9 @@ Este documento describe, en lenguaje no técnico, qué es el sistema, qué funci
 
 El proyecto está formado por **dos partes que comparten la misma base de datos**:
 
-| | Para quién | Qué permite |
-|---|---|---|
-| **Portal público** | Visitantes / futuros huéspedes | Conocer el predio, ver fotos, reservar alojamiento online sin necesidad de crear una cuenta |
+|                          | Para quién                                     | Qué permite                                                                                       |
+| ------------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Portal público**       | Visitantes / futuros huéspedes                 | Conocer el predio, ver fotos, reservar alojamiento online sin necesidad de crear una cuenta       |
 | **Panel administrativo** | Equipo de Tierra Roja (Staff y Administración) | Gestionar todas las reservas, registrar pagos, hacer check-in/check-out, ver ocupación y reportes |
 
 Ambas partes están **conectadas en tiempo real**: una reserva hecha por un visitante desde el celular aparece al instante en el panel del staff, y una reserva cargada manualmente por el staff (por ejemplo, un cliente que llama por teléfono) también descuenta disponibilidad para el sitio público. No hay planillas paralelas ni doble carga de datos.
@@ -35,14 +35,14 @@ Ambas partes están **conectadas en tiempo real**: una reserva hecha por un visi
 
 ### 2.1 Portal público (sitio web para visitantes)
 
-| Página | Contenido |
-|---|---|
-| **Inicio** (`/`) | Presentación del predio: piscinas, camping, motorhome y cabaña, con llamados a la acción hacia la reserva |
-| **Reservar** (`/reservar`) | Reserva online en 4 pasos, sin necesidad de cuenta ni contraseña |
-| **Galería** (`/galeria`) | Fotos del predio organizadas por categoría (Naturaleza, Piscinas, Camping, Cabañas) |
-| **Atractivos de Iguazú** (`/atractivos`) | Guía de qué hacer en Puerto Iguazú: las 34 fichas del descriptivo oficial de la ACATI y el mapa de la ciudad para ver y descargar. Se llega desde el botón de la sección "Ubicación" del inicio; no está en el menú |
-| **Contacto** (`/contacto`) | Datos de contacto, formulario de consultas, ubicación y horarios |
-| **Política de Privacidad** (`/politica-de-privacidad`) | Cómo se usan y protegen los datos de los huéspedes |
+| Página                                                 | Contenido                                                                                                                                                                                                           |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Inicio** (`/`)                                       | Presentación del predio: piscinas, camping, motorhome y cabaña, con llamados a la acción hacia la reserva                                                                                                           |
+| **Reservar** (`/reservar`)                             | Reserva online en 4 pasos, sin necesidad de cuenta ni contraseña                                                                                                                                                    |
+| **Galería** (`/galeria`)                               | Fotos del predio organizadas por categoría (Naturaleza, Piscinas, Camping, Cabañas)                                                                                                                                 |
+| **Atractivos de Iguazú** (`/atractivos`)               | Guía de qué hacer en Puerto Iguazú: las 34 fichas del descriptivo oficial de la ACATI y el mapa de la ciudad para ver y descargar. Se llega desde el botón de la sección "Ubicación" del inicio; no está en el menú |
+| **Contacto** (`/contacto`)                             | Datos de contacto, formulario de consultas, ubicación y horarios                                                                                                                                                    |
+| **Política de Privacidad** (`/politica-de-privacidad`) | Cómo se usan y protegen los datos de los huéspedes                                                                                                                                                                  |
 
 ### 2.2 Panel administrativo (equipo de Tierra Roja)
 
@@ -51,17 +51,17 @@ Acceso mediante usuario y contraseña, con **dos niveles de permisos**:
 - **Staff**: uso diario — ver llegadas/salidas de hoy, buscar una reserva, cargar una reserva manual (por teléfono o en el mostrador), y ver quién debe pagar.
 - **Admin**: todo lo anterior, más las herramientas de gestión del negocio — vista operativa general, calendario de ocupación, configuración de precios y cupos, y reportes.
 
-| Sección | Rol | Qué permite |
-|---|---|---|
-| **Hoy** | Staff / Admin | Ver quién llega y quién se va hoy |
-| **Buscar** | Staff / Admin | Encontrar una reserva por nombre o DNI |
-| **Nueva reserva** | Staff / Admin | Cargar manualmente una reserva (mismo formulario que usa el visitante, pero pensado para que lo complete el staff) |
-| **Pendientes de pago** | Staff / Admin | Listado de reservas confirmadas que todavía no transfirieron la seña |
-| **Detalle de una reserva** | Staff / Admin | Ver los datos completos, registrar un pago, hacer check-in o check-out |
-| **Vista operativa** | Admin | Panorama general del día (llegadas, salidas, pagos pendientes) y ocupación actual por tipo de alojamiento |
-| **Calendario de ocupación** | Admin | Ver, mes a mes, qué lugares están ocupados y por quién, y crear reservas directamente desde el calendario |
-| **Configuración** | Admin | Editar cupos, precios y plazos de pago sin intervención del equipo de desarrollo |
-| **Reportes** | Admin | Números del mes: facturación, noches ocupadas, cantidad de reservas, canal de captación |
+| Sección                     | Rol           | Qué permite                                                                                                        |
+| --------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Hoy**                     | Staff / Admin | Ver quién llega y quién se va hoy                                                                                  |
+| **Buscar**                  | Staff / Admin | Encontrar una reserva por nombre o DNI                                                                             |
+| **Nueva reserva**           | Staff / Admin | Cargar manualmente una reserva (mismo formulario que usa el visitante, pero pensado para que lo complete el staff) |
+| **Pendientes de pago**      | Staff / Admin | Listado de reservas confirmadas que todavía no transfirieron la seña                                               |
+| **Detalle de una reserva**  | Staff / Admin | Ver los datos completos, registrar un pago, hacer check-in o check-out                                             |
+| **Vista operativa**         | Admin         | Panorama general del día (llegadas, salidas, pagos pendientes) y ocupación actual por tipo de alojamiento          |
+| **Calendario de ocupación** | Admin         | Ver, mes a mes, qué lugares están ocupados y por quién, y crear reservas directamente desde el calendario          |
+| **Configuración**           | Admin         | Editar cupos, precios y plazos de pago sin intervención del equipo de desarrollo                                   |
+| **Reportes**                | Admin         | Números del mes: facturación, noches ocupadas, cantidad de reservas, canal de captación                            |
 
 ### 2.3 Automatizaciones
 
@@ -76,12 +76,12 @@ El sistema hace, sin intervención humana:
 
 El sistema gestiona cuatro tipos de alojamiento, cada uno con sus propias reglas de disponibilidad:
 
-| Tipo | Cómo se reserva | Particularidad |
-|---|---|---|
-| **Camping** | Por cupo general (cantidad de personas) | No tiene "lugares" numerados; se controla por cantidad total de personas admitidas por noche |
-| **Motorhome** | Por parcela | Hay 25 parcelas; el sistema asigna automáticamente una libre, el cliente no elige el número |
-| **Cabaña** | Unidad única | Solo hay una cabaña disponible; capacidad máxima 8 personas |
-| **Quincho** | Por categoría (Chico / Grande / Especial / Compartido) | Se reserva por día (no por noche); el cliente elige la categoría y el sistema muestra los quinchos libres de esa categoría |
+| Tipo          | Cómo se reserva                                        | Particularidad                                                                                                             |
+| ------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| **Camping**   | Por cupo general (cantidad de personas)                | No tiene "lugares" numerados; se controla por cantidad total de personas admitidas por noche                               |
+| **Motorhome** | Por parcela                                            | Hay 25 parcelas; el sistema asigna automáticamente una libre, el cliente no elige el número                                |
+| **Cabaña**    | Unidad única                                           | Solo hay una cabaña disponible; capacidad máxima 8 personas                                                                |
+| **Quincho**   | Por categoría (Chico / Grande / Especial / Compartido) | Se reserva por día (no por noche); el cliente elige la categoría y el sistema muestra los quinchos libres de esa categoría |
 
 **Piscinas / parque acuático**: hoy es un **beneficio informativo e incluido**, no un ítem que se reserve aparte. Se muestra en la página de inicio como atractivo del predio y está incluido al reservar la cabaña. Si el negocio vende "pase de día" para usar solo las piscinas (se menciona un horario de 9 a 19hs en la página de Contacto), esa venta hoy se gestiona fuera del sistema — no hay reserva, cupo ni cobro digital para esa modalidad todavía.
 
@@ -159,7 +159,6 @@ Todo lo anterior, más:
 - **Vista operativa**: un resumen ejecutivo del día — llegadas, salidas, pagos pendientes, y la ocupación actual de cada tipo de alojamiento (por ejemplo, "3 de 25 motorhomes ocupados"). Cada fila de ocupación lleva directo al calendario de ese tipo de alojamiento.
 
 - **Calendario de ocupación**: la herramienta visual para planificar. Se navega por pestañas (Camping / Motorhome / Cabaña / Quinchos) y muestra, día por día, quién ocupa cada lugar:
-
   - Cada **fila** es un lugar físico real (por ejemplo, cada parcela de motorhome) o, para Camping, un "carril" virtual que representa un cupo disponible.
   - Cada **reserva** se ve como una barra de color a lo largo de las fechas que ocupa, con un color según su estado: **Reserva** (confirmada, azul), **Checkin** (huésped ya ingresó, verde), **Adeudado** (todavía debe plata, ámbar) y **Checkout** (estadía finalizada, marrón). Tocar una barra abre el detalle de esa reserva.
   - Por defecto el calendario **arranca en el día de hoy** (los días que ya pasaron no ayudan a decidir dónde ubicar una reserva nueva), pero hay un botón para volver a ver los días anteriores del mes si hace falta consultarlos.
@@ -193,16 +192,16 @@ Todo lo anterior, más:
 
 ## 7. Glosario
 
-| Término | Significado |
-|---|---|
-| **Unidad** | Cada uno de los cuatro tipos de alojamiento (Camping, Motorhome, Cabaña, Quincho) |
-| **Parcela** | Un lugar físico específico dentro de una unidad (por ejemplo, "Parcela 7" de Motorhome) |
-| **Cupo** | Cantidad máxima de personas o lugares disponibles para un tipo de alojamiento sin lugares numerados (Camping) |
-| **Seña** | El pago (total o parcial) que confirma una reserva |
-| **Check-in** | Registro de ingreso del huésped al predio |
-| **Check-out** | Registro de salida del huésped |
-| **Origen (WEB / Manual)** | Si la reserva la hizo el visitante desde el sitio, o si la cargó el staff |
-| **Staff / Admin** | Los dos niveles de acceso al panel: uso diario, y gestión avanzada del negocio |
+| Término                   | Significado                                                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Unidad**                | Cada uno de los cuatro tipos de alojamiento (Camping, Motorhome, Cabaña, Quincho)                             |
+| **Parcela**               | Un lugar físico específico dentro de una unidad (por ejemplo, "Parcela 7" de Motorhome)                       |
+| **Cupo**                  | Cantidad máxima de personas o lugares disponibles para un tipo de alojamiento sin lugares numerados (Camping) |
+| **Seña**                  | El pago (total o parcial) que confirma una reserva                                                            |
+| **Check-in**              | Registro de ingreso del huésped al predio                                                                     |
+| **Check-out**             | Registro de salida del huésped                                                                                |
+| **Origen (WEB / Manual)** | Si la reserva la hizo el visitante desde el sitio, o si la cargó el staff                                     |
+| **Staff / Admin**         | Los dos niveles de acceso al panel: uso diario, y gestión avanzada del negocio                                |
 
 ---
 
@@ -211,7 +210,7 @@ Todo lo anterior, más:
 Durante la preparación de esta documentación se detectaron algunos contenidos de relleno (placeholders) y datos inconsistentes entre distintas páginas del sitio, que conviene resolver antes del lanzamiento definitivo:
 
 1. **Dirección del predio inconsistente**: la página de Contacto muestra "Av. de las Cataratas 2000 Ha" mientras que el pie de página y la Política de Privacidad muestran "Barrio Los Yerbales 2000 Ha". Hay que definir cuál es la correcta.
-2. **Email de contacto inconsistente**: `tierrarojaiguazu@gmail.com` (página de Contacto) vs. `hola@tierraroja.com.ar` (pie de página y Política de Privacidad).
+2. **Email de contacto inconsistente**: `tierrarojaiguazu@gmail.com` (página de Contacto) vs. `hola@tierrarojaiguazu.com` (pie de página y Política de Privacidad).
 3. **Número de WhatsApp inconsistente**: el pie de página usa un número distinto al de la página de Contacto, y este último todavía tiene un enlace sin completar (`wa.me/yourwhatsapp`).
 4. **Formulario de contacto no está conectado**: hoy el formulario de la página de Contacto es solo visual — al enviarlo, no le llega el mensaje a nadie. Falta definir a dónde debe llegar (email, WhatsApp Business, etc.) y conectarlo.
 5. **Datos bancarios pendientes en el email de confirmación**: el mail que recibe el cliente al reservar todavía tiene un texto de relleno donde deberían ir el CBU/alias real y el WhatsApp de contacto para modificar o cancelar una reserva.

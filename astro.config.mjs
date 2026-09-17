@@ -12,7 +12,7 @@ export default defineConfig({
   adapter: vercel(),
   // Dominio de marca (ver política de privacidad / términos) — actualizar
   // acá el día que se defina el dominio final con/sin "www" en Vercel.
-  site: 'https://tierraroja.com.ar',
+  site: 'https://tierrarojaiguazu.com',
   // ── Idiomas ──
   // Español en la raíz (`/`, `/galeria`, …) porque es el idioma principal y
   // el que ya está indexado; portugués e inglés bajo prefijo (`/pt`, `/en`).
@@ -53,7 +53,8 @@ export default defineConfig({
           links: clave
             ? IDIOMAS.map(({ codigo, hreflang }) => ({
                 lang: hreflang,
-                url: new URL(rutaCanonica(RUTAS[codigo][clave]), 'https://tierraroja.com.ar').href,
+                url: new URL(rutaCanonica(RUTAS[codigo][clave]), 'https://tierrarojaiguazu.com')
+                  .href,
               }))
             : undefined,
         };
@@ -70,8 +71,8 @@ export default defineConfig({
     // con "Cross-site POST form submissions are forbidden".
     allowedDomains: [
       { hostname: 'camping-tierra-roja.vercel.app' },
-      { hostname: 'tierraroja.com.ar' },
-      { hostname: 'www.tierraroja.com.ar' },
+      { hostname: 'tierrarojaiguazu.com' },
+      { hostname: 'www.tierrarojaiguazu.com' },
     ],
   },
 });

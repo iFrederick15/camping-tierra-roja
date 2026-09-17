@@ -12,9 +12,15 @@ Cada punto dice **qué archivo editar** y qué pasa cuando se completa.
 ## 1. Precios · `src/lib/precios.ts`
 
 ```ts
-CAMPING:   { desde: null }  // ⚠️ COMPLETAR
-MOTORHOME: { desde: null }  // ⚠️ COMPLETAR
-CABANA:    { desde: null }  // ⚠️ COMPLETAR
+CAMPING: {
+  desde: null;
+} // ⚠️ COMPLETAR
+MOTORHOME: {
+  desde: null;
+} // ⚠️ COMPLETAR
+CABANA: {
+  desde: null;
+} // ⚠️ COMPLETAR
 export const VIGENCIA_PRECIOS: string | null = null;
 ```
 
@@ -43,12 +49,12 @@ Confirmados y ya publicados (venían de la página de Contacto):
 
 Faltan (hoy muestran "Consulta el tiempo de viaje" en vez de un número):
 
-| Punto | Campo a completar |
-|---|---|
+| Punto                                       | Campo a completar             |
+| ------------------------------------------- | ----------------------------- |
 | Frontera con Brasil (Puente Tancredo Neves) | `minutos`, `confirmado: true` |
-| Foz do Iguaçu (centro) | `minutos`, `confirmado: true` |
-| Aeropuerto de Puerto Iguazú (IGR) | `minutos`, `confirmado: true` |
-| Hito Tres Fronteras | `minutos`, `confirmado: true` |
+| Foz do Iguaçu (centro)                      | `minutos`, `confirmado: true` |
+| Aeropuerto de Puerto Iguazú (IGR)           | `minutos`, `confirmado: true` |
+| Hito Tres Fronteras                         | `minutos`, `confirmado: true` |
 
 Los dos primeros son los más importantes: son el argumento de venta para el
 visitante brasileño, que es el segundo público del camping.
@@ -122,6 +128,7 @@ GOOGLE_PLACE_ID=        # Place ID de Tierra Roja
 ```
 
 Pasos para conseguirlas:
+
 1. Crear/usar un proyecto en Google Cloud Console, habilitar **Places API
    (New)** y activar facturación (hay franja gratuita mensual).
 2. Generar una API key y restringirla a esa API.
@@ -175,17 +182,17 @@ Al agregar una foto hay que sumar su descripción en `galeria.fotos` de los
 
 Siguen abiertos y requieren accesos externos:
 
-- **Dominio**: conectar `tierraroja.com.ar` en Vercel y configurar los 301 de
+- **Dominio**: conectar `tierrarojaiguazu.com` en Vercel y configurar los 301 de
   `www` → apex y de `*.vercel.app` → dominio final.
 - **Google Search Console**: verificar el dominio y enviar
-  `https://tierraroja.com.ar/sitemap-index.xml`.
+  `https://tierrarojaiguazu.com/sitemap-index.xml`.
 - **Resend**: `RESEND_API_KEY` y dominio verificado para que funcionen el
   formulario de contacto (`/api/contacto`) y los emails de confirmación de
   reserva (web y manuales del Panel).
   Estado al 17/09/2026: el único dominio cargado en Resend es
   `tierrarojaiguazu.com` y está en `failed` (faltan los registros DKIM, SPF y
   el CNAME de tracking en el DNS, que hoy está en Hostinger), mientras que el
-  código envía desde `reservas@tierraroja.com.ar` — un dominio que no está en
+  código envía desde `reservas@tierrarojaiguazu.com` — un dominio que no está en
   la cuenta. Con esa combinación Resend rechaza todo envío real: la reserva se
   crea y el email nunca sale (queda en los logs de Vercel, no tira error al
   cliente). Para probar en producción antes de arreglar el DNS, poner en Vercel
@@ -205,7 +212,7 @@ Siguen abiertos y requieren accesos externos:
   monto mínimo que el email pide transferir dentro del plazo; el saldo se
   abona al ingresar. Cambiarlo por temporada no requiere deploy.
 - **Logo del email**: `enviarEmailConfirmacion` sirve el logo desde
-  `https://tierraroja.com.ar/images/marca/logo-email.png`, así que hasta que el
+  `https://tierrarojaiguazu.com/images/marca/logo-email.png`, así que hasta que el
   dominio esté conectado el email llega con la imagen rota. Para probarlo
   antes, poner el dominio de Vercel en `EMAIL_BASE_URL`.
 

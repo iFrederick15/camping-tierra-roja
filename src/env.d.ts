@@ -12,7 +12,7 @@ interface ImportMetaEnv {
   readonly EMAIL_BASE_URL: string;
   /**
    * Remitente de los emails transaccionales. Por defecto, las casillas de
-   * `tierraroja.com.ar`. Mientras ese dominio no esté verificado en Resend,
+   * `tierrarojaiguazu.com`. Mientras ese dominio no esté verificado en Resend,
    * `EMAIL_FROM="Tierra Roja <onboarding@resend.dev>"` deja probar en
    * producción: Resend solo lo entrega a la casilla dueña de la cuenta.
    */
