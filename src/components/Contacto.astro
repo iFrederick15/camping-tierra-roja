@@ -19,6 +19,10 @@ const { idioma, t } = Astro.props;
 const hlMapa = idioma === 'pt' ? 'pt-BR' : idioma === 'en' ? 'en' : 'es';
 const mapaEmbed = `https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Acu%C3%A1tico,${NEGOCIO.geo.lat},${NEGOCIO.geo.lng}&hl=${hlMapa}&z=15&output=embed`;
 
+const introHtml = interpolar(t.contacto.intro, {
+  direccion: `<a href="${NEGOCIO.mapaUrl}" target="_blank" rel="noopener" class="underline decoration-primario/40 underline-offset-4 hover:text-primario">${NEGOCIO.direccion.calle}</a>`,
+});
+
 // El valor de cada opción (lo que llega en el mensaje de WhatsApp) queda
 // SIEMPRE en español, para que el equipo del camping lo lea sin traducir.
 const tiposConsulta = [
@@ -41,9 +45,7 @@ const claseCampo =
     <span class="text-primario">{t.contacto.tituloDestacado}</span>
     {t.contacto.titulo}
   </h1>
-  <p class="mx-auto max-w-2xl text-lg leading-relaxed text-texto-suave md:mx-0">
-    {interpolar(t.contacto.intro, { direccion: NEGOCIO.direccion.calle })}
-  </p>
+  <p class="mx-auto max-w-2xl text-lg leading-relaxed text-texto-suave md:mx-0" set:html={introHtml} />
 
   <!-- Atajo para quien ya decidió: no hace falta escribir un mensaje. -->
   <div
@@ -154,7 +156,17 @@ const claseCampo =
           </span>
           <div>
             <p class="font-bold text-texto">{t.contacto.ubicacionLabel}</p>
-            <address class="not-italic text-texto-suave">{DIRECCION_COMPLETA}</address>
+            <address class="not-italic">
+              <a
+                href={NEGOCIO.mapaUrl}
+                target="_blank"
+                rel="noopener"
+                data-evento={EVENTOS.MAPA}
+                data-evento-detalle="contacto-datos"
+                class="text-texto-suave transition-colors hover:text-primario"
+                >{DIRECCION_COMPLETA}</a
+              >
+            </address>
           </div>
         </li>
         <li class="flex items-start gap-4">

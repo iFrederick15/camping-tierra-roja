@@ -1,7 +1,7 @@
 ---
 export const prerender = true;
 import Layout from '../layouts/Layout.astro';
-import { DIRECCION_COMPLETA, whatsappHref } from '../lib/negocio';
+import { NEGOCIO, DIRECCION_COMPLETA, whatsappHref } from '../lib/negocio';
 
 const actualizado = '12 de agosto de 2026';
 
@@ -89,7 +89,10 @@ const secciones = [
         <p class="text-texto-suave leading-relaxed">
           El responsable del tratamiento de los datos personales recogidos a través de este sitio es <strong
             class="text-texto">Tierra Roja – Camping y Parque Acuático</strong
-          >, con domicilio en {DIRECCION_COMPLETA}.
+          >, con domicilio en{' '}
+          <a href={NEGOCIO.mapaUrl} target="_blank" rel="noopener" class="text-primario font-semibold"
+            >{DIRECCION_COMPLETA}</a
+          >.
         </p>
         <p class="text-texto-suave leading-relaxed">
           Esta política se rige por la Ley 25.326 de Protección de los Datos Personales de la
@@ -257,9 +260,14 @@ const secciones = [
             <div class="bg-primario/10 p-2.5 rounded-lg text-primario">
               <span class="material-symbols-outlined text-lg">location_on</span>
             </div>
-            <span class="text-texto font-semibold">
+            <a
+              href={NEGOCIO.mapaUrl}
+              target="_blank"
+              rel="noopener"
+              class="text-texto font-semibold hover:text-primario transition-colors"
+            >
               {DIRECCION_COMPLETA}
-            </span>
+            </a>
           </div>
         </div>
       </div>

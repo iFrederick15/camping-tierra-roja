@@ -157,7 +157,15 @@ const mapaEmbed = `https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Ac
                 class="material-symbols-outlined mt-0.5 text-xl text-primario"
                 aria-hidden="true">location_on</span
               >
-              {DIRECCION_COMPLETA}
+              <a
+                href={NEGOCIO.mapaUrl}
+                target="_blank"
+                rel="noopener"
+                data-evento={EVENTOS.MAPA}
+                data-evento-detalle="ubicacion-direccion"
+                class="transition-colors hover:text-primario"
+                >{DIRECCION_COMPLETA}</a
+              >
             </address>
             <div class="mt-6 flex flex-col gap-3">
               <a

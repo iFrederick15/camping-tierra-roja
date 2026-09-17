@@ -1,7 +1,7 @@
 ---
 export const prerender = true;
 import Layout from '../layouts/Layout.astro';
-import { DIRECCION_COMPLETA, whatsappHref } from '../lib/negocio';
+import { NEGOCIO, DIRECCION_COMPLETA, whatsappHref } from '../lib/negocio';
 
 const actualizado = '15 de agosto de 2026';
 
@@ -98,9 +98,15 @@ const secciones = [
         <h2 class="font-titulo font-bold text-2xl text-texto">2. Objeto del servicio</h2>
         <p class="text-texto-suave leading-relaxed">
           A través del sitio ofrecemos la reserva de estadías en nuestras distintas unidades:
-          camping, parcelas para motorhome, quinchos y cabañas, ubicadas en {DIRECCION_COMPLETA}. La
-          disponibilidad y los precios mostrados corresponden a las fechas consultadas y pueden
-          variar según la temporada.
+          camping, parcelas para motorhome, quinchos y cabañas, ubicadas en{' '}
+          <a
+            href={NEGOCIO.mapaUrl}
+            target="_blank"
+            rel="noopener"
+            class="text-primario font-semibold"
+            >{DIRECCION_COMPLETA}</a
+          >. La disponibilidad y los precios mostrados corresponden a las fechas consultadas y
+          pueden variar según la temporada.
         </p>
       </div>
 
@@ -232,9 +238,14 @@ const secciones = [
             <div class="bg-primario/10 p-2.5 rounded-lg text-primario">
               <span class="material-symbols-outlined text-lg">location_on</span>
             </div>
-            <span class="text-texto font-semibold">
+            <a
+              href={NEGOCIO.mapaUrl}
+              target="_blank"
+              rel="noopener"
+              class="text-texto font-semibold hover:text-primario transition-colors"
+            >
               {DIRECCION_COMPLETA}
-            </span>
+            </a>
           </div>
         </div>
       </div>

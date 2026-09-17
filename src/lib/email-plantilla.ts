@@ -221,7 +221,7 @@ ${contenido}
             <td class="pad" style="padding:26px 32px 30px;background-color:${C.fondoCrema};border-top:1px solid ${C.borde};">
               <p style="margin:0 0 6px;font-family:${FUENTE_TITULO};font-size:15px;font-weight:700;color:${C.texto};">${NEGOCIO.nombre}</p>
               <p style="margin:0 0 14px;font-family:${FUENTE_CUERPO};font-size:13px;line-height:20px;color:${C.textoSuave};">
-                ${DIRECCION_COMPLETA}<br>
+                <a href="${NEGOCIO.mapaUrl}" style="color:${C.textoSuave};text-decoration:none;">${DIRECCION_COMPLETA}</a><br>
                 <a href="tel:${NEGOCIO.telefonoE164}" style="color:${C.textoSuave};text-decoration:none;">${NEGOCIO.telefono}</a>
                 &nbsp;·&nbsp;
                 <a href="mailto:${NEGOCIO.email}" style="color:${C.textoSuave};text-decoration:none;">${NEGOCIO.email}</a>

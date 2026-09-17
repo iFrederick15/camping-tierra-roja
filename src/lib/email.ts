@@ -284,7 +284,7 @@ export function construirEmailConfirmacion(datos: DatosConfirmacion): {
   const llegar = bloque(`
       ${tituloSeccion('Cómo llegar')}
       <p style="margin:0 0 16px;font-family:${FUENTE_CUERPO};font-size:15px;line-height:23px;color:${C.texto};">
-        ${NEGOCIO.direccion.calle}, ${NEGOCIO.direccion.localidad}, ${NEGOCIO.direccion.region}.<br>
+        <a href="${NEGOCIO.mapaUrl}" style="color:${C.texto};text-decoration:underline;">${NEGOCIO.direccion.calle}, ${NEGOCIO.direccion.localidad}, ${NEGOCIO.direccion.region}</a>.<br>
         <span style="color:${C.textoSuave};">Trae tu DNI: lo pedimos al ingresar.</span>
       </p>
       ${boton(NEGOCIO.mapaUrl, 'Ver en el mapa')}`);
