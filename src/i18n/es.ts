@@ -266,7 +266,7 @@ export const es = {
       },
       {
         q: '¿Qué servicios incluye el camping?',
-        a: 'Parcelas amplias entre los árboles, baños y duchas con agua caliente, quinchos con parrilla, canchas de fútbol y vóley, acceso a las tres piscinas y botiquín de primeros auxilios. El camping no cuenta con servicio médico.',
+        a: 'Parcelas amplias entre los árboles, baños y duchas con agua caliente, quinchos con parrilla, canchas de fútbol y vóley, acceso a las tres piscinas, botiquín de primeros auxilios y un área protegida para atender cualquier eventualidad durante tu estadía. El camping no cuenta con servicio médico.',
       },
       {
         q: '¿Cuáles son los horarios?',
