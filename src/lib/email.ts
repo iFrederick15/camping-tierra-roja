@@ -13,7 +13,11 @@ interface DatosConfirmacion {
   fechaIngreso: Date;
   fechaSalida: Date;
   montoTotal: number;
-  fechaLimitePago: Date;
+  // Reservas web: plazo para transferir la seña (vencido sin pago, la reserva
+  // se cancela sola). `null` en las reservas manuales que carga Staff desde el
+  // Panel: no vencen y el pago se coordina en el mostrador o por teléfono, así
+  // que el email sale sin plazo (ver PRODUCT.md § Operating Context).
+  fechaLimitePago: Date | null;
 }
 
 // La reserva ya quedó guardada en la base antes de llamar a esta función —
@@ -27,6 +31,11 @@ export async function enviarEmailConfirmacion(datos: DatosConfirmacion) {
     const resend = new Resend(import.meta.env.RESEND_API_KEY);
     const fmt = (d: Date) => d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
 
+    const bloquePago = datos.fechaLimitePago
+      ? `<p>Tienes hasta el ${datos.fechaLimitePago.toLocaleString('es-AR')} para transferir la seña.
+        Datos bancarios: [COMPLETAR].</p>`
+      : `<p>El pago de esta reserva se coordina directamente con nosotros.</p>`;
+
     await resend.emails.send({
       from: 'Tierra Roja <reservas@tierraroja.com.ar>',
       to: datos.email,
@@ -37,9 +46,9 @@ export async function enviarEmailConfirmacion(datos: DatosConfirmacion) {
         <p><b>${escaparHtml(datos.unidadNombre)}</b><br/>
         Del ${fmt(datos.fechaIngreso)} al ${fmt(datos.fechaSalida)}</p>
         <p><b>Total: $${datos.montoTotal.toLocaleString('es-AR')}</b></p>
-        <p>Tienes hasta el ${datos.fechaLimitePago.toLocaleString('es-AR')} para transferir la seña.
-        Datos bancarios: [COMPLETAR].</p>
-        <p>Si necesitas modificar o cancelar tu reserva, escríbenos por WhatsApp al [COMPLETAR].</p>
+        ${bloquePago}
+        <p>Si necesitas modificar o cancelar tu reserva, escríbenos por WhatsApp al
+        ${NEGOCIO.telefono}.</p>
       `,
     });
   } catch (e) {

@@ -60,16 +60,19 @@ export const en: Traducciones = {
         descripcion:
           'The largest one, with a water curtain under the pergola, sun loungers and play features.',
         etiqueta: 'Water curtain and pergola',
+        alt: 'Main pool with a water curtain and pergola at the Tierra Roja water park in Puerto Iguazú',
       },
       {
         nombre: 'Water slides',
         descripcion: 'Three colourful slides with a pool of their own.',
         etiqueta: 'Where the children go',
+        alt: 'Pool with three colourful water slides at the Tierra Roja water park in Puerto Iguazú',
       },
       {
         nombre: 'Adults-only pool',
         descripcion: 'A waterfall, set apart from the slides. No children.',
         etiqueta: 'Adults only',
+        alt: 'Relaxation pool with a waterfall at the Tierra Roja water park in Puerto Iguazú',
       },
     ],
   },

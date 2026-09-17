@@ -60,22 +60,29 @@ export const es = {
     kicker: 'Parque acuático',
     titulo: 'Las tres piscinas',
     subtitulo: 'Abiertas todo el año. El acceso va con cualquier reserva, sin cargo aparte.',
+    // `incluido` ya no se muestra: repetía el dato del `subtitulo`. Se deja la
+    // clave traducida por si se vuelve a usar.
     incluido: 'Incluidas en la reserva de camping, motorhome y la cabaña',
+    // El `alt` de cada foto también se traduce: en `/pt` y `/en` un lector de
+    // pantalla lo lee en el idioma de la página, igual que en Galería.
     lista: [
       {
         nombre: 'Diversión',
         descripcion: 'La más grande, con cortina de agua bajo la pérgola, reposeras y juegos.',
         etiqueta: 'Cortina de agua y pérgola',
+        alt: 'Piscina principal con cortina de agua y pérgola en el parque acuático de Tierra Roja, Puerto Iguazú',
       },
       {
         nombre: 'Familiar',
         descripcion: 'Tres toboganes de colores con su propia piscina.',
         etiqueta: 'La zona de los niños',
+        alt: 'Piscina con tres toboganes de colores en el parque acuático de Tierra Roja, Puerto Iguazú',
       },
       {
         nombre: 'Relax',
         descripcion: 'Con cascada, apartada de los toboganes. Sin acceso para niños.',
         etiqueta: 'Solo adultos',
+        alt: 'Piscina de relax con cascada de agua en el parque acuático de Tierra Roja, Puerto Iguazú',
       },
     ],
   },

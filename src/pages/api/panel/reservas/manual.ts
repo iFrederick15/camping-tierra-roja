@@ -1,8 +1,10 @@
 // POST /api/panel/reservas/manual
 // Reserva cargada por Staff (walk-in o teléfono). A diferencia de
-// /api/reservar: origen MANUAL, confirmada directo sin plazo automático
-// (ya hay una persona de Tierra Roja gestionando en vivo con el cliente),
-// y no exige email/teléfono.
+// /api/reservar: origen MANUAL y confirmada directo sin plazo automático
+// (ya hay una persona de Tierra Roja gestionando en vivo con el cliente).
+// Email y teléfono sí son obligatorios, igual que en el portal público: el
+// cliente recibe el mismo email de confirmación y el teléfono es la vía para
+// avisarle cualquier cambio.
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../../lib/supabase';
 import {
@@ -12,6 +14,7 @@ import {
   diaSiguiente,
   CAPACIDAD_MAXIMA_CABANA,
 } from '../../../../lib/reservas';
+import { enviarEmailConfirmacion } from '../../../../lib/email';
 import { validarDatosCliente } from '../../../../lib/validacion';
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -42,7 +45,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
   }
 
-  const errorDatos = validarDatosCliente(body);
+  const errorDatos = validarDatosCliente(body, {
+    emailObligatorio: true,
+    telefonoObligatorio: true,
+  });
   if (errorDatos) {
     return new Response(JSON.stringify({ error: errorDatos }), { status: 400 });
   }
@@ -111,8 +117,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       parcela_id: parcelaAsignada,
       nombre_cliente: nombreCliente,
       dni,
-      email: email || null,
-      telefono: telefono || null,
+      email,
+      telefono,
       cantidad_acompanantes: cantidadAcompanantes ?? 0,
       categoria_seleccionada: categoria ?? null,
       cantidad_menores: cantidadMenores ?? 0,
@@ -135,6 +141,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
       { status: 500 }
     );
   }
+
+  // Mismo email que recibe quien reserva desde la web, pero sin plazo de
+  // seña (las reservas manuales no vencen). Es "mejor esfuerzo": si Resend
+  // falla, la reserva ya quedó cargada y Staff sigue con el mostrador.
+  await enviarEmailConfirmacion({
+    email,
+    nombreCliente,
+    unidadNombre: unidad.nombre,
+    fechaIngreso: new Date(fechaIngreso),
+    fechaSalida: new Date(fechaSalida),
+    montoTotal,
+    fechaLimitePago: null,
+  });
 
   return new Response(JSON.stringify({ ok: true, reservaId: reserva.id }), { status: 201 });
 };

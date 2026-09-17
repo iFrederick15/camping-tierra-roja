@@ -261,10 +261,11 @@ function Stepper({
 }
 
 interface Props {
-  // 'staff': lo usa /panel/reservas/nueva (Staff). Misma UI, pero postea a
-  // /api/panel/reservas/manual, no exige email/teléfono, y al confirmar
-  // manda directo al Detalle de la reserva (para check-in/pago) en vez de
-  // mostrar el paso "confirmado" genérico del Portal público.
+  // 'staff': lo usa /panel/reservas/nueva (Staff). Misma UI y los mismos
+  // campos obligatorios (email y teléfono incluidos: el cliente recibe el
+  // email de confirmación), pero postea a /api/panel/reservas/manual y al
+  // confirmar manda directo al Detalle de la reserva (para check-in/pago)
+  // en vez de mostrar el paso "confirmado" genérico del Portal público.
   modo?: 'publico' | 'staff';
   // Precarga desde el Calendario de ocupación (clic/arrastre en una celda
   // vacía) — ver /panel/reservas/nueva.astro. categoriaInicial/parcelaInicial
@@ -558,7 +559,8 @@ export default function BookingWidget({
   const datosCompletos =
     datosCliente.nombreCliente.trim() !== '' &&
     datosCliente.dni.trim() !== '' &&
-    (modo === 'staff' || (emailValido && datosCliente.telefono.trim() !== ''));
+    emailValido &&
+    datosCliente.telefono.trim() !== '';
 
   async function confirmarReserva() {
     setEnviando(true);
@@ -1119,7 +1121,7 @@ export default function BookingWidget({
             />
           </label>
           <label className={labelCampo}>
-            {modo === 'staff' ? 'Email (opcional)' : T.emailPlaceholder}
+            {T.emailPlaceholder}
             <input
               className={input}
               type="email"
@@ -1138,7 +1140,7 @@ export default function BookingWidget({
             )}
           </label>
           <label className={labelCampo}>
-            {modo === 'staff' ? 'Teléfono (opcional)' : T.telefonoPlaceholder}
+            {T.telefonoPlaceholder}
             <input
               className={input}
               type="tel"

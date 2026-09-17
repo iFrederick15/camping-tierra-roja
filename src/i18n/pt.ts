@@ -61,16 +61,19 @@ export const pt: Traducciones = {
         descripcion:
           'A maior delas, com cortina de água sob a pérgola, espreguiçadeiras e brinquedos.',
         etiqueta: 'Cortina de água e pérgola',
+        alt: 'Piscina principal com cortina de água e pérgola no parque aquático de Tierra Roja, Puerto Iguazú',
       },
       {
         nombre: 'Toboáguas',
         descripcion: 'Três toboáguas coloridos sobre a própria piscina.',
         etiqueta: 'Área das crianças',
+        alt: 'Piscina com três toboáguas coloridos no parque aquático de Tierra Roja, Puerto Iguazú',
       },
       {
         nombre: 'Piscina de adultos',
         descripcion: 'Com cascata, afastada da área dos toboáguas. Sem acesso para crianças.',
         etiqueta: 'Somente adultos',
+        alt: 'Piscina de relaxamento com cascata no parque aquático de Tierra Roja, Puerto Iguazú',
       },
     ],
   },

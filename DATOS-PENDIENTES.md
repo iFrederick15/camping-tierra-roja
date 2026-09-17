@@ -179,10 +179,12 @@ Siguen abiertos y requieren accesos externos:
   `www` → apex y de `*.vercel.app` → dominio final.
 - **Google Search Console**: verificar el dominio y enviar
   `https://tierraroja.com.ar/sitemap-index.xml`.
-- **Resend**: `RESEND_API_KEY` y dominio verificado para que funcione el
-  formulario de contacto (`/api/contacto`).
+- **Resend**: `RESEND_API_KEY` y dominio verificado para que funcionen el
+  formulario de contacto (`/api/contacto`) y los emails de confirmación de
+  reserva (web y manuales del Panel).
 - **`src/lib/email.ts`**: `enviarEmailConfirmacion` todavía tiene `[COMPLETAR]`
-  en los datos bancarios de la seña y en el WhatsApp de contacto.
+  en los datos bancarios de la seña. El WhatsApp de contacto ya sale de
+  `NEGOCIO.telefono`.
 
 ---
 

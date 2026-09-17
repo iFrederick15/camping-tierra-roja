@@ -6,6 +6,7 @@
 // (antes había que deducirlo) y cierra con un CTA de reserva.
 import EncabezadoSeccion from './ui/EncabezadoSeccion.astro';
 import BotonReserva from './ui/BotonReserva.astro';
+import type { ICONOS_MATERIAL } from '../lib/iconos';
 import type { Idioma, Traducciones } from '../i18n';
 
 interface Props {
@@ -16,26 +17,21 @@ interface Props {
 const { idioma, t } = Astro.props;
 
 // Los datos que no cambian con el idioma (fotos, iconos) viven acá; los
-// textos vienen del diccionario, en el mismo orden.
-const visuales = [
-  {
-    icono: 'pool',
-    imagen: '/images/piscinas/piscina-diversion.webp',
-    alt: 'Piscina principal con cortina de agua y pérgola en el parque acuático de Tierra Roja, Puerto Iguazú',
-  },
-  {
-    icono: 'child_care',
-    imagen: '/images/piscinas/piscina-familiar.webp',
-    alt: 'Piscina con tres toboganes de colores en el parque acuático de Tierra Roja, Puerto Iguazú',
-  },
-  {
-    icono: 'spa',
-    imagen: '/images/piscinas/piscina-relax.webp',
-    alt: 'Piscina de relax con cascada de agua en el parque acuático de Tierra Roja, Puerto Iguazú',
-  },
+// textos, incluido el `alt`, vienen del diccionario en el mismo orden.
+//
+// El tipo de `icono` es la lista de `src/lib/iconos.ts`: un icono que no esté
+// en la fuente recortada se renderiza como texto plano, así que TypeScript lo
+// marca al escribirlo en vez de que aparezca el nombre del icono en la web.
+const visuales: { icono: (typeof ICONOS_MATERIAL)[number]; imagen: string }[] = [
+  { icono: 'pool', imagen: '/images/piscinas/piscina-diversion.webp' },
+  { icono: 'child_care', imagen: '/images/piscinas/piscina-familiar.webp' },
+  { icono: 'spa', imagen: '/images/piscinas/piscina-relax.webp' },
 ];
 
-const piscinas = t.piscinas.lista.map((p, i) => ({ ...p, ...visuales[i] }));
+// Se recorre `visuales` (y no el diccionario) porque las fotos son las tres
+// piscinas que existen: si una traducción quedara corta, la tarjeta pierde el
+// texto pero no queda un `<img>` sin `src`. Mismo criterio que en Galería.
+const piscinas = visuales.map((visual, i) => ({ ...visual, ...t.piscinas.lista[i] }));
 ---
 
 <section id="piscinas" class="scroll-mt-20 bg-fondo-alt px-6 py-20 lg:py-28">
@@ -44,22 +40,14 @@ const piscinas = t.piscinas.lista.map((p, i) => ({ ...p, ...visuales[i] }));
       kicker={t.piscinas.kicker}
       titulo={t.piscinas.titulo}
       subtitulo={t.piscinas.subtitulo}
-      class="mb-4"
+      class="mb-12"
     />
-
-    <!-- El dato va como línea de texto, no como píldora con icono de
-         "verificado": es información, no un sello. -->
-    <p
-      class="mx-auto mb-14 max-w-max border-b border-primario/30 pb-1 font-titulo text-sm font-bold text-primario"
-    >
-      {t.piscinas.incluido}
-    </p>
 
     <div class="grid grid-cols-1 gap-7 md:grid-cols-3 lg:gap-8">
       {
         piscinas.map((piscina) => (
           <article class="flex flex-col overflow-hidden rounded-card bg-superficie shadow-suave transition-shadow duration-200 hover:shadow-elevada">
-            <div class="relative aspect-[8/5] overflow-hidden">
+            <div class="aspect-8/5 overflow-hidden">
               <img
                 src={piscina.imagen}
                 alt={piscina.alt}
