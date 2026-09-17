@@ -160,7 +160,7 @@ Un rojo de marca saturado sobre una base de papel cálido, con verde y ámbar re
 ### Primary
 - **Rojo Tierra Roja** (primario): el color de la acción. Fondo del botón de reserva, anillo de foco global, subrayado del enlace activo en la navegación, kicker de sección sobre fondo claro, íconos de acento en listas sobre claro, y el fondo de bloques de cierre (franja del footer, sección Cabaña, banda final de Galería).
 - **Rojo Tierra Roja profundo** (primario-oscuro): solo es el hover y el estado presionado de los botones rojos.
-- **Rojo Tierra Roja claro** (primario-claro): borde en hover de filas del panel y hover del botón "Nueva reserva" del panel. No sirve para texto chico sobre blanco.
+- **Rojo Tierra Roja claro** (primario-claro): solo el borde en hover de las filas del panel. Nunca es el hover de un botón rojo, y no sirve para texto chico sobre blanco.
 
 ### Secondary
 - **Brasa** (acento): el nombre "Tierra Roja" dentro del H1 del hero, sobre foto oscura (4,8:1), e íconos de lista sobre fotos. Sobre blanco da 3,7:1: solo sirve para texto grande.
@@ -230,7 +230,7 @@ Capas suaves estructurales. Las tres sombras son de dos capas: una línea de con
 
 ## Shapes
 
-Esquinas amplias y amables. Las tarjetas y bloques grandes van a 24px, las acciones son píldoras completas, los atajos de alojamiento y desplegables van a 16px, los contenedores de formulario y mapa a 12px, y los campos a 8px. El footer abre con una curva superior de 48px, que es su única forma distintiva. Los íconos de acción sueltos (menú, redes, buscador del panel) son círculos. Las fotos siempre se recortan por su contenedor redondeado (`overflow-hidden`) con `object-cover`.
+Esquinas amplias y amables. Las tarjetas y bloques grandes van a 24px, las acciones son píldoras completas, los atajos de alojamiento y desplegables van a 16px, los ítems del menú mobile a 12px, y los campos y los cuadrados de íconos a 8px. Formularios, bloques de datos, fotos y mapas son tarjetas: van a 24px como el resto. El footer abre con una curva superior de 48px, que es su única forma distintiva. Los íconos de acción sueltos (menú, redes, buscador del panel) son círculos. Las fotos siempre se recortan por su contenedor redondeado (`overflow-hidden`) con `object-cover`.
 
 ## Components
 
@@ -287,4 +287,5 @@ Barra fija abajo, debajo de lg, con el botón de reserva rojo de 48px a ancho co
 - **Don't** usar píldoras rosadas (`bg-primario/8`) con ícono de "verificado" como sello de confianza.
 - **Don't** poner Brasa (acento) en texto chico sobre claro; para eso está acento-texto.
 - **Don't** usar el verde oficial `#25D366` de WhatsApp con texto blanco.
-- **Don't** introducir pesos de Ubuntu que no se cargan (`font-extrabold` cae a 700).
+- **Don't** usar con `font-titulo` pesos que Ubuntu no carga (`font-semibold`, `font-extrabold`, `font-black`): usar `font-medium` o `font-bold`.
+- **Don't** cargar fuentes a mano en un `<head>`: todo layout usa `src/components/Fuentes.astro`.

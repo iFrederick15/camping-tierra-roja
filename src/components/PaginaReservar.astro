@@ -11,6 +11,7 @@ import BookingWidget from './BookingWidget';
 import BotonWhatsApp from './ui/BotonWhatsApp.astro';
 import { TEXTOS_WIDGET } from '../i18n/reservar-widget';
 import { RUTAS, type Idioma, type Traducciones } from '../i18n';
+import { supabase } from '../lib/supabase';
 
 interface Props {
   idioma: Idioma;
@@ -26,6 +27,30 @@ const parametro = Astro.url.searchParams.get('unidad')?.toUpperCase();
 const unidadInicial = UNIDADES_VALIDAS.find((u) => u === parametro);
 
 const iconosBeneficio = ['search', 'check_circle', 'verified'];
+
+// ── ¿Responde la base? ────────────────────────────────────────────────────
+// Esta página es SSR (`prerender = false`). Si Supabase está caído —el caso
+// real: el proyecto pausado por inactividad en el plan gratuito—, el widget
+// igual se hidrata y el visitante choca con un error en cada paso. Se
+// comprueba acá y, si no hay base, se ofrece WhatsApp, que es el otro canal
+// por el que el camping toma reservas igual.
+//
+// Cuesta un viaje a Postgres por render de /reservar (~30 ms desde Vercel) y
+// de paso cuenta como actividad: es tráfico real que ayuda a que el proyecto
+// no se vuelva a pausar. `unidades` tiene lectura pública en RLS, así que
+// alcanza con el cliente anónimo.
+let baseDisponible = true;
+try {
+  const { error } = await supabase
+    .from('unidades')
+    .select('id')
+    .limit(1)
+    .abortSignal(AbortSignal.timeout(4000));
+  baseDisponible = !error;
+} catch {
+  // Timeout, DNS caído, proyecto pausado: para el visitante es lo mismo.
+  baseDisponible = false;
+}
 ---
 
 <header class="relative h-[34vh] min-h-56 w-full overflow-hidden md:h-[42vh]">
@@ -57,12 +82,28 @@ const iconosBeneficio = ['search', 'check_circle', 'verified'];
   <!-- En desktop la tarjeta se monta sobre la foto: el reservador queda a la
        vista en la primera pantalla. -->
   <div class="relative z-10 md:-mt-12">
-    <BookingWidget
-      client:load
-      idioma={idioma}
-      textos={TEXTOS_WIDGET[idioma]}
-      unidadInicial={unidadInicial}
-    />
+    {
+      baseDisponible ? (
+        <BookingWidget
+          client:load
+          idioma={idioma}
+          textos={TEXTOS_WIDGET[idioma]}
+          unidadInicial={unidadInicial}
+        />
+      ) : (
+        <div class="mx-auto flex max-w-2xl flex-col items-center gap-4 rounded-card border border-borde bg-superficie px-6 py-10 text-center">
+          <h2 class="font-titulo text-xl font-bold text-negro md:text-2xl">
+            {t.reservar.sinSistemaTitulo}
+          </h2>
+          <p class="max-w-prose leading-relaxed text-texto-suave">{t.reservar.sinSistemaTexto}</p>
+          <BotonWhatsApp
+            idioma={idioma}
+            texto={t.reservar.ayudaBoton}
+            contexto={t.reservar.titulo}
+          />
+        </div>
+      )
+    }
   </div>
 
   <!-- Contenido estático (server-render): da valor semántico a la URL más

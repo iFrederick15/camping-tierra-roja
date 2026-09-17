@@ -182,6 +182,7 @@ export const es = {
     mapaTitulo: 'Ubicación de Camping Tierra Roja en Puerto Iguazú',
     cta: 'Reservar mi estadía',
     atractivos: {
+      listaEtiqueta: 'Distancias y atractivos de Iguazú',
       listaDistancias: 'Tiempos de viaje desde el camping',
       listaDestacados: 'Atractivos destacados de Iguazú',
       categorias: {
@@ -466,6 +467,11 @@ export const es = {
     ayudaTitulo: '¿Prefieres que te ayudemos?',
     ayudaTexto: 'Escríbenos por WhatsApp y armamos tu reserva juntos.',
     ayudaBoton: 'Escribir por WhatsApp',
+    // Reemplazan al widget cuando la base de datos no responde (ver
+    // PaginaReservar.astro): sin esto, la página muestra un buscador roto.
+    sinSistemaTitulo: 'La reserva online no está disponible en este momento',
+    sinSistemaTexto:
+      'Es una falla nuestra, no de las fechas que buscas. Escríbenos por WhatsApp y tomamos la reserva por ahí.',
   },
 
   // ── Metadatos por defecto ─────────────────────────────────────────────

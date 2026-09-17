@@ -24,7 +24,7 @@ const iconosMotorhome = ['water_drop', 'outdoor_grill', 'verified', 'group'];
       <!-- Camping (principal) -->
       <article
         id="camping"
-        class="relative flex min-h-[26rem] scroll-mt-20 flex-col justify-end overflow-hidden rounded-card p-6 sm:p-8 lg:col-span-7 lg:min-h-[34rem] lg:p-12"
+        class="relative flex min-h-[26rem] scroll-mt-20 flex-col justify-end overflow-hidden rounded-card p-6 sm:min-h-[30rem] sm:p-8 lg:col-span-7 lg:min-h-[34rem] lg:p-12"
       >
         <img
           src="/images/camping/camping.webp"
@@ -35,10 +35,17 @@ const iconosMotorhome = ['water_drop', 'outdoor_grill', 'verified', 'group'];
           loading="lazy"
           decoding="async"
         />
-        <div class="absolute inset-0 bg-gradient-to-t from-negro/95 via-negro/55 to-negro/10"></div>
+        <!-- El texto ocupa casi toda la tarjeta en mobile y apenas la mitad
+             inferior en desktop, así que el degradé se abre a medida que hay
+             más aire: con los valores de desktop, el kicker y el H2 quedaban
+             sobre el follaje iluminado y no se leían. -->
+        <div
+          class="absolute inset-0 bg-linear-to-t from-negro/95 via-negro/86 via-80% to-negro/68 sm:via-negro/78 sm:via-75% sm:to-negro/35 lg:via-negro/70 lg:via-55% lg:to-negro/12"
+        >
+        </div>
 
         <div class="relative z-10">
-          <p class="mb-2 font-titulo text-xs font-bold uppercase tracking-[0.14em] text-white/70">
+          <p class="mb-2 font-titulo text-xs font-bold uppercase tracking-[0.14em] text-white/90">
             {t.camping.kicker}
           </p>
           <h2 class="mb-4 font-titulo text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
@@ -47,11 +54,14 @@ const iconosMotorhome = ['water_drop', 'outdoor_grill', 'verified', 'group'];
           <p class="mb-6 max-w-lg leading-relaxed text-white/85">
             {t.camping.descripcion}
           </p>
-          <ul class="mb-8 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <ul class="mb-8 grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-x-6">
             {
               t.camping.lista.map((item, i) => (
-                <li class="flex items-center gap-2 text-sm text-white/85">
-                  <span class="material-symbols-outlined text-base text-acento" aria-hidden="true">
+                <li class="flex items-start gap-2 text-sm leading-snug text-white/85">
+                  <span
+                    class="material-symbols-outlined shrink-0 text-base text-acento"
+                    aria-hidden="true"
+                  >
                     {iconosCamping[i]}
                   </span>
                   {item}
@@ -87,12 +97,12 @@ const iconosMotorhome = ['water_drop', 'outdoor_grill', 'verified', 'group'];
             <p class="mb-5 leading-relaxed text-texto-suave">
               {t.camping.motorhomeDescripcion}
             </p>
-            <ul class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
+            <ul class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-1">
               {
                 t.camping.motorhomeLista.map((item, i) => (
-                  <li class="flex items-center gap-2 text-sm text-texto-suave">
+                  <li class="flex items-start gap-2 text-sm leading-snug text-texto-suave">
                     <span
-                      class="material-symbols-outlined text-base text-primario"
+                      class="material-symbols-outlined shrink-0 text-base text-primario"
                       aria-hidden="true"
                     >
                       {iconosMotorhome[i]}

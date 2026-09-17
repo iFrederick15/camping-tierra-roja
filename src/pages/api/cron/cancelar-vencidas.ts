@@ -18,7 +18,13 @@ function tokenValido(recibido: string | null, esperado: string): boolean {
 }
 
 export const GET: APIRoute = async ({ request }) => {
-  const secret = import.meta.env.CRON_SECRET;
+  // `process.env` primero, igual que GTM_ID en Analytics.astro: Vite hornea
+  // `import.meta.env.CRON_SECRET` como literal en el build, mientras que el
+  // header `Authorization` lo arma Vercel con el valor ACTUAL de la variable.
+  // Si el secreto se rota (o se carga) sin redeployar, los dos dejan de
+  // coincidir, el cron devuelve 401 todos los días sin tocar la base y nada
+  // avisa. Leerlo en runtime elimina esa desincronización.
+  const secret = process.env.CRON_SECRET ?? import.meta.env.CRON_SECRET;
 
   // Falla en CERRADO: si el secreto no está configurado, este endpoint —que
   // ejecuta un UPDATE masivo sobre reservas— nunca debe correr por una

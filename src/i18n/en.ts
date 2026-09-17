@@ -172,6 +172,7 @@ export const en: Traducciones = {
     mapaTitulo: 'Location of Camping Tierra Roja in Puerto Iguazú',
     cta: 'Book my stay',
     atractivos: {
+      listaEtiqueta: 'Distances and attractions around Iguazú',
       listaDistancias: 'Travel times from the campsite',
       listaDestacados: 'Featured attractions around Iguazú',
       categorias: {
@@ -442,6 +443,9 @@ export const en: Traducciones = {
     ayudaTitulo: 'Would you rather we helped?',
     ayudaTexto: 'Message us on WhatsApp and we will put your booking together with you.',
     ayudaBoton: 'Chat on WhatsApp',
+    sinSistemaTitulo: 'Online booking is unavailable right now',
+    sinSistemaTexto:
+      'This is a problem on our side, not with the dates you picked. Message us on WhatsApp and we will take the booking there.',
   },
 
   meta: {
