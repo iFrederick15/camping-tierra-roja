@@ -11,6 +11,7 @@ import {
   calcularNoches,
   calcularPrecio,
   asignarParcelaMotorhome,
+  nombreDeParcela,
   diaSiguiente,
   CAPACIDAD_MAXIMA_CABANA,
 } from '../../../../lib/reservas';
@@ -39,10 +40,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } = body;
 
   if (!nombreCliente || !dni || !fechaIngreso || !fechaSalida) {
-    return new Response(
-      JSON.stringify({ error: 'Nombre, DNI y fechas son obligatorios' }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: 'Nombre, DNI y fechas son obligatorios' }), {
+      status: 400,
+    });
   }
 
   const errorDatos = validarDatosCliente(body, {
@@ -55,10 +55,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   // Los quinchos se reservan por un solo día.
   if (unidadTipo === 'QUINCHOS' && fechaSalida !== diaSiguiente(fechaIngreso)) {
-    return new Response(
-      JSON.stringify({ error: 'Los quinchos se reservan por un solo día' }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: 'Los quinchos se reservan por un solo día' }), {
+      status: 400,
+    });
   }
 
   const { data: unidad, error: errUnidad } = await supabaseAdmin
@@ -136,21 +135,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   if (errInsert || !reserva) {
     console.error('POST /api/panel/reservas/manual — error insertando reserva:', errInsert);
-    return new Response(
-      JSON.stringify({ error: 'No se pudo crear la reserva' }),
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'No se pudo crear la reserva' }), { status: 500 });
   }
 
   // Mismo email que recibe quien reserva desde la web, pero sin plazo de
   // seña (las reservas manuales no vencen). Es "mejor esfuerzo": si Resend
   // falla, la reserva ya quedó cargada y Staff sigue con el mostrador.
   await enviarEmailConfirmacion({
+    reservaId: reserva.id,
     email,
     nombreCliente,
     unidadNombre: unidad.nombre,
-    fechaIngreso: new Date(fechaIngreso),
-    fechaSalida: new Date(fechaSalida),
+    parcelaNombre: await nombreDeParcela(parcelaAsignada),
+    fechaIngreso,
+    fechaSalida,
+    noches,
+    detalle,
     montoTotal,
     fechaLimitePago: null,
   });

@@ -14,6 +14,7 @@ import {
   obtenerConfiguracionPagos,
   calcularPrecio,
   asignarParcelaMotorhome,
+  nombreDeParcela,
   hoyISO,
   diaSiguiente,
   CAPACIDAD_MAXIMA_CABANA,
@@ -72,10 +73,9 @@ export const POST: APIRoute = async ({ request }) => {
   // picker, que solo pide una fecha, pero se repite acá porque el picker se
   // puede saltear pegándole directo a la API).
   if (unidadTipo === 'QUINCHOS' && fechaSalida !== diaSiguiente(fechaIngreso)) {
-    return new Response(
-      JSON.stringify({ error: 'Los quinchos se reservan por un solo día' }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: 'Los quinchos se reservan por un solo día' }), {
+      status: 400,
+    });
   }
 
   const { data: unidad, error: errUnidad } = await supabaseAdmin
@@ -167,11 +167,15 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   await enviarEmailConfirmacion({
+    reservaId: reserva.id,
     email,
     nombreCliente,
     unidadNombre: unidad.nombre,
-    fechaIngreso: new Date(fechaIngreso),
-    fechaSalida: new Date(fechaSalida),
+    parcelaNombre: await nombreDeParcela(parcelaAsignada),
+    fechaIngreso,
+    fechaSalida,
+    noches,
+    detalle,
     montoTotal,
     fechaLimitePago,
   });

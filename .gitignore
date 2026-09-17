@@ -5,6 +5,9 @@ node_modules
 dist
 .vercel
 
+# Salida de scripts/preview-email.mjs (emails de ejemplo para revisar el diseño)
+dist-preview
+
 # Informe de auditoría: enumera rutas internas y vulnerabilidades — no commitear
 auditoria-seguridad.md
 auditoria-seo.md

@@ -182,9 +182,17 @@ Siguen abiertos y requieren accesos externos:
 - **Resend**: `RESEND_API_KEY` y dominio verificado para que funcionen el
   formulario de contacto (`/api/contacto`) y los emails de confirmación de
   reserva (web y manuales del Panel).
-- **`src/lib/email.ts`**: `enviarEmailConfirmacion` todavía tiene `[COMPLETAR]`
-  en los datos bancarios de la seña. El WhatsApp de contacto ya sale de
-  `NEGOCIO.telefono`.
+- **Datos bancarios para transferir**: cargar `PAGO_TITULAR`, `PAGO_CBU`,
+  `PAGO_ALIAS` y (opcional) `PAGO_BANCO` en Vercel → Environment Variables.
+  Mientras falten, el email de confirmación no muestra un hueco: pide los
+  datos por WhatsApp. El teléfono ya sale de `NEGOCIO.telefono`.
+- **Porcentaje de la seña**: `PAGO_SENA_PORCENTAJE` (por defecto 50). Es el
+  monto mínimo que el email pide transferir dentro del plazo; el saldo se
+  abona al ingresar. Cambiarlo por temporada no requiere deploy.
+- **Logo del email**: `enviarEmailConfirmacion` sirve el logo desde
+  `https://tierraroja.com.ar/images/marca/logo-email.png`, así que hasta que el
+  dominio esté conectado el email llega con la imagen rota. Para probarlo
+  antes, poner el dominio de Vercel en `EMAIL_BASE_URL`.
 
 ---
 

@@ -222,6 +222,19 @@ export async function asignarParcelaMotorhome(
   return libre?.id ?? null;
 }
 
+// Las rutas de reserva manejan la parcela por id (uuid); el email de
+// confirmación necesita el nombre legible ("Parcela 12") para que el cliente
+// sepa adónde ir al llegar.
+export async function nombreDeParcela(parcelaId: string | null): Promise<string | null> {
+  if (!parcelaId) return null;
+  const { data } = await supabaseAdmin
+    .from('parcelas')
+    .select('nombre')
+    .eq('id', parcelaId)
+    .single();
+  return data?.nombre ?? null;
+}
+
 // ------------------------------------------------------------
 // Precio: cada unidad tiene una lista de "ítems" (opciones_precio) — ver
 // sql/003_precios_itemizados.sql. Único lugar donde se calcula monto_total,

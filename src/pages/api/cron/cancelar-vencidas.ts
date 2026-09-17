@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ request }) => {
 
   const { data: vencidas, error: errBusqueda } = await supabaseAdmin
     .from('reservas')
-    .select('id, monto_total, monto_pagado')
+    .select('id, monto_pagado')
     .eq('estado', 'CONFIRMADA')
     .eq('origen', 'WEB')
     .not('fecha_limite_pago', 'is', null)
@@ -53,9 +53,12 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: 'Error interno' }), { status: 500 });
   }
 
-  const idsACancelar = (vencidas ?? [])
-    .filter((r) => Number(r.monto_pagado) < Number(r.monto_total))
-    .map((r) => r.id);
+  // Se cancela solo la reserva que no registra NINGÚN pago. Quien transfirió
+  // la seña (o cualquier importe a cuenta) la conserva y abona el saldo al
+  // ingresar, que es lo que prometen los Términos y el email de confirmación.
+  // Antes se cancelaba todo lo que no estuviera pagado al 100%, y eso daba de
+  // baja justamente a los clientes que habían hecho lo que se les pidió.
+  const idsACancelar = (vencidas ?? []).filter((r) => Number(r.monto_pagado) <= 0).map((r) => r.id);
 
   if (idsACancelar.length === 0) {
     return new Response(JSON.stringify({ ok: true, canceladas: 0 }), { status: 200 });
@@ -71,5 +74,7 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: 'Error interno' }), { status: 500 });
   }
 
-  return new Response(JSON.stringify({ ok: true, canceladas: idsACancelar.length }), { status: 200 });
+  return new Response(JSON.stringify({ ok: true, canceladas: idsACancelar.length }), {
+    status: 200,
+  });
 };
