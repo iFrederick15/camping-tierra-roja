@@ -112,7 +112,6 @@ export const pt: Traducciones = {
       '3 quartos',
       'Ar-condicionado',
       'Wi-Fi incluído',
-      'TV com DirecTV',
       'Acesso às piscinas',
       'Quincho com churrasqueira',
     ],
@@ -232,11 +231,11 @@ export const pt: Traducciones = {
       },
       {
         q: 'Vocês têm cabanas?',
-        a: 'Sim, temos uma cabana para até 8 pessoas, com 3 quartos, ar-condicionado, Wi-Fi, TV com DirecTV, quincho com churrasqueira próprio e acesso às piscinas.',
+        a: 'Sim, temos uma cabana para até 8 pessoas, com 3 quartos, ar-condicionado, Wi-Fi, quincho com churrasqueira próprio e acesso às piscinas.',
       },
       {
         q: 'O parque aquático está incluído?',
-        a: 'Sim: quem se hospeda no camping, na área de motorhome ou na cabana tem acesso às três piscinas do parque aquático. A piscina de relaxamento é um espaço pensado para adultos, sem acesso para crianças.',
+        a: 'Sim: quem se hospeda no camping, na área de motorhome ou na cabana tem acesso às piscinas autorizadas do parque aquático. A piscina de relaxamento é um espaço pensado para adultos, sem acesso para crianças.',
       },
       {
         q: 'Dá para entrar só por um dia?',

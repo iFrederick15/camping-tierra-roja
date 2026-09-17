@@ -46,7 +46,7 @@ const faq = [
   },
   {
     q: '¿Se aceptan mascotas?',
-    a: 'Sí, se aceptan mascotas siempre que se mantenga la limpieza del predio. Los dueños son responsables de recoger y disponer correctamente los residuos de sus mascotas.',
+    a: 'Se aceptan mascotas, siempre que esté con su correa y se mantenga la limpieza del predio.',
   },
   {
     q: '¿Hay libro de reclamos y sugerencias?',
@@ -113,7 +113,12 @@ const faqSchema = {
         <div class="mt-6 pt-6 border-t border-borde/60">
           <p class="text-texto-suave text-xs leading-relaxed">
             ¿Tienes alguna consulta sobre el reglamento? Escríbenos por{' '}
-            <a href={whatsappHref('es')} target="_blank" rel="noopener" class="text-primario font-semibold">
+            <a
+              href={whatsappHref('es')}
+              target="_blank"
+              rel="noopener"
+              class="text-primario font-semibold"
+            >
               WhatsApp
             </a>
           </p>

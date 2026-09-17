@@ -111,7 +111,6 @@ export const en: Traducciones = {
       '3 bedrooms',
       'Air conditioning',
       'Wi-Fi included',
-      'TV with DirecTV',
       'Access to the pools',
       'Private BBQ area',
     ],
@@ -231,11 +230,11 @@ export const en: Traducciones = {
       },
       {
         q: 'Do you have cabins?',
-        a: 'Yes, we have one cabin for up to 8 guests, with 3 bedrooms, air conditioning, Wi-Fi, TV with DirecTV, its own covered barbecue area and access to the pools.',
+        a: 'Yes, we have one cabin for up to 8 guests, with 3 bedrooms, air conditioning, Wi-Fi, its own covered barbecue area and access to the pools.',
       },
       {
         q: 'Is the water park included?',
-        a: 'Yes: guests staying at the campsite, in the motorhome area or in the cabin have access to all three pools. The relaxation pool is an adults-only space, with no access for children.',
+        a: 'Yes: guests staying at the campsite, in the motorhome area or in the cabin have access to approved swimming pools. The relaxation pool is an adults-only space, with no access for children.',
       },
       {
         q: 'Can I visit just for the day?',
@@ -404,7 +403,8 @@ export const en: Traducciones = {
     mensajePlaceholder: 'How can we help?',
     enviar: 'Send via WhatsApp',
     enviando: 'Opening WhatsApp…',
-    whatsappMensaje: 'Hi Tierra Roja 👋 I am {nombre} ({email}).\nInquiry: {tipoConsulta}\n\n{mensaje}',
+    whatsappMensaje:
+      'Hi Tierra Roja 👋 I am {nombre} ({email}).\nInquiry: {tipoConsulta}\n\n{mensaje}',
     datosTitulo: 'Contact details',
     ubicacionLabel: 'Address',
     telefonoLabel: 'Phone',

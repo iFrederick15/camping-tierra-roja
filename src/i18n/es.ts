@@ -123,7 +123,6 @@ export const es = {
       '3 habitaciones',
       'Aire acondicionado',
       'Wi-Fi incluido',
-      'TV con DirecTV',
       'Acceso a las piscinas',
       'Quincho con parrilla',
     ],
@@ -247,14 +246,14 @@ export const es = {
       },
       {
         q: '¿Tienen cabañas?',
-        a: 'Sí, contamos con una cabaña para hasta 8 personas, con 3 habitaciones, aire acondicionado, Wi-Fi, TV con DirecTV, quincho con parrilla propio y acceso a las piscinas.',
+        a: 'Sí, contamos con una cabaña para hasta 8 personas, con 3 habitaciones, aire acondicionado, Wi-Fi, quincho con parrilla propio y acceso a las piscinas.',
       },
       {
         q: '¿El parque acuático está incluido?',
-        a: 'Sí: quienes se alojan en el camping, en el sector motorhome o en la cabaña tienen acceso a las tres piscinas del parque acuático. La piscina de relax es un espacio pensado para adultos, sin acceso para niños.',
+        a: 'Sí: quienes se alojan en el camping, en el sector motorhome o en la cabaña tienen acceso a las piscinas habilitadas del parque acuático. La piscina de relax es un espacio pensado para adultos, sin acceso para niños.',
       },
       {
-        q: '¿Se puede entrar solo por el día?',
+        q: '¿Se puede abonar una entrada para pasar el día?',
         a: 'Si. Pueden abonar la entrada al camping para pasar el día, pueden hacer uso de las parrillas y tendrán acceso a las piscinas habilitadas. En caso de querer un quincho, deben reservarlo a través del botón "Reservar"',
       },
       {
@@ -263,7 +262,7 @@ export const es = {
       },
       {
         q: '¿Aceptan mascotas?',
-        a: 'Sí, se aceptan mascotas siempre que se mantenga la limpieza del predio. Los dueños son responsables de recoger y disponer correctamente sus residuos.',
+        a: 'Se aceptan mascotas, siempre que esté con su correa y se mantenga la limpieza del predio.',
       },
       {
         q: '¿Qué servicios incluye el camping?',
