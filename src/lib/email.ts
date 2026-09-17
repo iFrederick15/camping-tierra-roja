@@ -216,7 +216,7 @@ export function construirEmailConfirmacion(datos: DatosConfirmacion): {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${C.fondoCrema};border:1px solid ${C.borde};border-left:4px solid ${C.primario};border-radius:10px;">
           <tr>
             <td class="pad" style="padding:22px 24px;">
-              ${tituloSeccion('Para dejarla firme')}
+              ${tituloSeccion('Para confirmar tu reserva')}
               <p style="margin:0 0 4px;font-family:${FUENTE_CUERPO};font-size:15px;line-height:23px;color:${C.texto};">
                 ${haySaldo ? 'Transfiere al menos la seña antes del' : `Transfiere el total de <strong>${total}</strong> antes del`}
                 <strong style="color:${C.advertencia};">${fmtFechaHora(datos.fechaLimitePago)}</strong>
