@@ -1,7 +1,7 @@
 ---
 export const prerender = true;
 import Layout from '../layouts/Layout.astro';
-import { NEGOCIO, CONTACTO_HREF, DIRECCION_COMPLETA } from '../lib/negocio';
+import { DIRECCION_COMPLETA, whatsappHref } from '../lib/negocio';
 
 const actualizado = '12 de agosto de 2026';
 
@@ -71,9 +71,9 @@ const secciones = [
         </ul>
         <div class="mt-6 pt-6 border-t border-borde/60">
           <p class="text-texto-suave text-xs leading-relaxed">
-            ¿Tienes dudas sobre tus datos? Escríbenos a{' '}
-            <a href={CONTACTO_HREF.mailto} class="text-primario font-semibold">
-              {NEGOCIO.email}
+            ¿Tienes dudas sobre tus datos? Escríbenos por{' '}
+            <a href={whatsappHref('es')} target="_blank" rel="noopener" class="text-primario font-semibold">
+              WhatsApp
             </a>
           </p>
         </div>
@@ -196,8 +196,8 @@ const secciones = [
         <p class="text-texto-suave leading-relaxed">
           De acuerdo con la Ley 25.326, tienes derecho a acceder, rectificar, actualizar o solicitar
           la supresión de tus datos personales de forma gratuita. Para ejercer cualquiera de estos
-          derechos, escríbenos a{' '}
-          <a href={CONTACTO_HREF.mailto} class="text-primario font-semibold">{NEGOCIO.email}</a>.
+          derechos, escríbenos por{' '}
+          <a href={whatsappHref('es')} target="_blank" rel="noopener" class="text-primario font-semibold">WhatsApp</a>.
         </p>
         <p class="text-texto-suave leading-relaxed">
           La Agencia de Acceso a la Información Pública, en su carácter de Órgano de Control de la
@@ -242,13 +242,15 @@ const secciones = [
         <div class="flex flex-col gap-3 pt-2">
           <div class="flex items-center gap-3">
             <div class="bg-primario/10 p-2.5 rounded-lg text-primario">
-              <span class="material-symbols-outlined text-lg">mail</span>
+              <span class="material-symbols-outlined text-lg">chat</span>
             </div>
             <a
-              href={CONTACTO_HREF.mailto}
+              href={whatsappHref('es')}
+              target="_blank"
+              rel="noopener"
               class="text-texto font-semibold hover:text-primario transition-colors"
             >
-              {NEGOCIO.email}
+              WhatsApp
             </a>
           </div>
           <div class="flex items-center gap-3">

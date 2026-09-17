@@ -405,11 +405,11 @@ export const es = {
   contacto: {
     metaTitulo: 'Contacto y cómo llegar — Camping Tierra Roja, Puerto Iguazú',
     metaDescripcion:
-      'Teléfono, WhatsApp, email y mapa de Camping Tierra Roja en Puerto Iguazú, a unos 20 minutos de las Cataratas del Iguazú.',
+      'Teléfono, WhatsApp y mapa de Camping Tierra Roja en Puerto Iguazú, a unos 20 minutos de las Cataratas del Iguazú.',
     tituloDestacado: 'Contacto',
     titulo: 'y cómo llegar',
     intro:
-      'Camping Tierra Roja está en {direccion}, a unos 20 minutos de las Cataratas del Iguazú y del centro de Puerto Iguazú. Atendemos todos los días del año. Para consultas de disponibilidad y reservas, escríbenos por WhatsApp o completa el formulario y te respondemos dentro de las 24 horas.',
+      'Camping Tierra Roja está en {direccion}, a unos 20 minutos de las Cataratas del Iguazú y del centro de Puerto Iguazú. Atendemos todos los días del año. Para consultas de disponibilidad y reservas, escríbenos por WhatsApp o completa el formulario: te derivamos a WhatsApp con tu consulta ya armada.',
     formTitulo: 'Envíanos tu mensaje',
     nombre: 'Nombre completo',
     nombrePlaceholder: 'Pedro Pérez',
@@ -426,14 +426,13 @@ export const es = {
     },
     mensaje: 'Mensaje',
     mensajePlaceholder: '¿Cómo podemos ayudarte?',
-    enviar: 'Enviar mensaje',
-    enviando: 'Enviando…',
-    ok: '¡Listo! Recibimos tu mensaje y te respondemos dentro de las 24 horas.',
-    error: 'No pudimos enviar tu mensaje. Prueba por WhatsApp.',
+    enviar: 'Enviar por WhatsApp',
+    enviando: 'Abriendo WhatsApp…',
+    whatsappMensaje:
+      'Hola Tierra Roja 👋 Soy {nombre} ({email}).\nConsulta: {tipoConsulta}\n\n{mensaje}',
     datosTitulo: 'Datos de contacto',
     ubicacionLabel: 'Ubicación',
     telefonoLabel: 'Teléfono',
-    emailLabel: 'Email',
     whatsappBoton: 'Hablar por WhatsApp',
     respuestaRapida: 'Respondemos por WhatsApp en el día.',
     fotoPie: 'Barrio Los Yerbales, Puerto Iguazú.',

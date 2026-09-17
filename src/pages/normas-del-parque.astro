@@ -1,7 +1,7 @@
 ---
 export const prerender = true;
 import Layout from '../layouts/Layout.astro';
-import { NEGOCIO, CONTACTO_HREF } from '../lib/negocio';
+import { whatsappHref } from '../lib/negocio';
 
 const secciones = [
   { id: 'admision', label: '1. Admisión y derecho de ingreso' },
@@ -31,10 +31,7 @@ const faq = [
     q: '¿Qué se considera una estadía?',
     a: 'Una estadía es el período comprendido entre el día de ingreso y las 10:00 hs del día siguiente.',
   },
-  {
-    q: '¿Cómo se cobran los ingresos entre las 00:00 y las 06:00 hs?',
-    a: 'Los ingresos realizados entre las 00:00 hs y las 06:00 hs abonan media (½) estadía, válida hasta las 10:00 hs de ese mismo día.',
-  },
+
   {
     q: '¿Cuál es el horario de descanso?',
     a: 'El período de descanso va desde las 00:00 hs hasta las 07:00 hs del día siguiente. Pedimos respetar el silencio en ese horario. Los adultos responsables responden por la conducta de los menores a su cargo durante toda la estadía.',
@@ -97,9 +94,7 @@ const faqSchema = {
   <section class="max-w-7xl mx-auto px-6 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
     <!-- Índice -->
     <nav class="lg:col-span-4 lg:sticky lg:top-28 order-2 lg:order-1">
-      <div
-        class="bg-superficie p-6 md:p-8 rounded-card shadow-elevada border border-borde/10"
-      >
+      <div class="bg-superficie p-6 md:p-8 rounded-card shadow-elevada border border-borde/10">
         <h2 class="font-titulo font-bold text-lg text-texto mb-4">En esta página</h2>
         <ul class="space-y-2.5">
           {
@@ -117,9 +112,9 @@ const faqSchema = {
         </ul>
         <div class="mt-6 pt-6 border-t border-borde/60">
           <p class="text-texto-suave text-xs leading-relaxed">
-            ¿Tienes alguna consulta sobre el reglamento? Escríbenos a{' '}
-            <a href={CONTACTO_HREF.mailto} class="text-primario font-semibold">
-              {NEGOCIO.email}
+            ¿Tienes alguna consulta sobre el reglamento? Escríbenos por{' '}
+            <a href={whatsappHref('es')} target="_blank" rel="noopener" class="text-primario font-semibold">
+              WhatsApp
             </a>
           </p>
         </div>
@@ -173,7 +168,7 @@ const faqSchema = {
       <div id="descanso" class="scroll-mt-28 space-y-4">
         <h2 class="font-titulo font-bold text-2xl text-texto">5. Horario de descanso</h2>
         <p class="text-texto-suave leading-relaxed">
-          El período de descanso comprende desde las 00:00 hs. hasta las 07:00 hs. del día
+          El período de descanso comprende desde las 22:00 hs. hasta las 07:00 hs. del día
           siguiente. Te pedimos respetar el silencio durante ese horario para el bienestar de todos
           los acampantes. Los padres o adultos responsables son los responsables de la conducta de
           los menores a su cargo durante toda la estadía.
@@ -201,8 +196,9 @@ const faqSchema = {
       <div id="mascotas" class="scroll-mt-28 space-y-4">
         <h2 class="font-titulo font-bold text-2xl text-texto">8. Mascotas</h2>
         <p class="text-texto-suave leading-relaxed">
-          Se aceptan mascotas, siempre y cuando se mantenga la limpieza del predio. Los dueños son
-          responsables de recoger y disponer correctamente los residuos de sus mascotas.
+          Se aceptan mascotas, siempre que esté con su correa y se mantenga la limpieza del predio.
+          Los dueños son responsables de recoger y disponer correctamente los residuos de sus
+          mascotas.
         </p>
       </div>
 
@@ -220,7 +216,7 @@ const faqSchema = {
         <h2 class="font-titulo font-bold text-2xl text-texto">10. Primeros auxilios</h2>
         <p class="text-texto-suave leading-relaxed">
           El camping no cuenta con servicio médico, pero dispone de un botiquín de primeros auxilios
-          para atender cualquier eventualidad durante tu estadía.
+          y un servicio de área protegida para atender cualquier eventualidad durante tu estadía.
         </p>
         <p class="text-texto-suave leading-relaxed pt-2">
           El ingreso al predio implica la aceptación de la totalidad de este reglamento. Camping

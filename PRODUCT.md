@@ -50,6 +50,7 @@ Contexto de ubicación confirmado: a unos 20 minutos del Parque Nacional Iguazú
 - **Español neutro** (tuteo, sin voseo): nada de "reservá / consultá / tenés".
 - **Datos del negocio centralizados** en `src/lib/` (`negocio.ts` para nombre, dirección, teléfono, WhatsApp, redes). No reescribir NAP a mano.
 - **Unidades**: Camping (por cupo de personas), Motorhome (25 parcelas), Cabaña (una sola, hasta 8 personas), Quincho (por día, categorías Chico / Grande / Especial / Compartido).
+- **Bloqueo de fechas**: desde el Calendario del Panel, la dueña deshabilita fechas de un lugar puntual (parcela / quincho) o de toda una unidad, con nota opcional. Esas fechas dejan de ofrecerse en la web (tabla `bloqueos`, `sql/009_bloqueos.sql`).
 - **Piscinas**: beneficio informativo incluido; no se reservan ni se venden desde el sistema. Si existe un pase de día, se gestiona fuera del sistema (**sin definir**).
 - **Home liviana**: no carga JavaScript externo; React se hidrata solo en la página de reserva. La fuente de iconos se sirve recortada: un icono nuevo debe sumarse a `src/lib/iconos.ts`.
 - **Guía de atractivos** (`/atractivos`): 34 fichas del descriptivo oficial de la ACATI más mapa descargable.

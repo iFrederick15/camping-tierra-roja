@@ -90,6 +90,109 @@ export type Disponibilidad =
   | { tipo: 'unica'; disponible: boolean }
   | { tipo: 'lista'; opciones: { id: string; nombre: string; atributos: string[] }[] };
 
+// ------------------------------------------------------------
+// Bloqueos de disponibilidad — la dueña "deshabilita" fechas desde el
+// Calendario (mantenimiento, uso propio, evento privado). Ocupan lugar
+// igual que una reserva, pero sin cliente ni precio.
+// Ver sql/009_bloqueos.sql para el significado de parcelaId/plazas.
+// ------------------------------------------------------------
+const FORMATO_FECHA = /^\d{4}-\d{2}-\d{2}$/;
+
+export interface Bloqueo {
+  id: string;
+  unidadId: string;
+  parcelaId: string | null;
+  plazas: number | null; // null + parcelaId null = la unidad entera
+  fechaInicio: string;
+  fechaFin: string; // exclusiva, igual que reservas.fecha_salida
+  nota: string | null;
+  creadoPor: string | null;
+}
+
+const SELECT_BLOQUEO =
+  'id, unidad_id, parcela_id, plazas, fecha_inicio, fecha_fin, nota, creado_por';
+
+function mapearBloqueo(b: any): Bloqueo {
+  return {
+    id: b.id,
+    unidadId: b.unidad_id,
+    parcelaId: b.parcela_id,
+    plazas: b.plazas,
+    fechaInicio: b.fecha_inicio,
+    fechaFin: b.fecha_fin,
+    nota: b.nota,
+    creadoPor: b.creado_por,
+  };
+}
+
+// Bloqueos de una unidad que pisan el rango [desde, hasta) — mismo criterio
+// de solapamiento que las reservas.
+export async function listarBloqueos(
+  unidadId: string,
+  desde: string,
+  hasta: string
+): Promise<Bloqueo[]> {
+  const { data, error } = await supabaseAdmin
+    .from('bloqueos')
+    .select(SELECT_BLOQUEO)
+    .eq('unidad_id', unidadId)
+    .lt('fecha_inicio', hasta)
+    .gt('fecha_fin', desde)
+    .order('fecha_inicio');
+
+  if (error) {
+    // Si todavía no se corrió la migración 009 la tabla no existe: el sitio
+    // sigue funcionando como antes (sin bloqueos) en vez de caerse entero.
+    if (error.code === '42P01' || error.code === 'PGRST205') {
+      console.warn('listarBloqueos: falta correr sql/009_bloqueos.sql');
+      return [];
+    }
+    // Cualquier otro error sí corta: devolver una lista vacía "abriría"
+    // fechas que la dueña cerró y las dejaría reservables desde la web.
+    console.error('listarBloqueos:', error);
+    throw new Error('No se pudieron leer los bloqueos');
+  }
+  return (data ?? []).map(mapearBloqueo);
+}
+
+// Un bloqueo sin parcela y sin plazas deshabilita la unidad completa.
+function bloqueaUnidadEntera(bloqueos: Bloqueo[]): boolean {
+  return bloqueos.some((b) => b.parcelaId === null && b.plazas === null);
+}
+
+// Cuántos lugares del cupo genérico (CAMPING) tapan los bloqueos ese día.
+function plazasBloqueadasEnDia(bloqueos: Bloqueo[], dia: string, cupoTotal: number): number {
+  return bloqueos
+    .filter((b) => b.fechaInicio <= dia && b.fechaFin > dia)
+    .reduce((acc, b) => acc + (b.plazas ?? cupoTotal), 0);
+}
+
+// Días sueltos de un rango [desde, hasta). El cupo del camping se mide por
+// día: dos bloqueos que caen dentro del mismo rango pero no comparten ningún
+// día no se pisan entre sí, y sumarlos de a rango rechazaría fechas que en
+// realidad tienen lugar.
+function diasDelRango(desde: string, hasta: string): string[] {
+  const dias: string[] = [];
+  if (!FORMATO_FECHA.test(desde) || !FORMATO_FECHA.test(hasta)) return dias;
+  // Tope defensivo: un rango absurdo no puede colgar el server.
+  for (let dia = desde; dia < hasta && dias.length < 400; dia = diaSiguiente(dia)) dias.push(dia);
+  return dias;
+}
+
+// Lugares del camping que los bloqueos tapan en el peor día del rango — es
+// el día que define si queda o no lugar para toda la estadía.
+function plazasBloqueadasEnRango(
+  bloqueos: Bloqueo[],
+  desde: string,
+  hasta: string,
+  cupoTotal: number
+): number {
+  return diasDelRango(desde, hasta).reduce(
+    (peor, dia) => Math.max(peor, plazasBloqueadasEnDia(bloqueos, dia, cupoTotal)),
+    0
+  );
+}
+
 // Extraído de disponibilidad.ts para que la reserva manual de Staff use
 // exactamente la misma fuente de verdad que el Portal público.
 // "categoria" solo aplica (y es obligatoria) para QUINCHOS: filtra las
@@ -132,23 +235,41 @@ export async function obtenerDisponibilidad(
     .lt('fecha_ingreso', hasta)
     .gt('fecha_salida', desde);
   if (excluirReservaId) queryReservas = queryReservas.neq('id', excluirReservaId);
-  const { data: solapadas, error: errReservas } = await queryReservas;
 
-  if (errReservas) {
-    console.error('obtenerDisponibilidad — error consultando reservas:', errReservas);
+  // Los bloqueos que puso la dueña desde el Calendario ocupan lugar igual
+  // que una reserva (ver sql/009_bloqueos.sql).
+  let solapadas: { parcela_id: string | null }[] | null;
+  let bloqueos: Bloqueo[];
+  try {
+    const [resReservas, resBloqueos] = await Promise.all([
+      queryReservas,
+      listarBloqueos(unidad.id, desde, hasta),
+    ]);
+    if (resReservas.error) {
+      console.error('obtenerDisponibilidad — error consultando reservas:', resReservas.error);
+      return { error: 'No se pudo calcular la disponibilidad', status: 500 };
+    }
+    solapadas = resReservas.data;
+    bloqueos = resBloqueos;
+  } catch (e) {
+    console.error('obtenerDisponibilidad — error consultando bloqueos:', e);
     return { error: 'No se pudo calcular la disponibilidad', status: 500 };
   }
 
   const unidadInfo = { id: unidad.id, nombre: unidad.nombre };
+  const unidadBloqueada = bloqueaUnidadEntera(bloqueos);
+  const parcelasBloqueadas = new Set(bloqueos.map((b) => b.parcelaId).filter(Boolean));
 
   // MOTORHOME: el cliente no elige parcela — el sistema asigna una libre
   // automáticamente al confirmar (ver asignarParcelaMotorhome). Acá solo
   // importa saber si hay al menos una parcela activa sin solapar.
   if (unidad.tipo === 'MOTORHOME') {
     const parcelasOcupadasIds = new Set((solapadas ?? []).map((r) => r.parcela_id));
-    const libres = (unidad.parcelas ?? []).filter(
-      (p: any) => p.activa && !parcelasOcupadasIds.has(p.id)
-    );
+    const libres = unidadBloqueada
+      ? []
+      : (unidad.parcelas ?? []).filter(
+          (p: any) => p.activa && !parcelasOcupadasIds.has(p.id) && !parcelasBloqueadas.has(p.id)
+        );
     return {
       unidad: unidadInfo,
       disponibilidad: { tipo: 'cupo', disponible: libres.length > 0, cuposLibres: libres.length },
@@ -157,27 +278,33 @@ export async function obtenerDisponibilidad(
 
   if (unidad.tipo === 'QUINCHOS') {
     const parcelasOcupadasIds = new Set((solapadas ?? []).map((r) => r.parcela_id));
-    const disponibles = (unidad.parcelas ?? [])
-      .filter(
-        (p: any) =>
-          p.activa && !parcelasOcupadasIds.has(p.id) && p.opciones_precio?.clave === categoria
-      )
-      .map((p: any) => ({ id: p.id, nombre: p.nombre, atributos: p.atributos }));
+    const disponibles = unidadBloqueada
+      ? []
+      : (unidad.parcelas ?? [])
+          .filter(
+            (p: any) =>
+              p.activa &&
+              !parcelasOcupadasIds.has(p.id) &&
+              !parcelasBloqueadas.has(p.id) &&
+              p.opciones_precio?.clave === categoria
+          )
+          .map((p: any) => ({ id: p.id, nombre: p.nombre, atributos: p.atributos }));
 
     return { unidad: unidadInfo, disponibilidad: { tipo: 'lista', opciones: disponibles } };
   }
 
   if (unidad.tipo === 'CAMPING') {
+    const cupo = unidad.cupo_total ?? 0;
     const ocupadas = solapadas?.length ?? 0;
-    const libres = (unidad.cupo_total ?? 0) - ocupadas;
+    const libres = cupo - ocupadas - plazasBloqueadasEnRango(bloqueos, desde, hasta, cupo);
     return {
       unidad: unidadInfo,
       disponibilidad: { tipo: 'cupo', disponible: libres > 0, cuposLibres: Math.max(libres, 0) },
     };
   }
 
-  // CABANA: unidad única
-  const disponible = (solapadas?.length ?? 0) === 0;
+  // CABANA: unidad única — cualquier bloqueo la deshabilita entera.
+  const disponible = (solapadas?.length ?? 0) === 0 && bloqueos.length === 0;
   return { unidad: unidadInfo, disponibilidad: { tipo: 'unica', disponible } };
 }
 
@@ -213,9 +340,18 @@ export async function asignarParcelaMotorhome(
     .lt('fecha_ingreso', hasta)
     .gt('fecha_salida', desde);
   if (excluirReservaId) querySolapadas = querySolapadas.neq('id', excluirReservaId);
-  const { data: solapadas } = await querySolapadas;
+  const [{ data: solapadas }, bloqueos] = await Promise.all([
+    querySolapadas,
+    listarBloqueos(unidadId, desde, hasta),
+  ]);
 
-  const ocupadasIds = new Set((solapadas ?? []).map((r) => r.parcela_id));
+  // Una parcela bloqueada por la dueña no se puede asignar, igual que una
+  // ocupada; si el bloqueo es de toda la unidad, no hay ninguna para dar.
+  if (bloqueaUnidadEntera(bloqueos)) return null;
+  const ocupadasIds = new Set([
+    ...(solapadas ?? []).map((r) => r.parcela_id),
+    ...bloqueos.map((b) => b.parcelaId),
+  ]);
   if (
     parcelaPreferida &&
     !ocupadasIds.has(parcelaPreferida) &&
@@ -238,6 +374,167 @@ export async function nombreDeParcela(parcelaId: string | null): Promise<string 
     .eq('id', parcelaId)
     .single();
   return data?.nombre ?? null;
+}
+
+// ------------------------------------------------------------
+// Crear / quitar bloqueos. La validación vive acá (y no en la ruta /api)
+// para que sea la misma regla que usa obtenerDisponibilidad: un bloqueo
+// nunca puede pisar una reserva ya tomada ni dejar el cupo en negativo.
+// ------------------------------------------------------------
+export interface EntradaBloqueo {
+  unidadTipo: string;
+  // Lugar puntual a bloquear (motorhome / quincho). Se ignora si
+  // todaLaUnidad viene en true.
+  parcelaId?: string | null;
+  todaLaUnidad?: boolean;
+  fechaInicio: string;
+  fechaFin: string; // exclusiva
+  nota?: string | null;
+  creadoPor?: string | null;
+}
+
+const LARGO_MAXIMO_NOTA = 300;
+
+const fechaCorta = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+
+export async function crearBloqueo(
+  entrada: EntradaBloqueo
+): Promise<{ error: string; status: number } | { bloqueo: Bloqueo }> {
+  const { fechaInicio, fechaFin } = entrada;
+  if (
+    !FORMATO_FECHA.test(fechaInicio ?? '') ||
+    !FORMATO_FECHA.test(fechaFin ?? '') ||
+    fechaFin <= fechaInicio
+  ) {
+    return { error: 'Las fechas del bloqueo no son válidas', status: 400 };
+  }
+
+  const { data: unidad, error: errUnidad } = await supabaseAdmin
+    .from('unidades')
+    .select('id, tipo, nombre, cupo_total')
+    .eq('tipo', entrada.unidadTipo)
+    .single();
+
+  if (errUnidad || !unidad) {
+    return { error: 'Unidad no encontrada', status: 404 };
+  }
+
+  // La cabaña es una sola: bloquearla siempre la deshabilita entera.
+  const todaLaUnidad = Boolean(entrada.todaLaUnidad) || unidad.tipo === 'CABANA';
+  const necesitaParcela = unidad.tipo === 'MOTORHOME' || unidad.tipo === 'QUINCHOS';
+
+  let parcelaId: string | null = null;
+  if (!todaLaUnidad && necesitaParcela) {
+    if (!entrada.parcelaId) {
+      return { error: 'Elegí el lugar a bloquear, o bloqueá la unidad entera', status: 400 };
+    }
+    const { data: parcela } = await supabaseAdmin
+      .from('parcelas')
+      .select('id')
+      .eq('id', entrada.parcelaId)
+      .eq('unidad_id', unidad.id)
+      .maybeSingle();
+    if (!parcela) {
+      return { error: 'Ese lugar no pertenece a esta unidad', status: 400 };
+    }
+    parcelaId = parcela.id;
+  }
+
+  // CAMPING no tiene parcelas: un bloqueo de un solo lugar se guarda como
+  // "1 plaza del cupo" (ver sql/009_bloqueos.sql).
+  const plazas = !todaLaUnidad && unidad.tipo === 'CAMPING' ? 1 : null;
+
+  let reservasSolapadas: {
+    parcela_id: string | null;
+    fecha_ingreso: string;
+    fecha_salida: string;
+  }[];
+  let bloqueosExistentes: Bloqueo[];
+  try {
+    const [resReservas, resBloqueos] = await Promise.all([
+      supabaseAdmin
+        .from('reservas')
+        .select('parcela_id, fecha_ingreso, fecha_salida')
+        .eq('unidad_id', unidad.id)
+        .in('estado', ['CONFIRMADA', 'CHECKIN_HECHO'])
+        .lt('fecha_ingreso', fechaFin)
+        .gt('fecha_salida', fechaInicio),
+      listarBloqueos(unidad.id, fechaInicio, fechaFin),
+    ]);
+    if (resReservas.error) throw resReservas.error;
+    reservasSolapadas = resReservas.data ?? [];
+    bloqueosExistentes = resBloqueos;
+  } catch (e) {
+    console.error('crearBloqueo — error consultando ocupación:', e);
+    return { error: 'No se pudo verificar la ocupación de esas fechas', status: 500 };
+  }
+
+  if (todaLaUnidad) {
+    if (reservasSolapadas.length > 0) {
+      return {
+        error: `Hay ${reservasSolapadas.length} reserva(s) en esas fechas: cancelalas o cambialas de fecha antes de bloquear todo.`,
+        status: 409,
+      };
+    }
+  } else if (parcelaId) {
+    if (reservasSolapadas.some((r) => r.parcela_id === parcelaId)) {
+      return { error: 'Ese lugar ya tiene una reserva en esas fechas', status: 409 };
+    }
+    // Un bloqueo duplicado quedaría tapado por el que ya está y no se vería
+    // en el Calendario: se rechaza en vez de dejar filas invisibles.
+    if (bloqueosExistentes.some((b) => b.parcelaId === parcelaId || b.parcelaId === null)) {
+      return { error: 'Esas fechas ya están bloqueadas', status: 409 };
+    }
+  } else {
+    // CAMPING, un lugar del cupo: tiene que quedar al menos uno libre cada
+    // día del rango.
+    const cupo = unidad.cupo_total ?? 0;
+    for (const dia of diasDelRango(fechaInicio, fechaFin)) {
+      const reservasDia = reservasSolapadas.filter(
+        (r) => r.fecha_ingreso <= dia && r.fecha_salida > dia
+      ).length;
+      const bloqueadasDia = plazasBloqueadasEnDia(bloqueosExistentes, dia, cupo);
+      if (reservasDia + bloqueadasDia + 1 > cupo) {
+        return {
+          error: `El ${fechaCorta(dia)} ya no queda ningún lugar libre para bloquear`,
+          status: 409,
+        };
+      }
+    }
+  }
+
+  const nota = (entrada.nota ?? '').trim().slice(0, LARGO_MAXIMO_NOTA) || null;
+
+  const { data, error } = await supabaseAdmin
+    .from('bloqueos')
+    .insert({
+      unidad_id: unidad.id,
+      parcela_id: parcelaId,
+      plazas,
+      fecha_inicio: fechaInicio,
+      fecha_fin: fechaFin,
+      nota,
+      creado_por: entrada.creadoPor ?? null,
+    })
+    .select(SELECT_BLOQUEO)
+    .single();
+
+  if (error || !data) {
+    console.error('crearBloqueo — error insertando:', error);
+    return { error: 'No se pudo guardar el bloqueo', status: 500 };
+  }
+  return { bloqueo: mapearBloqueo(data) };
+}
+
+export async function eliminarBloqueo(
+  id: string
+): Promise<{ error: string; status: number } | null> {
+  const { error } = await supabaseAdmin.from('bloqueos').delete().eq('id', id);
+  if (error) {
+    console.error('eliminarBloqueo:', error);
+    return { error: 'No se pudo quitar el bloqueo', status: 500 };
+  }
+  return null;
 }
 
 // ------------------------------------------------------------

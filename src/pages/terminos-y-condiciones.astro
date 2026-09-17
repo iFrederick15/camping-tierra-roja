@@ -1,7 +1,7 @@
 ---
 export const prerender = true;
 import Layout from '../layouts/Layout.astro';
-import { NEGOCIO, CONTACTO_HREF, DIRECCION_COMPLETA } from '../lib/negocio';
+import { DIRECCION_COMPLETA, whatsappHref } from '../lib/negocio';
 
 const actualizado = '15 de agosto de 2026';
 
@@ -47,9 +47,7 @@ const secciones = [
   <section class="max-w-7xl mx-auto px-6 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
     <!-- Índice -->
     <nav class="lg:col-span-4 lg:sticky lg:top-28 order-2 lg:order-1">
-      <div
-        class="bg-superficie p-6 md:p-8 rounded-card shadow-elevada border border-borde/10"
-      >
+      <div class="bg-superficie p-6 md:p-8 rounded-card shadow-elevada border border-borde/10">
         <h2 class="font-titulo font-bold text-lg text-texto mb-4">En esta página</h2>
         <ul class="space-y-2.5">
           {
@@ -67,9 +65,9 @@ const secciones = [
         </ul>
         <div class="mt-6 pt-6 border-t border-borde/60">
           <p class="text-texto-suave text-xs leading-relaxed">
-            ¿Tienes dudas sobre estos términos? Escríbenos a{' '}
-            <a href={CONTACTO_HREF.mailto} class="text-primario font-semibold">
-              {NEGOCIO.email}
+            ¿Tienes dudas sobre estos términos? Escríbenos por{' '}
+            <a href={whatsappHref('es')} target="_blank" rel="noopener" class="text-primario font-semibold">
+              WhatsApp
             </a>
           </p>
         </div>
@@ -100,8 +98,9 @@ const secciones = [
         <h2 class="font-titulo font-bold text-2xl text-texto">2. Objeto del servicio</h2>
         <p class="text-texto-suave leading-relaxed">
           A través del sitio ofrecemos la reserva de estadías en nuestras distintas unidades:
-          camping, motorhome, quinchos y cabañas, ubicadas en {DIRECCION_COMPLETA}. La disponibilidad y los precios mostrados corresponden a las fechas
-          consultadas y pueden variar según la temporada.
+          camping, parcelas para motorhome, quinchos y cabañas, ubicadas en {DIRECCION_COMPLETA}. La
+          disponibilidad y los precios mostrados corresponden a las fechas consultadas y pueden
+          variar según la temporada.
         </p>
       </div>
 
@@ -110,7 +109,7 @@ const secciones = [
         <p class="text-texto-suave leading-relaxed">
           Para reservar no es necesario crear una cuenta. Eliges las fechas y la unidad, completas
           tus datos de contacto y confirmamos la disponibilidad en el momento. La reserva queda en
-          estado <strong class="text-texto">confirmada</strong> apenas se genera, pero su validez definitiva
+          estado <strong class="text-texto">realizada</strong> apenas se genera, pero su validez definitiva
           depende de que se acredite el pago dentro del plazo indicado en la sección siguiente.
         </p>
       </div>
@@ -134,13 +133,15 @@ const secciones = [
           Toda reserva tiene un plazo límite para transferir el pago, informado por email al momento
           de confirmarla. Ese plazo es más amplio cuanto mayor sea la anticipación con la que
           reservas, y se acorta para reservas de último momento cercanas a la fecha de ingreso.
-          Dentro de ese plazo debes abonar como mínimo la <strong class="text-texto">seña</strong>{' '}
+          Dentro de ese plazo debes abonar como mínimo la <strong class="text-texto">seña</strong>{
+            ' '
+          }
           indicada en el correo de confirmación; el saldo se paga al ingresar.
         </p>
         <p class="text-texto-suave leading-relaxed">
           Si el plazo vence sin que se acredite <strong class="text-texto">ningún pago</strong>, la
-          reserva se <strong class="text-texto">cancela automáticamente</strong> y la disponibilidad
-          se libera, sin necesidad de aviso previo adicional.
+          reserva se <strong class="text-texto">cancela automáticamente</strong> y la disponibilidad se
+          libera, sin necesidad de aviso previo adicional.
         </p>
       </div>
 
@@ -148,11 +149,8 @@ const secciones = [
         <h2 class="font-titulo font-bold text-2xl text-texto">6. Cancelaciones y modificaciones</h2>
         <p class="text-texto-suave leading-relaxed">
           Si ya efectuaste el pago y necesitas modificar o cancelar tu reserva, escríbenos por
-          WhatsApp o a{' '}
-          <a href={CONTACTO_HREF.mailto} class="text-primario font-semibold"
-            >{NEGOCIO.email}</a
-          >. Estos cambios se resuelven de forma directa con nuestro equipo, evaluando cada caso
-          según la anticipación y la disponibilidad.
+          WhatsApp. Estos cambios se resuelven de forma directa con nuestro equipo, evaluando cada
+          caso según la anticipación y la disponibilidad.
         </p>
       </div>
 
@@ -178,8 +176,8 @@ const secciones = [
           El complejo se reserva el Derecho de Admisión y podrá negar el ingreso o invitar a
           retirarse a quienes incumplan las normas del reglamento o representen un peligro o una
           molestia para otros visitantes. Camping Tierra Roja no cuenta con servicio médico propio,
-          aunque dispone de un botiquín de primeros auxilios para atender eventualidades durante la
-          estadía.
+          aunque dispone de un botiquín de primeros auxilios y una área protegida para atender
+          eventualidades durante la estadía.
         </p>
       </div>
 
@@ -219,13 +217,15 @@ const secciones = [
         <div class="flex flex-col gap-3 pt-2">
           <div class="flex items-center gap-3">
             <div class="bg-primario/10 p-2.5 rounded-lg text-primario">
-              <span class="material-symbols-outlined text-lg">mail</span>
+              <span class="material-symbols-outlined text-lg">chat</span>
             </div>
             <a
-              href={CONTACTO_HREF.mailto}
+              href={whatsappHref('es')}
+              target="_blank"
+              rel="noopener"
               class="text-texto font-semibold hover:text-primario transition-colors"
             >
-              {NEGOCIO.email}
+              WhatsApp
             </a>
           </div>
           <div class="flex items-center gap-3">

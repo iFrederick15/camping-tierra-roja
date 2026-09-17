@@ -1,10 +1,8 @@
 ---
 // Página de contacto: formulario + datos + mapa.
 //
-// Mejoras: textos traducidos, atajo directo a reservar (mucha gente entra a
-// "Contacto" cuando en realidad quiere reservar), WhatsApp con mensaje
-// pre-cargado, mensajes de estado del formulario accesibles y campos con
-// `autocomplete` para que el navegador los complete solo en mobile.
+// El contacto es únicamente por WhatsApp: el formulario no envía nada a un
+// backend, arma el mensaje con los datos completados y redirige a wa.me.
 import BotonReserva from './ui/BotonReserva.astro';
 import BotonWhatsApp from './ui/BotonWhatsApp.astro';
 import { NEGOCIO, DIRECCION_COMPLETA, CONTACTO_HREF } from '../lib/negocio';
@@ -21,8 +19,8 @@ const { idioma, t } = Astro.props;
 const hlMapa = idioma === 'pt' ? 'pt-BR' : idioma === 'en' ? 'en' : 'es';
 const mapaEmbed = `https://www.google.com/maps?q=Camping+Tierra+Roja+y+Parque+Acu%C3%A1tico,${NEGOCIO.geo.lat},${NEGOCIO.geo.lng}&hl=${hlMapa}&z=15&output=embed`;
 
-// Los valores enviados al backend quedan SIEMPRE en español: /api/contacto y
-// el correo que recibe el camping no cambian de idioma.
+// El valor de cada opción (lo que llega en el mensaje de WhatsApp) queda
+// SIEMPRE en español, para que el equipo del camping lo lea sin traducir.
 const tiposConsulta = [
   { valor: 'Información general', label: t.contacto.opciones.general },
   { valor: 'Camping', label: t.contacto.opciones.camping },
@@ -62,7 +60,13 @@ const claseCampo =
     class="rounded-card border border-borde/40 bg-superficie p-8 shadow-elevada md:p-12 lg:col-span-7"
   >
     <h2 class="mb-8 font-titulo text-3xl font-bold">{t.contacto.formTitulo}</h2>
-    <form id="form-contacto" class="space-y-6" method="post" action="/api/contacto" novalidate>
+    <form
+      id="form-contacto"
+      class="space-y-6"
+      data-whatsapp-numero={NEGOCIO.whatsapp}
+      data-whatsapp-plantilla={t.contacto.whatsappMensaje}
+      novalidate
+    >
       <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div class="space-y-2">
           <label
@@ -132,14 +136,10 @@ const claseCampo =
         type="submit"
         data-enviar={t.contacto.enviar}
         data-enviando={t.contacto.enviando}
-        data-ok={t.contacto.ok}
-        data-error={t.contacto.error}
         class="min-h-14 w-full rounded-full bg-primario px-12 font-titulo font-bold text-white transition-colors hover:bg-primario-oscuro focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
       >
         {t.contacto.enviar}
       </button>
-      <p id="form-contacto-estado" class="text-sm font-semibold" role="status" aria-live="polite">
-      </p>
     </form>
   </div>
 
@@ -167,20 +167,6 @@ const claseCampo =
               href={CONTACTO_HREF.tel}
               data-evento={EVENTOS.TELEFONO}
               class="text-texto-suave transition-colors hover:text-primario">{NEGOCIO.telefono}</a
-            >
-          </div>
-        </li>
-        <li class="flex items-start gap-4">
-          <span class="rounded-lg bg-primario/10 p-3 text-primario" aria-hidden="true">
-            <span class="material-symbols-outlined">mail</span>
-          </span>
-          <div class="min-w-0">
-            <p class="font-bold text-texto">{t.contacto.emailLabel}</p>
-            <a
-              href={CONTACTO_HREF.mailto}
-              data-evento={EVENTOS.EMAIL}
-              class="break-all text-texto-suave transition-colors hover:text-primario"
-              >{NEGOCIO.email}</a
             >
           </div>
         </li>
@@ -253,11 +239,12 @@ const claseCampo =
   (function () {
     const form = document.getElementById('form-contacto');
     if (!form) return;
-    const estado = document.getElementById('form-contacto-estado');
     const boton = form.querySelector('button[type="submit"]');
     const textos = boton.dataset;
+    const numero = form.dataset.whatsappNumero;
+    const plantilla = form.dataset.whatsappPlantilla;
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
 
       if (!form.checkValidity()) {
@@ -265,35 +252,17 @@ const claseCampo =
         return;
       }
 
+      const datos = Object.fromEntries(new FormData(form));
+      // Honeypot anti-spam: si un bot completó el campo oculto, no hacemos nada.
+      if (datos.website) return;
+
+      const mensaje = plantilla.replace(/\{(\w+)\}/g, (_, clave) => datos[clave] ?? '');
+
       boton.disabled = true;
       boton.textContent = textos.enviando;
-      estado.textContent = textos.enviando;
-      estado.className = 'text-sm font-semibold text-texto-suave';
+      if (window.trackEvent) window.trackEvent('contacto_whatsapp');
 
-      try {
-        const res = await fetch('/api/contacto', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(Object.fromEntries(new FormData(form))),
-        });
-        const data = await res.json().catch(() => ({}));
-
-        if (res.ok) {
-          form.reset();
-          estado.textContent = textos.ok;
-          estado.className = 'text-sm font-semibold text-confirmado';
-          if (window.trackEvent) window.trackEvent('contacto_enviado');
-        } else {
-          estado.textContent = (data && data.error) || textos.error;
-          estado.className = 'text-sm font-semibold text-primario';
-        }
-      } catch (err) {
-        estado.textContent = textos.error;
-        estado.className = 'text-sm font-semibold text-primario';
-      } finally {
-        boton.disabled = false;
-        boton.textContent = textos.enviar;
-      }
+      window.location.href = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
     });
   })();
 </script>

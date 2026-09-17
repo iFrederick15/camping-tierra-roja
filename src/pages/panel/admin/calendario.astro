@@ -1,7 +1,13 @@
 ---
 import PanelLayout from '../../../layouts/PanelLayout.astro';
 import { supabaseAdmin } from '../../../lib/supabase';
-import { hoyISO, calcularEstadoPago, type TipoUnidad } from '../../../lib/reservas';
+import {
+  hoyISO,
+  calcularEstadoPago,
+  listarBloqueos,
+  type TipoUnidad,
+  type Bloqueo,
+} from '../../../lib/reservas';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -104,6 +110,39 @@ if (unidadSel) {
   }));
 }
 
+// Fechas que la dueña deshabilitó a mano (ver sql/009_bloqueos.sql). Se
+// dibujan en el tablero igual que las reservas porque ocupan lugar igual
+// que ellas.
+const bloqueosDelMes: Bloqueo[] = unidadSel
+  ? await listarBloqueos(unidadSel.id, inicioMes, finMes)
+  : [];
+
+// Una "ocupación" es cualquier cosa que tape días del tablero: una reserva
+// o un bloqueo. Se dibujan igual (una barra que abarca su rango), pero el
+// bloqueo no tiene cliente ni pantalla de detalle.
+type Ocupacion =
+  | { clase: 'reserva'; inicio: string; fin: string; reserva: ReservaFila }
+  | { clase: 'bloqueo'; inicio: string; fin: string; bloqueo: Bloqueo };
+
+const comoOcupacion = (r: ReservaFila): Ocupacion => ({
+  clase: 'reserva',
+  inicio: r.fechaIngreso,
+  fin: r.fechaSalida,
+  reserva: r,
+});
+
+const comoOcupacionBloqueo = (b: Bloqueo): Ocupacion => ({
+  clase: 'bloqueo',
+  inicio: b.fechaInicio,
+  fin: b.fechaFin,
+  bloqueo: b,
+});
+
+const capacidadCamping = unidadSel?.cupo_total ?? 0;
+
+// Bloqueos de la unidad entera: tapan todas las filas del tipo.
+const bloqueosDeToda = bloqueosDelMes.filter((b) => b.parcelaId === null && b.plazas === null);
+
 // Filas del tablero: para MOTORHOME/QUINCHOS cada fila es una parcela física
 // real (así la ocupación se ve en el lugar exacto donde quedó asignada). Para
 // CAMPING, que no tiene identidad física por reserva, se empaquetan las
@@ -111,13 +150,14 @@ if (unidadSel) {
 // CABANA, unidad única, una sola fila.
 interface Fila {
   etiqueta: string;
-  reservas: ReservaFila[];
+  ocupaciones: Ocupacion[];
   // Solo QUINCHOS: la parcela y su categoría de precio (opciones_precio.clave)
   // permiten precargar la reserva nueva con el lugar exacto que se clickeó —
   // ver obtenerDisponibilidad() en lib/reservas.ts, que filtra parcelas de
-  // QUINCHOS por esa categoría. MOTORHOME no la necesita: la parcela siempre
-  // se asigna automática en el backend (asignarParcelaMotorhome), nunca la
-  // elige quien carga la reserva.
+  // QUINCHOS por esa categoría. MOTORHOME no la necesita para reservar: la
+  // parcela siempre se asigna automática en el backend
+  // (asignarParcelaMotorhome). Sí la usan los dos para bloquear: ahí la
+  // dueña deshabilita un lugar puntual.
   parcelaId?: string;
   categoria?: string;
 }
@@ -136,37 +176,55 @@ if (tipoSeleccionado === 'MOTORHOME' || tipoSeleccionado === 'QUINCHOS') {
 
   filas = (parcelasData ?? []).map((p: any) => ({
     etiqueta: p.nombre,
-    reservas: reservasDelMes.filter((r) => r.parcelaId === p.id),
+    ocupaciones: [
+      ...reservasDelMes.filter((r) => r.parcelaId === p.id).map(comoOcupacion),
+      ...bloqueosDelMes.filter((b) => b.parcelaId === p.id).map(comoOcupacionBloqueo),
+      ...bloqueosDeToda.map(comoOcupacionBloqueo),
+    ],
     parcelaId: p.id,
     categoria: p.opciones_precio?.clave,
   }));
 
   if (sinAsignar.length > 0) {
-    filas.unshift({ etiqueta: 'Sin lugar', reservas: sinAsignar });
+    filas.unshift({ etiqueta: 'Sin lugar', ocupaciones: sinAsignar.map(comoOcupacion) });
   }
 } else if (tipoSeleccionado === 'CAMPING') {
-  const ordenadas = [...reservasDelMes].sort((a, b) =>
-    a.fechaIngreso.localeCompare(b.fechaIngreso)
-  );
+  // Cada bloqueo del camping ocupa "plazas" lugares del cupo (null = el cupo
+  // entero): se repite esa cantidad de veces para que el empaquetado por
+  // carriles los muestre como lugares realmente ocupados.
+  const items: Ocupacion[] = [
+    ...reservasDelMes.map(comoOcupacion),
+    ...bloqueosDelMes.flatMap((b) =>
+      Array.from({ length: b.plazas ?? capacidadCamping }, () => comoOcupacionBloqueo(b))
+    ),
+  ];
+  const ordenadas = [...items].sort((a, b) => a.inicio.localeCompare(b.inicio));
   const finPorCarril: string[] = [];
-  const carriles: ReservaFila[][] = [];
-  for (const r of ordenadas) {
-    let idx = finPorCarril.findIndex((fin) => fin <= r.fechaIngreso);
+  const carriles: Ocupacion[][] = [];
+  for (const item of ordenadas) {
+    let idx = finPorCarril.findIndex((fin) => fin <= item.inicio);
     if (idx === -1) {
       idx = finPorCarril.length;
       carriles.push([]);
     }
-    finPorCarril[idx] = r.fechaSalida;
-    carriles[idx].push(r);
+    finPorCarril[idx] = item.fin;
+    carriles[idx].push(item);
   }
-  filas = carriles.map((reservas, i) => ({ etiqueta: `Lugar ${i + 1}`, reservas }));
+  filas = carriles.map((ocupaciones, i) => ({ etiqueta: `Lugar ${i + 1}`, ocupaciones }));
 
-  const capacidad = unidadSel?.cupo_total ?? 0;
-  while (filas.length < capacidad) {
-    filas.push({ etiqueta: `Lugar ${filas.length + 1}`, reservas: [] });
+  while (filas.length < capacidadCamping) {
+    filas.push({ etiqueta: `Lugar ${filas.length + 1}`, ocupaciones: [] });
   }
 } else {
-  filas = [{ etiqueta: unidadSel?.nombre ?? 'Cabaña', reservas: reservasDelMes }];
+  filas = [
+    {
+      etiqueta: unidadSel?.nombre ?? 'Cabaña',
+      ocupaciones: [
+        ...reservasDelMes.map(comoOcupacion),
+        ...bloqueosDelMes.map(comoOcupacionBloqueo),
+      ],
+    },
+  ];
 }
 
 type EstadoVisual = 'RESERVA' | 'CHECKIN' | 'ADEUDADO' | 'CHECKOUT';
@@ -184,31 +242,34 @@ const ESTILO_VISUAL: Record<EstadoVisual, { label: string; className: string }> 
   CHECKOUT: { label: 'Checkout', className: 'bg-texto-suave' },
 };
 
-// Convierte las reservas (no superpuestas) de una fila en una secuencia de
+// Rayado diagonal para los bloqueos: se distingue de un vistazo de las
+// barras planas de las reservas, sin sumar otro color a la leyenda.
+const RAYADO_BLOQUEO =
+  'repeating-linear-gradient(45deg, var(--color-texto) 0 6px, var(--color-texto-suave) 6px 12px)';
+
+// Convierte las ocupaciones (no superpuestas) de una fila en una secuencia de
 // segmentos que cubre el mes completo: barras de varios días para cada
-// reserva (colspan) y celdas sueltas de 1 día para los huecos vacíos — así
-// el "hoy" se puede resaltar celda por celda.
+// reserva o bloqueo (colspan) y celdas sueltas de 1 día para los huecos
+// vacíos — así el "hoy" se puede resaltar celda por celda.
 interface Segmento {
   colspan: number;
   inicioDia: number;
-  reserva?: ReservaFila;
+  ocupacion?: Ocupacion;
 }
 
-function construirSegmentos(reservas: ReservaFila[]): Segmento[] {
-  const ordenadas = [...reservas].sort((a, b) => a.fechaIngreso.localeCompare(b.fechaIngreso));
+function construirSegmentos(ocupaciones: Ocupacion[]): Segmento[] {
+  const ordenadas = [...ocupaciones].sort((a, b) => a.inicio.localeCompare(b.inicio));
   const segmentos: Segmento[] = [];
   let cursor = diaInicioVisible;
-  for (const r of ordenadas) {
-    const inicioDia =
-      r.fechaIngreso < inicioVisible ? diaInicioVisible : Number(r.fechaIngreso.slice(8, 10));
-    const finDiaExclusivo =
-      r.fechaSalida >= finMes ? diasEnMes + 1 : Number(r.fechaSalida.slice(8, 10));
+  for (const o of ordenadas) {
+    const inicioDia = o.inicio < inicioVisible ? diaInicioVisible : Number(o.inicio.slice(8, 10));
+    const finDiaExclusivo = o.fin >= finMes ? diasEnMes + 1 : Number(o.fin.slice(8, 10));
     while (cursor < inicioDia) {
       segmentos.push({ colspan: 1, inicioDia: cursor });
       cursor++;
     }
     if (finDiaExclusivo <= cursor) continue;
-    segmentos.push({ colspan: finDiaExclusivo - cursor, inicioDia: cursor, reserva: r });
+    segmentos.push({ colspan: finDiaExclusivo - cursor, inicioDia: cursor, ocupacion: o });
     cursor = finDiaExclusivo;
   }
   while (cursor <= diasEnMes) {
@@ -220,8 +281,16 @@ function construirSegmentos(reservas: ReservaFila[]): Segmento[] {
 
 const filasConSegmentos = filas.map((fila) => ({
   ...fila,
-  segmentos: construirSegmentos(fila.reservas),
+  segmentos: construirSegmentos(fila.ocupaciones),
 }));
+
+// Texto del tooltip de un bloqueo: la nota si la hay, más quién lo puso.
+function tituloBloqueo(b: Bloqueo): string {
+  const partes = [b.nota?.trim() || 'Fechas bloqueadas'];
+  if (b.parcelaId === null && b.plazas === null) partes.push('toda la unidad');
+  if (b.creadoPor) partes.push(`bloqueó ${b.creadoPor}`);
+  return partes.join(' · ');
+}
 ---
 
 <PanelLayout title="Calendario de ocupación" activo="calendario">
@@ -280,7 +349,7 @@ const filasConSegmentos = filas.map((fila) => ({
     }
   </div>
 
-  <div class="flex items-center gap-4 text-sm text-texto-suave mb-6">
+  <div class="flex flex-wrap items-center gap-4 text-sm text-texto-suave mb-6">
     {
       (Object.keys(ESTILO_VISUAL) as EstadoVisual[]).map((clave) => (
         <span class="flex items-center gap-1.5">
@@ -291,7 +360,18 @@ const filasConSegmentos = filas.map((fila) => ({
         </span>
       ))
     }
+    <span class="flex items-center gap-1.5">
+      <span class="w-3 h-3 rounded-full inline-block" style={`background-image: ${RAYADO_BLOQUEO}`}
+      ></span>
+      Bloqueado
+    </span>
   </div>
+
+  <p class="text-sm text-texto-suave mb-6 max-w-2xl">
+    Hacé clic (o arrastrá) sobre los días libres de una fila para crear una reserva o para
+    <strong class="font-medium text-texto">bloquear esas fechas</strong> y que dejen de poder reservarse
+    desde la web. Hacé clic sobre un bloqueo para quitarlo.
+  </p>
 
   <div class="bg-superficie rounded-card border-2 border-borde overflow-hidden">
     <div class="overflow-x-auto pl-2">
@@ -321,23 +401,43 @@ const filasConSegmentos = filas.map((fila) => ({
         <tbody>
           {
             filasConSegmentos.map((fila) => (
-              <tr data-parcela-id={fila.parcelaId ?? ''} data-categoria={fila.categoria ?? ''}>
+              <tr
+                data-parcela-id={fila.parcelaId ?? ''}
+                data-categoria={fila.categoria ?? ''}
+                data-etiqueta={fila.etiqueta}
+              >
                 <td class="sticky left-0 z-10 bg-superficie border-b border-r-2 border-borde w-36 min-w-36 px-2 py-1.5 text-sm font-titulo font-medium text-texto whitespace-nowrap overflow-hidden text-ellipsis">
                   {fila.etiqueta}
                 </td>
                 {fila.segmentos.map((seg) =>
-                  seg.reserva ? (
+                  seg.ocupacion?.clase === 'reserva' ? (
                     <td colspan={seg.colspan} class="border-b border-l border-borde p-0">
                       <a
-                        href={`/panel/reservas/${seg.reserva.id}`}
+                        href={`/panel/reservas/${seg.ocupacion.reserva.id}`}
                         class:list={[
                           'flex items-center h-9 px-2 text-xs font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis hover:brightness-110 transition-[filter]',
-                          ESTILO_VISUAL[estadoVisual(seg.reserva)].className,
+                          ESTILO_VISUAL[estadoVisual(seg.ocupacion.reserva)].className,
                         ]}
-                        title={`${seg.reserva.nombreCliente} · ${ESTILO_VISUAL[estadoVisual(seg.reserva)].label}`}
+                        title={`${seg.ocupacion.reserva.nombreCliente} · ${ESTILO_VISUAL[estadoVisual(seg.ocupacion.reserva)].label}`}
                       >
-                        {seg.reserva.nombreCliente}
+                        {seg.ocupacion.reserva.nombreCliente}
                       </a>
+                    </td>
+                  ) : seg.ocupacion?.clase === 'bloqueo' ? (
+                    <td colspan={seg.colspan} class="border-b border-l border-borde p-0">
+                      <button
+                        type="button"
+                        class="bloqueo-barra flex items-center gap-1 w-full h-9 px-2 text-xs font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis hover:brightness-125 transition-[filter]"
+                        style={`background-image: ${RAYADO_BLOQUEO}`}
+                        data-bloqueo-id={seg.ocupacion.bloqueo.id}
+                        data-nota={seg.ocupacion.bloqueo.nota ?? ''}
+                        title={`${tituloBloqueo(seg.ocupacion.bloqueo)} · clic para quitar el bloqueo`}
+                      >
+                        <span class="material-symbols-outlined text-[14px] shrink-0">lock</span>
+                        <span class="overflow-hidden text-ellipsis">
+                          {seg.ocupacion.bloqueo.nota?.trim() || 'Bloqueado'}
+                        </span>
+                      </button>
                     </td>
                   ) : (
                     <td
@@ -346,7 +446,7 @@ const filasConSegmentos = filas.map((fila) => ({
                         seg.inicioDia === hoyDia ? 'bg-amber-50' : '',
                       ]}
                       data-fecha={`${anio}-${pad(mesNum + 1)}-${pad(seg.inicioDia)}`}
-                      title="Haz clic o arrastra para crear una reserva en estas fechas"
+                      title="Haz clic o arrastra para reservar o bloquear estas fechas"
                     />
                   )
                 )}
@@ -358,14 +458,135 @@ const filasConSegmentos = filas.map((fila) => ({
     </div>
   </div>
 
+  <!--
+    Una misma selección de fechas puede terminar en una reserva nueva o en un
+    bloqueo, así que el arrastre abre este diálogo en vez de saltar directo a
+    la pantalla de reserva (que era lo único que se podía hacer antes).
+  -->
+  <div
+    id="modal-seleccion"
+    class="hidden fixed inset-0 z-50 items-center justify-center bg-negro/40 p-4"
+  >
+    <div
+      class="bg-superficie rounded-card border-2 border-borde w-full max-w-md px-6 py-6 flex flex-col gap-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-titulo"
+    >
+      <div>
+        <h2 id="modal-titulo" class="font-titulo font-bold text-xl text-negro">
+          {ETIQUETAS_TIPO[tipoSeleccionado]}
+        </h2>
+        <p id="modal-rango" class="text-sm text-texto-suave mt-1"></p>
+      </div>
+
+      <div id="modal-acciones" class="flex flex-col gap-2">
+        <button
+          type="button"
+          id="btn-reservar"
+          class="inline-flex items-center justify-center gap-2 bg-primario text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors"
+        >
+          <span class="material-symbols-outlined text-[18px]">event_available</span>
+          Crear reserva
+        </button>
+        <button
+          type="button"
+          id="btn-bloquear"
+          class="inline-flex items-center justify-center gap-2 border-2 border-borde px-5 py-2.5 rounded-pill font-titulo font-medium text-texto hover:border-primario-claro transition-colors"
+        >
+          <span class="material-symbols-outlined text-[18px]">lock</span>
+          Bloquear fechas
+        </button>
+      </div>
+
+      <form id="form-bloqueo" class="hidden flex-col gap-4">
+        <label class="flex flex-col gap-1 text-sm text-texto-suave">
+          Nota (opcional)
+          <input
+            type="text"
+            name="nota"
+            maxlength="300"
+            placeholder="Mantenimiento, uso propio…"
+            class="border-2 border-borde rounded-card px-3 py-2 text-texto focus:border-primario focus:outline-none"
+          />
+        </label>
+
+        {
+          tipoSeleccionado !== 'CABANA' && (
+            <label class="flex items-start gap-2 text-sm text-texto-suave cursor-pointer select-none">
+              <input
+                type="checkbox"
+                name="todaLaUnidad"
+                class="mt-0.5 w-4 h-4 accent-[var(--color-primario)]"
+              />
+              <span>
+                Bloquear <strong class="font-medium text-texto">todos los lugares</strong> de{' '}
+                {ETIQUETAS_TIPO[tipoSeleccionado]} en esas fechas
+              </span>
+            </label>
+          )
+        }
+
+        <p id="msg-bloqueo" class="hidden text-sm"></p>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center gap-2 bg-primario text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          >
+            Bloquear
+          </button>
+          <button
+            type="button"
+            id="btn-volver"
+            class="border-2 border-borde px-5 py-2.5 rounded-pill font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+          >
+            Volver
+          </button>
+        </div>
+      </form>
+
+      <button
+        type="button"
+        id="btn-cerrar-modal"
+        class="self-center text-sm font-titulo text-texto-suave hover:text-primario transition-colors"
+      >
+        Cancelar
+      </button>
+    </div>
+  </div>
+
   <script define:vars={{ tipoSeleccionado }}>
-    // Clic (o arrastre) sobre celdas vacías de una misma fila → nueva
-    // reserva precargada con esas fechas. El arrastre solo tiene sentido
-    // dentro de una fila (un mismo lugar), así que se ignora si el mouse
-    // sale de la fila donde empezó.
+    // Clic (o arrastre) sobre celdas vacías de una misma fila → diálogo con
+    // las dos acciones posibles para ese rango: reservar o bloquear. El
+    // arrastre solo tiene sentido dentro de una fila (un mismo lugar), así
+    // que se ignora si el mouse sale de la fila donde empezó.
     let arrastrando = false;
     let filaActiva = null;
     let fechaInicio = null;
+
+    // Rango elegido, ya normalizado: "hasta" es exclusiva (fecha de salida),
+    // igual que en toda la app.
+    let seleccion = null;
+
+    const modal = document.getElementById('modal-seleccion');
+    const modalRango = document.getElementById('modal-rango');
+    const acciones = document.getElementById('modal-acciones');
+    const formBloqueo = document.getElementById('form-bloqueo');
+    const msgBloqueo = document.getElementById('msg-bloqueo');
+
+    const fechaCorta = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+
+    // Las fechas se calculan en UTC (espejo de diaSiguiente() en
+    // lib/reservas.ts): `new Date('2026-10-14T00:00:00')` se interpreta en el
+    // huso del navegador y, con husos al este de UTC, .toISOString() devuelve
+    // el día anterior — se guardaría un rango corrido un día.
+    const enUTC = (iso) => {
+      const [anio, mes, dia] = iso.split('-').map(Number);
+      return Date.UTC(anio, mes - 1, dia);
+    };
+    const diaSiguiente = (iso) => new Date(enUTC(iso) + 86400000).toISOString().slice(0, 10);
+    const cantidadDeDias = (desde, hasta) => Math.round((enUTC(hasta) - enUTC(desde)) / 86400000);
 
     function limpiarSeleccion() {
       document.querySelectorAll('.celda-preseleccion').forEach((c) => {
@@ -383,23 +604,47 @@ const filasConSegmentos = filas.map((fila) => ({
       });
     }
 
-    function irANuevaReserva(fila, fechaA, fechaB) {
+    function mostrarMensaje(texto, tono) {
+      msgBloqueo.textContent = texto;
+      msgBloqueo.className =
+        tono === 'error' ? 'text-sm text-primario font-medium' : 'text-sm text-texto-suave';
+    }
+
+    function cerrarModal() {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      limpiarSeleccion();
+      seleccion = null;
+    }
+
+    function abrirModal(fila, fechaA, fechaB) {
       const desde = fechaA < fechaB ? fechaA : fechaB;
       const ultimoDia = fechaA < fechaB ? fechaB : fechaA;
-      // "hasta" es la fecha de salida (exclusiva, como en toda la app): un
-      // solo día seleccionado equivale a una noche.
-      const hastaDate = new Date(`${ultimoDia}T00:00:00`);
-      hastaDate.setDate(hastaDate.getDate() + 1);
-      const hasta = hastaDate.toISOString().slice(0, 10);
 
-      const params = new URLSearchParams({ tipo: tipoSeleccionado, desde, hasta });
-      const parcela = fila.dataset.parcelaId;
-      const categoria = fila.dataset.categoria;
-      if (tipoSeleccionado === 'QUINCHOS' && parcela && categoria) {
-        params.set('parcela', parcela);
-        params.set('categoria', categoria);
-      }
-      window.location.href = `/panel/reservas/nueva?${params}`;
+      seleccion = {
+        desde,
+        // "hasta" es la fecha de salida (exclusiva, como en toda la app): un
+        // solo día seleccionado equivale a una noche.
+        hasta: diaSiguiente(ultimoDia),
+        parcelaId: fila.dataset.parcelaId || '',
+        categoria: fila.dataset.categoria || '',
+        etiqueta: fila.dataset.etiqueta || '',
+      };
+
+      const dias = cantidadDeDias(desde, seleccion.hasta);
+      modalRango.textContent =
+        `${seleccion.etiqueta} · ` +
+        (dias === 1
+          ? `${fechaCorta(desde)} (1 día)`
+          : `${fechaCorta(desde)} al ${fechaCorta(ultimoDia)} (${dias} días)`);
+
+      acciones.classList.remove('hidden');
+      formBloqueo.classList.add('hidden');
+      formBloqueo.classList.remove('flex');
+      formBloqueo.reset();
+      msgBloqueo.classList.add('hidden');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
     }
 
     document.querySelectorAll('.celda-libre').forEach((celda) => {
@@ -428,7 +673,107 @@ const filasConSegmentos = filas.map((fila) => ({
         .filter(Boolean)
         .sort();
       const fechaFin = seleccionadas[seleccionadas.length - 1] ?? fechaInicio;
-      irANuevaReserva(filaActiva, fechaInicio, fechaFin);
+      abrirModal(filaActiva, fechaInicio, fechaFin);
+    });
+
+    document.getElementById('btn-reservar').addEventListener('click', () => {
+      if (!seleccion) return;
+      const params = new URLSearchParams({
+        tipo: tipoSeleccionado,
+        desde: seleccion.desde,
+        hasta: seleccion.hasta,
+      });
+      // Los quinchos se reservan por lugar concreto (cada uno tiene su
+      // categoría de precio); en motorhome la parcela la asigna el backend.
+      if (tipoSeleccionado === 'QUINCHOS' && seleccion.parcelaId && seleccion.categoria) {
+        params.set('parcela', seleccion.parcelaId);
+        params.set('categoria', seleccion.categoria);
+      }
+      window.location.href = `/panel/reservas/nueva?${params}`;
+    });
+
+    document.getElementById('btn-bloquear').addEventListener('click', () => {
+      acciones.classList.add('hidden');
+      formBloqueo.classList.remove('hidden');
+      formBloqueo.classList.add('flex');
+      formBloqueo.querySelector('input[name="nota"]').focus();
+    });
+
+    document.getElementById('btn-volver').addEventListener('click', () => {
+      acciones.classList.remove('hidden');
+      formBloqueo.classList.add('hidden');
+      formBloqueo.classList.remove('flex');
+      msgBloqueo.classList.add('hidden');
+    });
+
+    document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModal);
+    modal.addEventListener('mousedown', (e) => {
+      if (e.target === modal) cerrarModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) cerrarModal();
+    });
+
+    formBloqueo.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!seleccion) return;
+      const datos = new FormData(formBloqueo);
+      const boton = formBloqueo.querySelector('button[type="submit"]');
+      boton.disabled = true;
+      msgBloqueo.classList.remove('hidden');
+      mostrarMensaje('Bloqueando…', 'info');
+
+      try {
+        const res = await fetch('/api/panel/admin/bloqueos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            unidadTipo: tipoSeleccionado,
+            parcelaId: seleccion.parcelaId || null,
+            todaLaUnidad: datos.get('todaLaUnidad') === 'on',
+            fechaInicio: seleccion.desde,
+            fechaFin: seleccion.hasta,
+            nota: datos.get('nota'),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          mostrarMensaje(data.error ?? 'No se pudo bloquear', 'error');
+          boton.disabled = false;
+          return;
+        }
+        // Recargar es lo más simple y deja el tablero coherente: el bloqueo
+        // puede cambiar en qué carril cae cada reserva del camping.
+        window.location.reload();
+      } catch {
+        mostrarMensaje('No se pudo bloquear: revisá la conexión', 'error');
+        boton.disabled = false;
+      }
+    });
+
+    // Quitar un bloqueo: clic sobre la barra rayada.
+    document.querySelectorAll('.bloqueo-barra').forEach((barra) => {
+      barra.addEventListener('click', async () => {
+        const nota = barra.dataset.nota;
+        if (
+          !confirm(
+            `¿Quitar este bloqueo${nota ? ` (${nota})` : ''}? Las fechas vuelven a quedar disponibles.`
+          )
+        ) {
+          return;
+        }
+        const res = await fetch('/api/panel/admin/bloqueos', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: barra.dataset.bloqueoId }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error ?? 'No se pudo quitar el bloqueo');
+          return;
+        }
+        window.location.reload();
+      });
     });
   </script>
 </PanelLayout>
