@@ -313,7 +313,7 @@ export function construirEmailConfirmacion(datos: DatosConfirmacion): {
   return {
     // El asunto lleva alojamiento y fecha para que se distinga en la bandeja
     // sin abrirlo (y para que se encuentre buscando "Camping" meses después).
-    subject: `Reserva realiazada — ${datos.unidadNombre}, ${fmtFechaCorta(datos.fechaIngreso)}`,
+    subject: `Reserva realizada — ${datos.unidadNombre}, ${fmtFechaCorta(datos.fechaIngreso)}`,
     html,
     // Alternativa en texto plano. No es un detalle estético: un email solo
     // en HTML puntúa peor en los filtros de spam y se lee mal en relojes y
