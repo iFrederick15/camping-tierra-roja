@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { construirEmailConfirmacion } from './email';
+import { codigoReserva } from './codigo-reserva';
 
 const BASE = {
   reservaId: 'a3f91c2d-7b4e-4f1a-9c22-5e8d0b6a7f31',
@@ -52,6 +53,20 @@ describe('construirEmailConfirmacion', () => {
     const { html, text } = construirEmailConfirmacion(BASE);
     expect(html).toContain('A3F91C2D');
     expect(text).toContain('Código de reserva: A3F91C2D');
+  });
+
+  it('usa el mismo código que muestra y busca el Panel', () => {
+    // Si el email derivara el código con una regla propia, Staff no podría
+    // encontrar la reserva que el cliente está dictando por teléfono.
+    const { html } = construirEmailConfirmacion(BASE);
+    expect(html).toContain(codigoReserva(BASE.reservaId));
+  });
+
+  it('el código es buscable: 8 caracteres hexadecimales', () => {
+    // El buscador del Panel reconoce el código con /^[0-9a-f]{8}$/i para
+    // traducirlo a un rango de uuid. Un formato distinto (guiones, más largo)
+    // dejaría de entrar por esa rama y la búsqueda no encontraría nada.
+    expect(codigoReserva(BASE.reservaId)).toMatch(/^[0-9A-F]{8}$/);
   });
 
   it('escapa el nombre del cliente', () => {

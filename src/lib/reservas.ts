@@ -3,6 +3,11 @@
 // duplican en una ruta /api ni en una página.
 import { supabaseAdmin } from './supabase';
 
+// Re-exportado para que este siga siendo el único punto de entrada de las
+// reglas de negocio. Vive en su propio módulo porque lib/email.ts lo necesita
+// sin arrastrar el cliente de Supabase — ver el comentario de ese archivo.
+export { codigoReserva } from './codigo-reserva';
+
 export type EstadoPago = 'NO_PAGADO' | 'PARCIAL' | 'PAGADO';
 
 export function calcularEstadoPago(montoTotal: number, montoPagado: number): EstadoPago {
@@ -400,10 +405,22 @@ export async function listarReservas(filtro: FiltroReservas): Promise<ReservaRes
       .trim()
       .slice(0, 60);
     if (!termino) return [];
-    query = query
-      .or(`nombre_cliente.ilike.%${termino}%,dni.ilike.%${termino}%`)
-      .order('fecha_ingreso', { ascending: false })
-      .limit(30);
+
+    const condiciones = [`nombre_cliente.ilike.%${termino}%`, `dni.ilike.%${termino}%`];
+
+    // Búsqueda por el código del email ("A3F91C2D"). Son los primeros 8
+    // caracteres hex del uuid, y sobre una columna uuid no se puede usar LIKE;
+    // pero como es un prefijo, todos los uuid que empiezan con esos dígitos
+    // caen en un rango contiguo. Así entra por el índice de la clave primaria
+    // en vez de recorrer la tabla.
+    if (/^[0-9a-f]{8}$/i.test(termino)) {
+      const c = termino.toLowerCase();
+      condiciones.push(
+        `and(id.gte.${c}-0000-0000-0000-000000000000,id.lte.${c}-ffff-ffff-ffff-ffffffffffff)`
+      );
+    }
+
+    query = query.or(condiciones.join(',')).order('fecha_ingreso', { ascending: false }).limit(30);
   } else {
     query = query
       .eq('estado', 'CONFIRMADA')

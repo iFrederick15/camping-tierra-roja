@@ -1,5 +1,10 @@
 ---
-import { calcularEstadoPago, ESTILO_ESTADO_PAGO, type ReservaResumen } from '../../lib/reservas';
+import {
+  calcularEstadoPago,
+  codigoReserva,
+  ESTILO_ESTADO_PAGO,
+  type ReservaResumen,
+} from '../../lib/reservas';
 
 interface Props {
   reserva: ReservaResumen;
@@ -22,6 +27,11 @@ const fmt = (f: string) =>
     <span class="text-texto-suave text-sm truncate">
       {reserva.unidadNombre}{reserva.parcelaNombre ? ` · ${reserva.parcelaNombre}` : ''}
       {mostrarFechas && ` · ${fmt(reserva.fechaIngreso)} – ${fmt(reserva.fechaSalida)}`}
+    </span>
+    <!-- El código del email: al buscar por él, confirma de un vistazo que esta
+         es la fila que el cliente está dictando. -->
+    <span class="text-texto-suave/80 text-xs font-titulo tracking-wider">
+      {codigoReserva(reserva.id)}
     </span>
   </div>
   <span

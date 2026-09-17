@@ -6,6 +6,7 @@ import { Resend } from 'resend';
 import { NEGOCIO } from './negocio';
 import { escaparHtml } from './html';
 import type { ItemPrecio } from './reservas';
+import { codigoReserva } from './codigo-reserva';
 import {
   C,
   FUENTE_CUERPO,
@@ -43,15 +44,6 @@ interface DatosConfirmacion {
   // Panel: no vencen y el pago se coordina en el mostrador o por teléfono, así
   // que el email sale sin plazo (ver PRODUCT.md § Operating Context).
   fechaLimitePago: Date | null;
-}
-
-/**
- * Código corto que el cliente puede dictar por teléfono o pegar en WhatsApp.
- * Son los primeros 8 caracteres del UUID: con el volumen de reservas de un
- * camping no hay riesgo real de colisión, y el Panel busca por id completo.
- */
-function codigoReserva(id: string): string {
-  return id.replace(/-/g, '').slice(0, 8).toUpperCase();
 }
 
 /**
