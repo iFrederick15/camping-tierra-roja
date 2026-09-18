@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../../../lib/supabase';
 import { obtenerReserva } from '../../../../../lib/reservas';
+import { enviarEmailPago } from '../../../../../lib/email';
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   if (!locals.usuario) {
@@ -13,9 +14,12 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     return new Response(JSON.stringify({ error: 'Reserva no encontrada' }), { status: 404 });
   }
   if (reserva.estado === 'CANCELADA') {
-    return new Response(JSON.stringify({ error: 'No se puede registrar un pago en una reserva cancelada' }), {
-      status: 400,
-    });
+    return new Response(
+      JSON.stringify({ error: 'No se puede registrar un pago en una reserva cancelada' }),
+      {
+        status: 400,
+      }
+    );
   }
 
   const body = await request.json();
@@ -23,7 +27,9 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   const metodo = String(body.metodo ?? '').trim();
 
   if (!monto || monto <= 0) {
-    return new Response(JSON.stringify({ error: 'El monto debe ser mayor a cero' }), { status: 400 });
+    return new Response(JSON.stringify({ error: 'El monto debe ser mayor a cero' }), {
+      status: 400,
+    });
   }
   if (!metodo) {
     return new Response(JSON.stringify({ error: 'Indica el método de pago' }), { status: 400 });
@@ -43,5 +49,22 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   }
 
   const actualizada = await obtenerReserva(id);
+
+  // El email es opcional en las reservas manuales: sin casilla no hay a quién avisar.
+  if (actualizada?.email) {
+    await enviarEmailPago({
+      reservaId: id,
+      email: actualizada.email,
+      nombreCliente: actualizada.nombreCliente,
+      unidadNombre: actualizada.unidadNombre,
+      fechaIngreso: actualizada.fechaIngreso,
+      fechaSalida: actualizada.fechaSalida,
+      monto,
+      metodo,
+      montoTotal: actualizada.montoTotal,
+      montoPagado: actualizada.montoPagado,
+    });
+  }
+
   return new Response(JSON.stringify({ ok: true, reserva: actualizada }), { status: 200 });
 };

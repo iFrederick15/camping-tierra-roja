@@ -4,7 +4,7 @@
 // son distintos entre sí— y el escapado del nombre.
 
 import { describe, it, expect } from 'vitest';
-import { construirEmailConfirmacion } from './email';
+import { construirEmailConfirmacion, construirEmailPago } from './email';
 import { codigoReserva } from './codigo-reserva';
 
 const BASE = {
@@ -116,5 +116,40 @@ describe('construirEmailConfirmacion', () => {
     expect(html).not.toContain('COMPLETAR');
     expect(text).not.toContain('COMPLETAR');
     expect(html).not.toContain('undefined');
+  });
+});
+
+describe('construirEmailPago', () => {
+  const PAGO = {
+    reservaId: BASE.reservaId,
+    email: BASE.email,
+    nombreCliente: BASE.nombreCliente,
+    unidadNombre: BASE.unidadNombre,
+    fechaIngreso: BASE.fechaIngreso,
+    fechaSalida: BASE.fechaSalida,
+    monto: 20000,
+    metodo: 'Transferencia',
+    montoTotal: 54000,
+    montoPagado: 20000,
+  };
+
+  it('muestra el pago, el acumulado y el saldo pendiente', () => {
+    const { html, text, subject } = construirEmailPago(PAGO);
+    expect(subject).toContain('A3F91C2D');
+    expect(text).toContain('Pago recibido: $20.000 (Transferencia)');
+    expect(text).toContain('Saldo al ingresar: $34.000');
+    expect(html).toContain('Saldo al ingresar');
+  });
+
+  it('con la reserva saldada no menciona saldo', () => {
+    const { html, text, subject } = construirEmailPago({ ...PAGO, montoPagado: 54000 });
+    expect(subject).toContain('totalmente paga');
+    expect(html).not.toContain('Saldo al ingresar');
+    expect(text).not.toContain('Saldo');
+  });
+
+  it('escapa el método de pago', () => {
+    const { html } = construirEmailPago({ ...PAGO, metodo: '<b>x</b>' });
+    expect(html).not.toContain('<b>x</b>');
   });
 });

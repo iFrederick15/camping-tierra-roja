@@ -441,6 +441,152 @@ function textoConfirmacion(
   return lineas.join('\n');
 }
 
+interface DatosPago {
+  reservaId: string;
+  email: string;
+  nombreCliente: string;
+  unidadNombre: string;
+  fechaIngreso: string;
+  fechaSalida: string;
+  /** Lo que se acaba de registrar, no el acumulado. */
+  monto: number;
+  metodo: string;
+  montoTotal: number;
+  /** Acumulado de la reserva, ya incluido este pago. */
+  montoPagado: number;
+}
+
+/**
+ * Arma el email de pago recibido sin enviarlo (mismo motivo que
+ * `construirEmailConfirmacion`: previsualizar y testear sin Resend).
+ *
+ * Es el comprobante del cliente: cuánto entró, cuánto lleva pagado y cuánto
+ * le queda para el ingreso. Con el primer pago la reserva pasa de REALIZADA a
+ * CONFIRMADA (ver sql/012), así que también le avisa que ya no se cancela sola.
+ */
+export function construirEmailPago(datos: DatosPago): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const codigo = codigoReserva(datos.reservaId);
+  const nombre = escaparHtml(datos.nombreCliente);
+  const unidad = escaparHtml(datos.unidadNombre);
+  const saldo = Math.max(datos.montoTotal - datos.montoPagado, 0);
+  const pagada = saldo === 0;
+
+  const encabezado = bloque(`
+      <p style="margin:0 0 10px;font-family:${FUENTE_CUERPO};font-size:16px;color:${C.texto};">Hola ${nombre},</p>
+      <h1 style="margin:0 0 12px;font-family:${FUENTE_TITULO};font-size:27px;line-height:1.2;font-weight:700;color:${C.texto};">Recibimos tu pago de ${fmtMoneda(datos.monto)}.</h1>
+      <p style="margin:0;font-family:${FUENTE_CUERPO};font-size:15px;line-height:23px;color:${C.textoSuave};">
+        ${
+          pagada
+            ? 'Tu reserva está confirmada y totalmente paga: al llegar no tienes nada más que abonar.'
+            : `Tu reserva está confirmada. Te queda un saldo de <strong style="color:${C.texto};">${fmtMoneda(saldo)}</strong>, que puedes abonar al ingresar.`
+        }
+      </p>`);
+
+  const filasPago = [
+    filaDato('Código de reserva', codigo),
+    filaDato('Alojamiento', unidad),
+    filaDato(
+      'Estadía',
+      `${fmtFechaCorta(datos.fechaIngreso)} al ${fmtFechaCorta(datos.fechaSalida)}`
+    ),
+    filaDato('Pago recibido', `${fmtMoneda(datos.monto)} (${escaparHtml(datos.metodo)})`),
+    filaDato('Total de la reserva', fmtMoneda(datos.montoTotal)),
+    filaDato('Pagado hasta hoy', fmtMoneda(datos.montoPagado), pagada),
+    pagada ? '' : filaDato('Saldo al ingresar', fmtMoneda(saldo), true),
+  ].join('');
+
+  const detalle = bloque(`
+      ${tituloSeccion('Detalle del pago')}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${filasPago}</table>`);
+
+  const cierre = bloque(
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ${C.borde};">
+        <tr>
+          <td style="padding:22px 0 0;">
+            <p style="margin:0;font-family:${FUENTE_CUERPO};font-size:14px;line-height:22px;color:${C.textoSuave};">
+              ¿Algo no coincide? Escríbenos por WhatsApp o llámanos al
+              <a href="tel:${NEGOCIO.telefonoE164}" style="color:${C.primario};font-weight:600;text-decoration:none;">${NEGOCIO.telefono}</a>, citando el código ${codigo}.
+            </p>
+          </td>
+        </tr>
+      </table>`,
+    '30px'
+  );
+
+  const html = plantillaEmail({
+    preheader: `Reserva ${codigo} · Pagado ${fmtMoneda(datos.montoPagado)} de ${fmtMoneda(datos.montoTotal)}`,
+    contenido: encabezado + detalle + cierre,
+  });
+
+  const text = [
+    `Hola ${datos.nombreCliente},`,
+    '',
+    `Recibimos tu pago de ${fmtMoneda(datos.monto)}.`,
+    pagada
+      ? 'Tu reserva está confirmada y totalmente paga: al llegar no tienes nada más que abonar.'
+      : `Tu reserva está confirmada. Te queda un saldo de ${fmtMoneda(saldo)}, que puedes abonar al ingresar.`,
+    '',
+    'DETALLE DEL PAGO',
+    `Código de reserva: ${codigo}`,
+    `Alojamiento: ${datos.unidadNombre}`,
+    `Estadía: ${fmtFechaCorta(datos.fechaIngreso)} al ${fmtFechaCorta(datos.fechaSalida)}`,
+    `Pago recibido: ${fmtMoneda(datos.monto)} (${datos.metodo})`,
+    `Total de la reserva: ${fmtMoneda(datos.montoTotal)}`,
+    `Pagado hasta hoy: ${fmtMoneda(datos.montoPagado)}`,
+    ...(pagada ? [] : [`Saldo al ingresar: ${fmtMoneda(saldo)}`]),
+    '',
+    `¿Algo no coincide? Escríbenos al ${NEGOCIO.telefono} citando el código ${codigo}.`,
+    '',
+    NEGOCIO.nombre,
+    `${NEGOCIO.telefono} · ${NEGOCIO.email}`,
+  ].join('\n');
+
+  return {
+    subject: pagada
+      ? `Pago recibido — reserva ${codigo} totalmente paga`
+      : `Pago recibido — reserva ${codigo}`,
+    html,
+    text,
+  };
+}
+
+// Mejor esfuerzo, igual que la confirmación: el pago ya quedó registrado y un
+// fallo de Resend no puede hacer que Staff crea que no se guardó y lo cargue
+// dos veces.
+export async function enviarEmailPago(datos: DatosPago) {
+  try {
+    if (!import.meta.env.RESEND_API_KEY) {
+      console.error(
+        `RESEND_API_KEY no está configurada — el pago de la reserva ${datos.reservaId} se registró, ` +
+          `pero el cliente NO recibió el email.`
+      );
+      return;
+    }
+
+    const resend = new Resend(import.meta.env.RESEND_API_KEY);
+    const { subject, html, text } = construirEmailPago(datos);
+
+    const { error } = await resend.emails.send({
+      from: remitente('Tierra Roja <reservas@tierrarojaiguazu.com>'),
+      to: datos.email,
+      replyTo: NEGOCIO.email,
+      subject,
+      html,
+      text,
+    });
+
+    if (error) {
+      console.error(`Resend rechazó el email de pago de la reserva ${datos.reservaId}:`, error);
+    }
+  } catch (e) {
+    console.error('No se pudo enviar el email de pago:', e);
+  }
+}
+
 interface DatosContacto {
   nombre: string;
   email: string;
