@@ -1,12 +1,19 @@
 ---
 import PanelLayout from '../../../layouts/PanelLayout.astro';
 import { supabaseAdmin } from '../../../lib/supabase';
-import { obtenerConfiguracionPagos } from '../../../lib/reservas';
-import { normalizarImagenes, urlPublicaImagen } from '../../../lib/imagenes-unidad';
+import { obtenerConfiguracionPagos, TIPOS_PUBLICOS } from '../../../lib/reservas';
+import {
+  normalizarImagenes,
+  urlPublicaImagen,
+  TIPOS_IMAGEN_PERMITIDOS,
+  TAMANO_MAXIMO_IMAGEN,
+} from '../../../lib/imagenes-unidad';
 
+// El salón de eventos no tiene precios ni fotos: no se ofrece en la web.
 const { data: unidades } = await supabaseAdmin
   .from('unidades')
   .select('id, tipo, nombre, cupo_total, imagenes')
+  .in('tipo', [...TIPOS_PUBLICOS])
   .order('tipo');
 
 // { unidadId: [{ raw, url }] } — `raw` es lo que se guarda en la fila,
@@ -44,37 +51,51 @@ for (const p of parcelas ?? []) {
   if (!parcelasPorUnidad.has(clave)) parcelasPorUnidad.set(clave, []);
   parcelasPorUnidad.get(clave)!.push(p);
 }
+
+const claseInput =
+  'border-2 border-borde rounded-card px-3 py-2 text-texto tabular-nums focus:border-primario focus:outline-none';
+const claseGuardar =
+  'border-2 border-borde rounded-pill px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro hover:text-texto transition-colors disabled:opacity-40 disabled:pointer-events-none';
 ---
 
 <PanelLayout title="Configuración" activo="configuracion">
   <h1 class="font-titulo font-bold text-3xl text-negro mb-8">Configuración</h1>
 
-  <section class="mb-10">
-    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Precios y cupos</h2>
+  <section class="mb-12">
+    <h2 class="font-titulo font-bold text-xl text-negro mb-1">Precios y cupos</h2>
+    <p class="text-sm text-texto-suave mb-4 max-w-2xl">
+      Cada precio se guarda por separado y se aplica al instante en la página de reservas.
+    </p>
     <div class="flex flex-col gap-6">
       {
         (unidades ?? []).map((u) => (
           <div class="rounded-card border-2 border-borde px-5 py-4 bg-superficie flex flex-col gap-3">
             <div class="flex items-center justify-between flex-wrap gap-3">
-              <span class="font-titulo font-bold text-negro text-lg">{u.nombre}</span>
+              <h3 class="font-titulo font-bold text-negro text-lg">{u.nombre}</h3>
               {u.tipo === 'CAMPING' && (
-                <form class="form-unidad flex items-end gap-3" data-id={u.id}>
+                <form
+                  class="form-unidad flex flex-wrap items-end gap-3"
+                  data-id={u.id}
+                  data-nombre={u.nombre}
+                >
                   <label class="flex flex-col gap-1 text-sm text-texto-suave">
                     Cupo total
                     <input
                       type="number"
                       name="cupoTotal"
                       value={u.cupo_total}
-                      class="border-2 border-borde rounded-card px-3 py-2 w-28 focus:border-primario focus:outline-none"
+                      min="0"
+                      max="100000"
+                      step="1"
+                      inputmode="numeric"
+                      required
+                      class={`${claseInput} w-28`}
                     />
                   </label>
-                  <button
-                    type="submit"
-                    class="border-2 border-borde rounded-pill px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
-                  >
+                  <button type="submit" class={claseGuardar}>
                     Guardar
                   </button>
-                  <span class="msg text-sm" />
+                  <span class="msg text-sm" role="status" />
                 </form>
               )}
             </div>
@@ -83,24 +104,28 @@ for (const p of parcelas ?? []) {
                 <form
                   class="form-opcion-precio flex flex-wrap items-end gap-3 bg-fondo-alt rounded-card px-4 py-3"
                   data-id={op.id}
+                  data-etiqueta={`${u.nombre} · ${op.etiqueta}`}
+                  data-unidad={u.tipo === 'QUINCHOS' ? 'por día' : 'por noche'}
                 >
-                  <span class="text-sm text-texto flex-1 min-w-48">{op.etiqueta}</span>
+                  <span class="text-sm text-texto flex-1 min-w-48 self-center">{op.etiqueta}</span>
                   <label class="flex flex-col gap-1 text-sm text-texto-suave">
                     {u.tipo === 'QUINCHOS' ? '$ por día' : '$ por noche'}
                     <input
                       type="number"
                       name="precioPorNoche"
                       value={op.precio_por_noche}
-                      class="border-2 border-borde rounded-card px-3 py-2 w-32 focus:border-primario focus:outline-none"
+                      min="0"
+                      max="100000000"
+                      step="any"
+                      inputmode="decimal"
+                      required
+                      class={`${claseInput} w-32`}
                     />
                   </label>
-                  <button
-                    type="submit"
-                    class="border-2 border-borde rounded-pill px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
-                  >
+                  <button type="submit" class={claseGuardar}>
                     Guardar
                   </button>
-                  <span class="msg text-sm" />
+                  <span class="msg text-sm" role="status" />
                 </form>
               ))}
             </div>
@@ -110,12 +135,13 @@ for (const p of parcelas ?? []) {
     </div>
   </section>
 
-  <section class="mb-10">
-    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Imágenes del reservador</h2>
+  <section class="mb-12">
+    <h2 class="font-titulo font-bold text-xl text-negro mb-1">Imágenes del reservador</h2>
     <p class="text-sm text-texto-suave mb-4 max-w-2xl">
       Son las fotos del carrusel que ve el cliente al elegir cada alojamiento en la página de
-      reservas. Subí archivos WebP o JPG de menos de 3&nbsp;MB; la primera de la lista es la que se
-      muestra al abrir. El cambio se ve en el sitio al instante.
+      reservas. Subí archivos WebP, JPG o PNG de hasta {TAMANO_MAXIMO_IMAGEN / 1024 / 1024}&nbsp;MB;
+      la primera de la lista es la portada, la que se muestra al abrir. El cambio se ve en el sitio
+      al instante.
     </p>
     <div class="flex flex-col gap-6">
       {
@@ -125,18 +151,20 @@ for (const p of parcelas ?? []) {
             data-id={u.id}
             data-nombre={u.nombre}
           >
-            <span class="font-titulo font-bold text-negro text-lg">{u.nombre}</span>
+            <h3 class="font-titulo font-bold text-negro text-lg">{u.nombre}</h3>
             <div class="lista-imagenes grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" />
             <div class="flex items-center gap-3 flex-wrap">
-              <label class="cursor-pointer border-2 border-borde rounded-pill px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors">
+              <label class="cursor-pointer border-2 border-borde rounded-pill px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro hover:text-texto transition-colors has-focus-visible:outline-3 has-focus-visible:outline-primario has-focus-visible:outline-offset-2 has-disabled:opacity-40 has-disabled:pointer-events-none">
                 <input
                   type="file"
-                  accept="image/webp,image/jpeg,image/png"
+                  accept={TIPOS_IMAGEN_PERMITIDOS.join(',')}
+                  data-tipos={TIPOS_IMAGEN_PERMITIDOS.join(',')}
+                  data-max={TAMANO_MAXIMO_IMAGEN}
                   class="input-foto sr-only"
                 />
                 Agregar foto
               </label>
-              <span class="msg text-sm" />
+              <span class="msg text-sm" role="status" />
             </div>
           </div>
         ))
@@ -150,8 +178,11 @@ for (const p of parcelas ?? []) {
     />
   </section>
 
-  <section class="mb-10">
-    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Parcelas</h2>
+  <section class="mb-12">
+    <h2 class="font-titulo font-bold text-xl text-negro mb-1">Parcelas</h2>
+    <p class="text-sm text-texto-suave mb-4 max-w-2xl">
+      Una parcela inactiva deja de ofrecerse para reservas nuevas.
+    </p>
     <div class="flex flex-col gap-6">
       {
         Array.from(parcelasPorUnidad.entries()).map(([nombreUnidad, lista]) => (
@@ -160,8 +191,9 @@ for (const p of parcelas ?? []) {
             <div class="flex flex-col gap-2">
               {lista.map((p: any) => (
                 <form
-                  class="form-parcela flex flex-wrap items-end gap-3 rounded-card border-2 border-borde px-5 py-3 bg-superficie"
+                  class="form-parcela flex flex-wrap items-center gap-3 rounded-card border-2 border-borde px-5 py-3 bg-superficie"
                   data-id={p.id}
+                  data-nombre={p.nombre}
                 >
                   <span class="font-titulo font-medium text-negro flex-1 min-w-48">{p.nombre}</span>
                   <label class="flex items-center gap-2.5 text-sm text-texto-suave cursor-pointer select-none">
@@ -172,18 +204,15 @@ for (const p of parcelas ?? []) {
                         checked={p.activa}
                         class="peer sr-only"
                       />
-                      <span class="w-9 h-5 rounded-pill bg-borde peer-checked:bg-primario transition-colors" />
+                      <span class="w-9 h-5 rounded-pill bg-borde peer-checked:bg-primario transition-colors peer-focus-visible:outline-3 peer-focus-visible:outline-primario peer-focus-visible:outline-offset-2" />
                       <span class="absolute left-0.5 top-0.5 w-4 h-4 rounded-pill bg-white shadow-sm transition-transform peer-checked:translate-x-4" />
                     </span>
-                    <span class="font-titulo font-medium">Activa</span>
+                    <span class="font-titulo font-medium w-14">Activa</span>
                   </label>
-                  <button
-                    type="submit"
-                    class="border-2 border-borde rounded-pill px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
-                  >
+                  <button type="submit" class={claseGuardar}>
                     Guardar
                   </button>
-                  <span class="msg text-sm" />
+                  <span class="msg text-sm" role="status" />
                 </form>
               ))}
             </div>
@@ -194,82 +223,131 @@ for (const p of parcelas ?? []) {
   </section>
 
   <section>
-    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Plazos de pago</h2>
+    <h2 class="font-titulo font-bold text-xl text-negro mb-1">Plazos de pago</h2>
+    <p class="text-sm text-texto-suave mb-4 max-w-2xl">
+      Cuánto tiempo tiene el cliente para pagar una reserva antes de que se libere, según con cuánta
+      anticipación reservó.
+    </p>
     <form
       id="form-plazos"
-      class="flex flex-wrap items-end gap-4 rounded-card border-2 border-borde px-5 py-4 bg-superficie max-w-xl"
+      class="flex flex-col gap-4 rounded-card border-2 border-borde px-5 py-4 bg-superficie max-w-xl"
     >
-      <label class="flex flex-col gap-1 text-sm text-texto-suave">
-        Plazo largo (hs)
-        <input
-          type="number"
-          name="horasPlazoLargo"
-          value={configPagos.horas_plazo_largo}
-          class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none"
-        />
-      </label>
-      <label class="flex flex-col gap-1 text-sm text-texto-suave">
-        Plazo corto (hs)
-        <input
-          type="number"
-          name="horasPlazoCorto"
-          value={configPagos.horas_plazo_corto}
-          class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none"
-        />
-      </label>
-      <label class="flex flex-col gap-1 text-sm text-texto-suave">
-        Umbral anticipación (días)
-        <input
-          type="number"
-          name="diasUmbralAnticipacion"
-          value={configPagos.dias_umbral_anticipacion}
-          class="border-2 border-borde rounded-card px-3 py-2 w-24 focus:border-primario focus:outline-none"
-        />
-      </label>
-      <button
-        type="submit"
-        class="border-2 border-borde rounded-card px-4 py-2 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
-      >
-        Guardar
-      </button>
-      <span class="msg text-sm"></span>
+      <div class="flex flex-wrap items-end gap-4">
+        <label class="flex flex-col gap-1 text-sm text-texto-suave">
+          Umbral de anticipación (días)
+          <input
+            type="number"
+            name="diasUmbralAnticipacion"
+            value={configPagos.dias_umbral_anticipacion}
+            min="0"
+            max="365"
+            step="1"
+            inputmode="numeric"
+            required
+            class={`${claseInput} w-24`}
+          />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-texto-suave">
+          Plazo largo (hs)
+          <input
+            type="number"
+            name="horasPlazoLargo"
+            value={configPagos.horas_plazo_largo}
+            min="0"
+            max="8760"
+            step="1"
+            inputmode="numeric"
+            required
+            class={`${claseInput} w-24`}
+          />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-texto-suave">
+          Plazo corto (hs)
+          <input
+            type="number"
+            name="horasPlazoCorto"
+            value={configPagos.horas_plazo_corto}
+            min="0"
+            max="8760"
+            step="1"
+            inputmode="numeric"
+            required
+            class={`${claseInput} w-24`}
+          />
+        </label>
+      </div>
+      <p id="resumen-plazos" class="text-sm text-texto bg-fondo-alt rounded-card px-4 py-3">
+        Con más de {configPagos.dias_umbral_anticipacion} días de anticipación:
+        {configPagos.horas_plazo_largo} hs para pagar. Con {configPagos.dias_umbral_anticipacion} días
+        o menos: {configPagos.horas_plazo_corto} hs.
+      </p>
+      <div class="flex items-center gap-3 flex-wrap">
+        <button type="submit" class={claseGuardar}>Guardar</button>
+        <span class="msg text-sm" role="status"></span>
+      </div>
     </form>
   </section>
 
   <script>
+    function setMsg(el: HTMLElement, texto: string, tono: 'info' | 'ok' | 'error') {
+      el.textContent = texto;
+      const clase =
+        tono === 'ok'
+          ? 'text-confirmado font-medium'
+          : tono === 'error'
+            ? 'text-primario font-medium'
+            : 'text-texto-suave';
+      el.className = `msg text-sm ${clase}`;
+    }
+
+    const pesos = (n: number) => `$ ${n.toLocaleString('es-AR')}`;
+
     // Confirmación explícita antes de guardar cualquier cambio de
     // Configuración — es uso diario de la dueña, un guardado accidental
-    // afecta precios/cupos en vivo del sitio público.
-    async function guardar(url: string, body: unknown, msgEl: HTMLElement) {
-      if (!confirm('¿Confirmas guardar este cambio?')) return;
-      msgEl.textContent = 'Guardando…';
-      msgEl.className = 'msg text-sm text-texto-suave';
-      const res = await fetch(url, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        msgEl.textContent = data.error ?? 'Error al guardar';
-        msgEl.className = 'msg text-sm text-primario font-medium';
-        return;
+    // afecta precios/cupos en vivo del sitio público. El texto nombra el
+    // cambio concreto para que el "Aceptar" no sea automático.
+    async function guardar(form: HTMLFormElement, url: string, body: unknown, pregunta: string) {
+      if (!confirm(pregunta)) return;
+      const msg = form.querySelector<HTMLElement>('.msg')!;
+      const boton = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+      boton.disabled = true;
+      setMsg(msg, 'Guardando…', 'info');
+      try {
+        const res = await fetch(url, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'No se pudo guardar el cambio');
+        setMsg(msg, 'Guardado', 'ok');
+      } catch (e) {
+        const texto =
+          e instanceof TypeError ? 'Sin conexión. Probá de nuevo.' : (e as Error).message;
+        setMsg(msg, texto, 'error');
+      } finally {
+        boton.disabled = false;
       }
-      msgEl.textContent = 'Guardado';
-      msgEl.className = 'msg text-sm text-confirmado font-medium';
     }
+
+    // Al volver a editar, el "Guardado" anterior ya no describe el valor en
+    // pantalla: se limpia.
+    document.querySelectorAll<HTMLFormElement>('form').forEach((form) => {
+      form.addEventListener('input', () => {
+        const msg = form.querySelector<HTMLElement>('.msg');
+        if (msg) msg.textContent = '';
+      });
+    });
 
     document.querySelectorAll<HTMLFormElement>('.form-unidad').forEach((form) => {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-        const fd = new FormData(form);
+        const cupo = Number(new FormData(form).get('cupoTotal'));
         guardar(
+          form,
           '/api/panel/admin/unidades',
-          {
-            id: form.dataset.id,
-            cupoTotal: fd.get('cupoTotal') || undefined,
-          },
-          form.querySelector('.msg')!
+          { id: form.dataset.id, cupoTotal: cupo },
+          `¿Cambiar el cupo total de ${form.dataset.nombre} a ${cupo}?`
         );
       });
     });
@@ -277,14 +355,12 @@ for (const p of parcelas ?? []) {
     document.querySelectorAll<HTMLFormElement>('.form-opcion-precio').forEach((form) => {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-        const fd = new FormData(form);
+        const precio = Number(new FormData(form).get('precioPorNoche'));
         guardar(
+          form,
           '/api/panel/admin/opciones-precio',
-          {
-            id: form.dataset.id,
-            precioPorNoche: fd.get('precioPorNoche'),
-          },
-          form.querySelector('.msg')!
+          { id: form.dataset.id, precioPorNoche: precio },
+          `¿Cambiar el precio de ${form.dataset.etiqueta} a ${pesos(precio)} ${form.dataset.unidad}?`
         );
       });
     });
@@ -292,27 +368,51 @@ for (const p of parcelas ?? []) {
     document.querySelectorAll<HTMLFormElement>('.form-parcela').forEach((form) => {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-        const fd = new FormData(form);
+        const activa = new FormData(form).get('activa') === 'on';
         guardar(
+          form,
           '/api/panel/admin/parcelas',
-          { id: form.dataset.id, activa: fd.get('activa') === 'on' },
-          form.querySelector('.msg')!
+          { id: form.dataset.id, activa },
+          activa
+            ? `¿Activar ${form.dataset.nombre}? Vuelve a ofrecerse para reservas.`
+            : `¿Desactivar ${form.dataset.nombre}? Deja de ofrecerse para reservas nuevas.`
         );
       });
     });
 
     const formPlazos = document.getElementById('form-plazos') as HTMLFormElement | null;
+    const resumenPlazos = document.getElementById('resumen-plazos');
+
+    function leerPlazos(form: HTMLFormElement) {
+      const fd = new FormData(form);
+      return {
+        horasPlazoLargo: Number(fd.get('horasPlazoLargo')),
+        horasPlazoCorto: Number(fd.get('horasPlazoCorto')),
+        diasUmbralAnticipacion: Number(fd.get('diasUmbralAnticipacion')),
+      };
+    }
+
+    function describirPlazos(p: ReturnType<typeof leerPlazos>) {
+      return (
+        `Con más de ${p.diasUmbralAnticipacion} días de anticipación: ${p.horasPlazoLargo} hs para pagar. ` +
+        `Con ${p.diasUmbralAnticipacion} días o menos: ${p.horasPlazoCorto} hs.`
+      );
+    }
+
+    formPlazos?.addEventListener('input', () => {
+      if (resumenPlazos && formPlazos.checkValidity()) {
+        resumenPlazos.textContent = describirPlazos(leerPlazos(formPlazos));
+      }
+    });
+
     formPlazos?.addEventListener('submit', (e) => {
       e.preventDefault();
-      const fd = new FormData(formPlazos);
+      const plazos = leerPlazos(formPlazos);
       guardar(
+        formPlazos,
         '/api/panel/admin/configuracion-pagos',
-        {
-          horasPlazoLargo: fd.get('horasPlazoLargo'),
-          horasPlazoCorto: fd.get('horasPlazoCorto'),
-          diasUmbralAnticipacion: fd.get('diasUmbralAnticipacion'),
-        },
-        formPlazos.querySelector('.msg')!
+        plazos,
+        `¿Guardar estos plazos?\n\n${describirPlazos(plazos)}`
       );
     });
 
@@ -327,16 +427,8 @@ for (const p of parcelas ?? []) {
       ? JSON.parse(datosEl.textContent || '{}')
       : {};
 
-    function setMsg(el: HTMLElement, texto: string, tono: 'info' | 'ok' | 'error') {
-      el.textContent = texto;
-      const clase =
-        tono === 'ok'
-          ? 'text-confirmado font-medium'
-          : tono === 'error'
-            ? 'text-primario font-medium'
-            : 'text-texto-suave';
-      el.className = `msg text-sm ${clase}`;
-    }
+    const claseAccionFoto =
+      'w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 disabled:opacity-30 disabled:pointer-events-none transition-colors';
 
     document.querySelectorAll<HTMLElement>('.galeria-unidad').forEach((card) => {
       const unidadId = card.dataset.id!;
@@ -344,7 +436,10 @@ for (const p of parcelas ?? []) {
       const lista = card.querySelector<HTMLElement>('.lista-imagenes')!;
       const input = card.querySelector<HTMLInputElement>('.input-foto')!;
       const msg = card.querySelector<HTMLElement>('.msg')!;
+      const tiposPermitidos = (input.dataset.tipos ?? '').split(',');
+      const tamanoMaximo = Number(input.dataset.max);
       let items: ItemImagen[] = imagenesPorUnidad[unidadId] ?? [];
+      let ocupado = false;
 
       function render() {
         if (items.length === 0) {
@@ -358,15 +453,15 @@ for (const p of parcelas ?? []) {
             <figure class="relative rounded-card overflow-hidden border-2 ${
               i === 0 ? 'border-primario' : 'border-borde'
             } bg-fondo-alt">
-              <img src="${it.url}" alt="" class="w-full aspect-video object-cover" />
-              ${i === 0 ? '<figcaption class="absolute top-1 left-1 text-[10px] font-titulo font-bold bg-primario text-white rounded-pill px-2 py-0.5">Portada</figcaption>' : ''}
-              <div class="absolute bottom-1 right-1 flex gap-1">
+              <img src="${it.url}" alt="Foto ${i + 1} de ${items.length}" loading="lazy" class="w-full aspect-video object-cover" />
+              ${i === 0 ? '<figcaption class="absolute top-1.5 left-1.5 text-xs font-titulo font-bold bg-primario text-white rounded-pill px-2 py-0.5">Portada</figcaption>' : ''}
+              <div class="absolute bottom-1.5 right-1.5 flex gap-1">
                 <button type="button" data-accion="izq" data-i="${i}" ${i === 0 ? 'disabled' : ''}
-                  class="w-7 h-7 rounded-full bg-black/55 text-white text-sm flex items-center justify-center disabled:opacity-30" aria-label="Mover antes">‹</button>
+                  class="${claseAccionFoto}" aria-label="Mover antes" title="Mover antes">‹</button>
                 <button type="button" data-accion="der" data-i="${i}" ${i === items.length - 1 ? 'disabled' : ''}
-                  class="w-7 h-7 rounded-full bg-black/55 text-white text-sm flex items-center justify-center disabled:opacity-30" aria-label="Mover después">›</button>
+                  class="${claseAccionFoto}" aria-label="Mover después" title="Mover después">›</button>
                 <button type="button" data-accion="borrar" data-i="${i}"
-                  class="w-7 h-7 rounded-full bg-black/55 text-white text-sm flex items-center justify-center hover:bg-primario" aria-label="Quitar foto">✕</button>
+                  class="${claseAccionFoto} hover:bg-primario" aria-label="Quitar foto" title="Quitar foto">✕</button>
               </div>
             </figure>`
           )
@@ -383,64 +478,80 @@ for (const p of parcelas ?? []) {
         return raw.map((r, i) => ({ raw: r, url: urls[i] ?? r }));
       }
 
-      async function reordenar(desde: number, hasta: number) {
-        const copia = items.slice();
-        const [movido] = copia.splice(desde, 1);
-        copia.splice(hasta, 0, movido);
-        setMsg(msg, 'Guardando…', 'info');
+      // Una operación por vez: reordenar mientras sube otra foto pisaría la
+      // lista con la respuesta que llegue última.
+      async function operar(enCurso: string, listo: string, pedido: () => Promise<ItemImagen[]>) {
+        if (ocupado) return;
+        ocupado = true;
+        input.disabled = true;
+        lista.setAttribute('aria-busy', 'true');
+        setMsg(msg, enCurso, 'info');
         try {
-          items = await pedir(
-            'PATCH',
-            JSON.stringify({ unidadId, imagenes: copia.map((i) => i.raw) }),
-            { 'Content-Type': 'application/json' }
-          );
+          items = await pedido();
           render();
-          setMsg(msg, 'Orden guardado', 'ok');
+          setMsg(msg, listo, 'ok');
         } catch (e) {
-          setMsg(msg, (e as Error).message, 'error');
+          const texto =
+            e instanceof TypeError ? 'Sin conexión. Probá de nuevo.' : (e as Error).message;
+          setMsg(msg, texto, 'error');
+        } finally {
+          ocupado = false;
+          input.disabled = false;
+          lista.removeAttribute('aria-busy');
         }
       }
 
-      async function borrar(indice: number) {
-        const objetivo = items[indice];
-        if (!confirm(`¿Quitar esta foto de ${nombre}? Se elimina del sitio.`)) return;
-        setMsg(msg, 'Quitando…', 'info');
-        try {
-          items = await pedir('DELETE', JSON.stringify({ unidadId, imagen: objetivo.raw }), {
+      function reordenar(desde: number, hasta: number) {
+        const copia = items.slice();
+        const [movido] = copia.splice(desde, 1);
+        copia.splice(hasta, 0, movido);
+        operar('Guardando…', hasta === 0 ? 'Nueva portada guardada' : 'Orden guardado', () =>
+          pedir('PATCH', JSON.stringify({ unidadId, imagenes: copia.map((i) => i.raw) }), {
             'Content-Type': 'application/json',
-          });
-          render();
-          setMsg(msg, 'Foto quitada', 'ok');
-        } catch (e) {
-          setMsg(msg, (e as Error).message, 'error');
-        }
+          })
+        );
+      }
+
+      function borrar(indice: number) {
+        const objetivo = items[indice];
+        const cual = indice === 0 ? 'la portada' : `la foto ${indice + 1}`;
+        if (!confirm(`¿Quitar ${cual} de ${nombre}? Se elimina del sitio.`)) return;
+        operar('Quitando…', 'Foto quitada', () =>
+          pedir('DELETE', JSON.stringify({ unidadId, imagen: objetivo.raw }), {
+            'Content-Type': 'application/json',
+          })
+        );
       }
 
       lista.addEventListener('click', (e) => {
         const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-accion]');
-        if (!btn) return;
+        if (!btn || ocupado) return;
         const i = Number(btn.dataset.i);
         if (btn.dataset.accion === 'izq') reordenar(i, i - 1);
         else if (btn.dataset.accion === 'der') reordenar(i, i + 1);
         else if (btn.dataset.accion === 'borrar') borrar(i);
       });
 
-      input.addEventListener('change', async () => {
+      input.addEventListener('change', () => {
         const file = input.files?.[0];
+        input.value = '';
         if (!file) return;
-        setMsg(msg, 'Subiendo…', 'info');
+        // Mismas reglas que el endpoint, para no esperar la subida y enterarse
+        // recién ahí de que el archivo no sirve.
+        if (!tiposPermitidos.includes(file.type)) {
+          setMsg(msg, 'Ese formato no sirve: usá WebP, JPG o PNG.', 'error');
+          return;
+        }
+        if (file.size > tamanoMaximo) {
+          const mb = (file.size / 1024 / 1024).toFixed(1).replace('.', ',');
+          const max = tamanoMaximo / 1024 / 1024;
+          setMsg(msg, `La foto pesa ${mb} MB; el máximo es ${max} MB.`, 'error');
+          return;
+        }
         const fd = new FormData();
         fd.append('unidadId', unidadId);
         fd.append('file', file);
-        try {
-          items = await pedir('POST', fd);
-          render();
-          setMsg(msg, 'Foto agregada', 'ok');
-        } catch (e) {
-          setMsg(msg, (e as Error).message, 'error');
-        } finally {
-          input.value = '';
-        }
+        operar('Subiendo…', 'Foto agregada', () => pedir('POST', fd));
       });
 
       render();

@@ -14,6 +14,7 @@ import {
   nombreDeParcela,
   diaSiguiente,
   CAPACIDAD_MAXIMA_CABANA,
+  esTipoPublico,
 } from '../../../../lib/reservas';
 import { enviarEmailConfirmacion } from '../../../../lib/email';
 import { validarDatosCliente } from '../../../../lib/validacion';
@@ -38,6 +39,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     cantidadMenores,
     cantidadMayores,
   } = body;
+
+  // El salón de eventos no lleva reservas con cliente y precio: su ocupación
+  // se marca con bloqueos desde el Calendario (ver sql/010_salon_eventos.sql).
+  if (!esTipoPublico(unidadTipo)) {
+    return new Response(JSON.stringify({ error: 'Unidad no válida' }), { status: 400 });
+  }
 
   if (!nombreCliente || !dni || !fechaIngreso || !fechaSalida) {
     return new Response(JSON.stringify({ error: 'Nombre, DNI y fechas son obligatorios' }), {

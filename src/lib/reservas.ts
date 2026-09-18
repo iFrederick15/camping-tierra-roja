@@ -83,7 +83,17 @@ export function calcularFechaLimitePago(
   return new Date(ahora.getTime() + horasPlazo * 60 * 60 * 1000);
 }
 
-export type TipoUnidad = 'CAMPING' | 'MOTORHOME' | 'CABANA' | 'QUINCHOS';
+export type TipoUnidad = 'CAMPING' | 'MOTORHOME' | 'CABANA' | 'QUINCHOS' | 'SALON';
+
+// Lo que se ofrece al público y se puede reservar con cliente y precio. El
+// salón de eventos (sql/010_salon_eventos.sql) queda afuera: solo existe en
+// el Calendario del Panel, donde la dueña marca con bloqueos cuándo está
+// ocupado. Las rutas públicas rechazan cualquier tipo fuera de esta lista.
+export const TIPOS_PUBLICOS = ['CAMPING', 'MOTORHOME', 'CABANA', 'QUINCHOS'] as const;
+
+export function esTipoPublico(tipo: unknown): boolean {
+  return (TIPOS_PUBLICOS as readonly unknown[]).includes(tipo);
+}
 
 export type Disponibilidad =
   | { tipo: 'cupo'; disponible: boolean; cuposLibres: number }
@@ -303,7 +313,7 @@ export async function obtenerDisponibilidad(
     };
   }
 
-  // CABANA: unidad única — cualquier bloqueo la deshabilita entera.
+  // CABANA / SALON: unidad única — cualquier bloqueo la deshabilita entera.
   const disponible = (solapadas?.length ?? 0) === 0 && bloqueos.length === 0;
   return { unidad: unidadInfo, disponibilidad: { tipo: 'unica', disponible } };
 }
@@ -419,8 +429,9 @@ export async function crearBloqueo(
     return { error: 'Unidad no encontrada', status: 404 };
   }
 
-  // La cabaña es una sola: bloquearla siempre la deshabilita entera.
-  const todaLaUnidad = Boolean(entrada.todaLaUnidad) || unidad.tipo === 'CABANA';
+  // La cabaña y el salón son uno solo: bloquearlos siempre los ocupa enteros.
+  const todaLaUnidad =
+    Boolean(entrada.todaLaUnidad) || unidad.tipo === 'CABANA' || unidad.tipo === 'SALON';
   const necesitaParcela = unidad.tipo === 'MOTORHOME' || unidad.tipo === 'QUINCHOS';
 
   let parcelaId: string | null = null;
@@ -473,6 +484,15 @@ export async function crearBloqueo(
     if (reservasSolapadas.length > 0) {
       return {
         error: `Hay ${reservasSolapadas.length} reserva(s) en esas fechas: cancelalas o cambialas de fecha antes de bloquear todo.`,
+        status: 409,
+      };
+    }
+    // En una unidad única, un segundo bloqueo encima de otro sería anotar
+    // dos eventos el mismo día en el salón: se rechaza.
+    if ((unidad.tipo === 'CABANA' || unidad.tipo === 'SALON') && bloqueosExistentes.length > 0) {
+      const b = bloqueosExistentes[0];
+      return {
+        error: `Esas fechas ya están ocupadas (${fechaCorta(b.fechaInicio)} → ${fechaCorta(b.fechaFin)}${b.nota ? `: ${b.nota}` : ''})`,
         status: 409,
       };
     }

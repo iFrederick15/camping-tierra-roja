@@ -18,6 +18,7 @@ import {
   hoyISO,
   diaSiguiente,
   CAPACIDAD_MAXIMA_CABANA,
+  esTipoPublico,
 } from '../../lib/reservas';
 
 export const POST: APIRoute = async ({ request }) => {
@@ -44,6 +45,12 @@ export const POST: APIRoute = async ({ request }) => {
     cantidadMenores, // CAMPING (cobra) / CABANA (informativo)
     cantidadMayores, // CAMPING (cobra) / CABANA (informativo)
   } = body;
+
+  // El salón de eventos no se reserva online (no tiene precios: la reserva
+  // quedaría en $0).
+  if (!esTipoPublico(unidadTipo)) {
+    return new Response(JSON.stringify({ error: 'Unidad no válida' }), { status: 400 });
+  }
 
   if (!email || !telefono) {
     return new Response(

@@ -5,7 +5,7 @@
 // Staff (/api/panel/reservas/manual) use exactamente la misma lógica.
 
 import type { APIRoute } from 'astro';
-import { obtenerDisponibilidad } from '../../lib/reservas';
+import { obtenerDisponibilidad, esTipoPublico } from '../../lib/reservas';
 
 export const GET: APIRoute = async ({ url }) => {
   const unidadTipo = url.searchParams.get('unidad');
@@ -21,6 +21,11 @@ export const GET: APIRoute = async ({ url }) => {
       JSON.stringify({ error: 'Faltan parámetros: unidad, desde, hasta' }),
       { status: 400 }
     );
+  }
+  // El salón de eventos es privado: su ocupación solo se ve en el Calendario
+  // del Panel, que lee los bloqueos directo.
+  if (!esTipoPublico(unidadTipo)) {
+    return new Response(JSON.stringify({ error: 'Unidad no encontrada' }), { status: 404 });
   }
 
   const resultado = await obtenerDisponibilidad(unidadTipo, desde, hasta, categoria, excluir);

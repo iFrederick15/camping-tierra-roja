@@ -8,12 +8,17 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../lib/supabase';
 import { urlsPublicasImagenes } from '../../lib/imagenes-unidad';
+import { esTipoPublico } from '../../lib/reservas';
 
 export const GET: APIRoute = async ({ url }) => {
   const unidadTipo = url.searchParams.get('unidad');
 
   if (!unidadTipo) {
     return new Response(JSON.stringify({ error: 'Falta el parámetro: unidad' }), { status: 400 });
+  }
+  // El salón de eventos es privado: no se expone ni su existencia.
+  if (!esTipoPublico(unidadTipo)) {
+    return new Response(JSON.stringify({ error: 'Unidad no válida' }), { status: 400 });
   }
 
   const { data: unidad, error } = await supabaseAdmin

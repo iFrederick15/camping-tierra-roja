@@ -21,8 +21,17 @@ const ETIQUETAS_TIPO: Record<TipoUnidad, string> = {
   CAMPING: 'Camping',
   MOTORHOME: 'Motorhome',
   QUINCHOS: 'Quinchos',
+  SALON: 'Salón',
 };
-const ORDEN_TIPOS: TipoUnidad[] = ['CAMPING', 'MOTORHOME', 'CABANA', 'QUINCHOS'];
+const ORDEN_TIPOS: TipoUnidad[] = ['CAMPING', 'MOTORHOME', 'CABANA', 'QUINCHOS', 'SALON'];
+
+// El salón de eventos es privado (sql/010_salon_eventos.sql): no tiene
+// reservas con cliente ni precio, solo bloqueos que marcan cuándo está
+// ocupado. En su tablero un bloqueo se lee como "ocupado", no "bloqueado".
+const textoBloqueo = (tipo: TipoUnidad) =>
+  tipo === 'SALON'
+    ? { vacio: 'Ocupado', autor: 'anotó', quitar: 'clic para liberar la fecha' }
+    : { vacio: 'Bloqueado', autor: 'bloqueó', quitar: 'clic para quitar el bloqueo' };
 
 // Mes visible: querystring ?mes=YYYY-MM, default al mes actual (huso horario
 // de Puerto Iguazú, igual que hoyISO()) — evita el off-by-one de usar la
@@ -85,6 +94,8 @@ const tipoParam = Astro.url.searchParams.get('tipo');
 const tipoSeleccionado = ORDEN_TIPOS.includes(tipoParam as TipoUnidad)
   ? (tipoParam as TipoUnidad)
   : ORDEN_TIPOS[0];
+const esSalon = tipoSeleccionado === 'SALON';
+const textosBloqueo = textoBloqueo(tipoSeleccionado);
 
 // Día que mira la vista Día: ?fecha=YYYY-MM-DD, y si no viene, hoy (o el
 // primero del mes que se está mirando).
@@ -306,10 +317,11 @@ const RAYADO_BLOQUEO =
   'repeating-linear-gradient(45deg, var(--color-texto) 0 6px, var(--color-texto-suave) 6px 12px)';
 
 // Texto del tooltip de un bloqueo: la nota si la hay, más quién lo puso.
-function tituloBloqueo(b: Bloqueo): string {
-  const partes = [b.nota?.trim() || 'Fechas bloqueadas'];
-  if (b.parcelaId === null && b.plazas === null) partes.push('toda la unidad');
-  if (b.creadoPor) partes.push(`bloqueó ${b.creadoPor}`);
+function tituloBloqueo(b: Bloqueo, tipo: TipoUnidad = tipoSeleccionado): string {
+  const textos = textoBloqueo(tipo);
+  const partes = [b.nota?.trim() || textos.vacio];
+  if (tipo !== 'SALON' && b.parcelaId === null && b.plazas === null) partes.push('toda la unidad');
+  if (b.creadoPor) partes.push(`${textos.autor} ${b.creadoPor}`);
   return partes.join(' · ');
 }
 
@@ -385,9 +397,9 @@ const celdasMes: CeldaDia[] = Array.from({ length: diasEnMes }, (_, i) => {
           : {
               clase: 'bloqueo',
               id,
-              etiqueta: o.bloqueo.nota?.trim() || 'Bloqueado',
+              etiqueta: o.bloqueo.nota?.trim() || textosBloqueo.vacio,
               className: '',
-              titulo: `${tituloBloqueo(o.bloqueo)} · clic para quitar el bloqueo`,
+              titulo: `${tituloBloqueo(o.bloqueo)} · ${textosBloqueo.quitar}`,
               nota: o.bloqueo.nota ?? '',
               esInicio,
               esFin,
@@ -527,11 +539,11 @@ if (vista === 'dia') {
   gruposDia = ORDEN_TIPOS.map((tipo) => {
     const indice = unidades.findIndex((u) => u.tipo === tipo);
     const unidad = indice === -1 ? null : unidades[indice];
-    // Misma fórmula que la Vista operativa: la cabaña es una, el camping va
-    // por cupo y motorhome/quinchos por parcelas activas.
+    // Misma fórmula que la Vista operativa: la cabaña (y el salón) es una,
+    // el camping va por cupo y motorhome/quinchos por parcelas activas.
     const capacidad = !unidad
       ? 0
-      : tipo === 'CABANA'
+      : tipo === 'CABANA' || tipo === 'SALON'
         ? 1
         : tipo === 'CAMPING'
           ? (unidad.cupo_total ?? 0)
@@ -555,8 +567,8 @@ if (vista === 'dia') {
 
     const bloqueos = (indice === -1 ? [] : bloqueosPorUnidad[indice]).map((b) => ({
       id: b.id,
-      texto: b.nota?.trim() || 'Fechas bloqueadas',
-      titulo: tituloBloqueo(b),
+      texto: b.nota?.trim() || textoBloqueo(tipo).vacio,
+      titulo: tituloBloqueo(b, tipo),
       // Un bloqueo de toda la unidad tapa el cupo entero; si no, las plazas
       // que diga (camping) o el lugar puntual (motorhome/quinchos).
       lugares: b.parcelaId === null && b.plazas === null ? capacidad : (b.plazas ?? 1),
@@ -584,8 +596,10 @@ if (vista === 'dia') {
   tituloDia = tituloDia.charAt(0).toUpperCase() + tituloDia.slice(1);
 }
 
-const totalOcupadosDia = gruposDia.reduce((acc, g) => acc + g.ocupados, 0);
-const totalCapacidadDia = gruposDia.reduce((acc, g) => acc + g.capacidad, 0);
+// El salón no es alojamiento: no suma a los "lugares" ocupados del día.
+const gruposAlojamiento = gruposDia.filter((g) => g.tipo !== 'SALON');
+const totalOcupadosDia = gruposAlojamiento.reduce((acc, g) => acc + g.ocupados, 0);
+const totalCapacidadDia = gruposAlojamiento.reduce((acc, g) => acc + g.capacidad, 0);
 const totalLlegadasDia = gruposDia.reduce(
   (acc, g) => acc + g.items.filter((it) => it.momento === 'llega').length,
   0
@@ -706,28 +720,40 @@ const clasePill =
     ]}
   >
     {
-      (Object.keys(ESTILO_VISUAL) as EstadoVisual[]).map((clave) => (
-        <span class="flex items-center gap-1.5">
-          <span
-            class:list={['w-2.5 h-2.5 rounded-full inline-block', ESTILO_VISUAL[clave].className]}
-          />
-          {ESTILO_VISUAL[clave].label}
-        </span>
-      ))
+      !esSalon &&
+        (Object.keys(ESTILO_VISUAL) as EstadoVisual[]).map((clave) => (
+          <span class="flex items-center gap-1.5">
+            <span
+              class:list={['w-2.5 h-2.5 rounded-full inline-block', ESTILO_VISUAL[clave].className]}
+            />
+            {ESTILO_VISUAL[clave].label}
+          </span>
+        ))
     }
     <span class="flex items-center gap-1.5">
       <span
         class="w-2.5 h-2.5 rounded-full inline-block"
         style={`background-image: ${RAYADO_BLOQUEO}`}></span>
-      Bloqueado
+      {textosBloqueo.vacio}
     </span>
   </div>
 
-  <p class:list={['text-sm text-texto-suave mb-4 max-w-2xl', vista === 'dia' ? 'hidden' : '']}>
-    Arrastrá con el mouse (o tocá el primer y el último día) sobre los días libres para crear una
-    reserva o para <strong class="font-medium text-texto">bloquear esas fechas</strong> y que dejen de
-    poder reservarse desde la web. Hacé clic sobre un bloqueo para quitarlo.
-  </p>
+  {
+    esSalon ? (
+      <p class:list={['text-sm text-texto-suave mb-4 max-w-2xl', vista === 'dia' ? 'hidden' : '']}>
+        El salón no se ofrece en la web: este calendario es solo para llevar cuándo está ocupado.
+        Arrastrá con el mouse (o tocá el primer y el último día) sobre los días libres para{' '}
+        <strong class="font-medium text-texto">marcarlos como ocupados</strong>, con el detalle del
+        evento. Hacé clic sobre una ocupación para liberar la fecha.
+      </p>
+    ) : (
+      <p class:list={['text-sm text-texto-suave mb-4 max-w-2xl', vista === 'dia' ? 'hidden' : '']}>
+        Arrastrá con el mouse (o tocá el primer y el último día) sobre los días libres para crear
+        una reserva o para <strong class="font-medium text-texto">bloquear esas fechas</strong> y
+        que dejen de poder reservarse desde la web. Hacé clic sobre un bloqueo para quitarlo.
+      </p>
+    )
+  }
 
   {
     vista === 'dia' ? (
@@ -783,7 +809,9 @@ const clasePill =
             </header>
 
             {g.items.length === 0 && g.bloqueos.length === 0 ? (
-              <p class="px-4 py-4 text-sm text-texto-suave">Sin reservas este día.</p>
+              <p class="px-4 py-4 text-sm text-texto-suave">
+                {g.tipo === 'SALON' ? 'Libre este día.' : 'Sin reservas este día.'}
+              </p>
             ) : (
               <div class="flex flex-col gap-2 p-3">
                 {g.items.map((it) => (
@@ -799,7 +827,8 @@ const clasePill =
                     class="bloqueo-barra flex items-center justify-between gap-4 rounded-card border-2 border-borde px-5 py-4 bg-superficie text-left hover:border-primario-claro transition-colors"
                     data-bloqueo-id={b.id}
                     data-nota={b.texto}
-                    title={`${b.titulo} · clic para quitar el bloqueo`}
+                    data-salon={g.tipo === 'SALON' ? '1' : undefined}
+                    title={`${b.titulo} · ${textoBloqueo(g.tipo).quitar}`}
                   >
                     <span class="flex items-center gap-3 min-w-0">
                       <span
@@ -809,12 +838,14 @@ const clasePill =
                       <span class="flex flex-col min-w-0">
                         <span class="font-titulo font-bold text-negro truncate">{b.texto}</span>
                         <span class="text-texto-suave text-sm">
-                          Bloqueado · {b.lugares} {b.lugares === 1 ? 'lugar' : 'lugares'}
+                          {g.tipo === 'SALON'
+                            ? 'Ocupado'
+                            : `Bloqueado · ${b.lugares} ${b.lugares === 1 ? 'lugar' : 'lugares'}`}
                         </span>
                       </span>
                     </span>
                     <span class="shrink-0 whitespace-nowrap border border-borde rounded-pill px-3 py-1 text-xs font-titulo font-bold text-texto-suave">
-                      Quitar
+                      {g.tipo === 'SALON' ? 'Liberar' : 'Quitar'}
                     </span>
                   </button>
                 ))}
@@ -874,7 +905,7 @@ const clasePill =
               data-fecha={c.iso}
               title={
                 c.libres > 0
-                  ? `${cortaISO(c.iso)} · ${c.libres} de ${capacidad} libre(s) — arrastrá o tocá para reservar o bloquear`
+                  ? `${cortaISO(c.iso)} · ${c.libres} de ${capacidad} libre(s) — arrastrá o tocá para ${esSalon ? 'marcarlo ocupado' : 'reservar o bloquear'}`
                   : `${cortaISO(c.iso)} · sin lugares libres`
               }
             >
@@ -1053,11 +1084,11 @@ const clasePill =
                           style={`background-image: ${RAYADO_BLOQUEO}`}
                           data-bloqueo-id={seg.ocupacion.bloqueo.id}
                           data-nota={seg.ocupacion.bloqueo.nota ?? ''}
-                          title={`${tituloBloqueo(seg.ocupacion.bloqueo)} · clic para quitar el bloqueo`}
+                          title={`${tituloBloqueo(seg.ocupacion.bloqueo)} · ${textosBloqueo.quitar}`}
                         >
                           <span class="material-symbols-outlined text-[14px] shrink-0">lock</span>
                           <span class="overflow-hidden text-ellipsis">
-                            {seg.ocupacion.bloqueo.nota?.trim() || 'Bloqueado'}
+                            {seg.ocupacion.bloqueo.nota?.trim() || textosBloqueo.vacio}
                           </span>
                         </button>
                       </td>
@@ -1068,7 +1099,11 @@ const clasePill =
                           seg.inicioDia === hoyDia ? 'bg-primario/5' : '',
                         ]}
                         data-fecha={`${anio}-${pad(mesNum + 1)}-${pad(seg.inicioDia)}`}
-                        title="Arrastrá o tocá para reservar o bloquear estas fechas"
+                        title={
+                          esSalon
+                            ? 'Arrastrá o tocá para marcar ocupadas estas fechas'
+                            : 'Arrastrá o tocá para reservar o bloquear estas fechas'
+                        }
                       />
                     )
                   )}
@@ -1167,22 +1202,37 @@ const clasePill =
       }
 
       <div id="modal-acciones" class="flex flex-col gap-2">
-        <button
-          type="button"
-          id="btn-reservar"
-          class="inline-flex items-center justify-center gap-2 bg-primario text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors disabled:opacity-40 disabled:pointer-events-none"
-        >
-          <span class="material-symbols-outlined text-[18px]">event_available</span>
-          Crear reserva
-        </button>
-        <button
-          type="button"
-          id="btn-bloquear"
-          class="inline-flex items-center justify-center gap-2 border-2 border-borde px-5 py-2.5 rounded-pill font-titulo font-medium text-texto hover:border-primario-claro transition-colors disabled:opacity-40 disabled:pointer-events-none"
-        >
-          <span class="material-symbols-outlined text-[18px]">lock</span>
-          Bloquear fechas
-        </button>
+        {
+          esSalon ? (
+            <button
+              type="button"
+              id="btn-bloquear"
+              class="inline-flex items-center justify-center gap-2 bg-primario text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            >
+              <span class="material-symbols-outlined text-[18px]">lock</span>
+              Marcar como ocupado
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                id="btn-reservar"
+                class="inline-flex items-center justify-center gap-2 bg-primario text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <span class="material-symbols-outlined text-[18px]">event_available</span>
+                Crear reserva
+              </button>
+              <button
+                type="button"
+                id="btn-bloquear"
+                class="inline-flex items-center justify-center gap-2 border-2 border-borde px-5 py-2.5 rounded-pill font-titulo font-medium text-texto hover:border-primario-claro transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <span class="material-symbols-outlined text-[18px]">lock</span>
+                Bloquear fechas
+              </button>
+            </>
+          )
+        }
         <button
           type="button"
           id="btn-ver-dia"
@@ -1195,18 +1245,20 @@ const clasePill =
 
       <form id="form-bloqueo" class="hidden flex-col gap-4">
         <label class="flex flex-col gap-1 text-sm text-texto-suave">
-          Nota (opcional)
+          {esSalon ? 'Detalle del evento (opcional)' : 'Nota (opcional)'}
           <input
             type="text"
             name="nota"
             maxlength="300"
-            placeholder="Mantenimiento, uso propio…"
+            placeholder={esSalon
+              ? 'Cumpleaños de Ana · 376 412-3456'
+              : 'Mantenimiento, uso propio…'}
             class="border-2 border-borde rounded-card px-3 py-2 text-texto focus:border-primario focus:outline-none"
           />
         </label>
 
         {
-          tipoSeleccionado !== 'CABANA' && (
+          tipoSeleccionado !== 'CABANA' && !esSalon && (
             <label class="flex items-start gap-2 text-sm text-texto-suave cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -1228,7 +1280,7 @@ const clasePill =
             type="submit"
             class="inline-flex items-center justify-center gap-2 bg-primario text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors disabled:opacity-40 disabled:pointer-events-none"
           >
-            Bloquear
+            {esSalon ? 'Guardar' : 'Bloquear'}
           </button>
           <button
             type="button"
@@ -1260,7 +1312,7 @@ const clasePill =
     }
   </style>
 
-  <script define:vars={{ tipoSeleccionado, pideLugar, lugaresElegibles, urlDia }}>
+  <script define:vars={{ tipoSeleccionado, pideLugar, lugaresElegibles, urlDia, esSalon }}>
     // Selección de fechas sobre las dos vistas (grilla del mes y línea de
     // tiempo). Cada contenedor de celdas seleccionables lleva [data-grupo]:
     // en la grilla es la grilla entera (el lugar se elige después, en el
@@ -1443,7 +1495,8 @@ const clasePill =
       btnVerDiaTexto.textContent = `Ver el día ${fechaCorta(desde)}`;
 
       const hayLugar = prepararLugares();
-      btnReservar.disabled = !hayLugar;
+      // El salón no tiene botón de reserva: solo se marca ocupado.
+      if (btnReservar) btnReservar.disabled = !hayLugar;
       btnBloquear.disabled = !hayLugar;
 
       acciones.classList.remove('hidden');
@@ -1512,7 +1565,7 @@ const clasePill =
 
     if (selectLugar) selectLugar.addEventListener('change', aplicarLugar);
 
-    btnReservar.addEventListener('click', () => {
+    btnReservar?.addEventListener('click', () => {
       if (!seleccion) return;
       const params = new URLSearchParams({
         tipo: tipoSeleccionado,
@@ -1572,7 +1625,7 @@ const clasePill =
       const boton = formBloqueo.querySelector('button[type="submit"]');
       boton.disabled = true;
       msgBloqueo.classList.remove('hidden');
-      mostrarMensaje('Bloqueando…', 'info');
+      mostrarMensaje(esSalon ? 'Guardando…' : 'Bloqueando…', 'info');
 
       try {
         const res = await fetch('/api/panel/admin/bloqueos', {
@@ -1589,7 +1642,7 @@ const clasePill =
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          mostrarMensaje(data.error ?? 'No se pudo bloquear', 'error');
+          mostrarMensaje(data.error ?? 'No se pudo guardar', 'error');
           boton.disabled = false;
           return;
         }
@@ -1597,7 +1650,7 @@ const clasePill =
         // puede cambiar en qué carril cae cada reserva del camping.
         window.location.reload();
       } catch {
-        mostrarMensaje('No se pudo bloquear: revisá la conexión', 'error');
+        mostrarMensaje('No se pudo guardar: revisá la conexión', 'error');
         boton.disabled = false;
       }
     });
@@ -1608,11 +1661,11 @@ const clasePill =
       const barraBloqueo = e.target.closest?.('.bloqueo-barra');
       if (!barraBloqueo) return;
       const nota = barraBloqueo.dataset.nota;
-      if (
-        !confirm(
-          `¿Quitar este bloqueo${nota ? ` (${nota})` : ''}? Las fechas vuelven a quedar disponibles.`
-        )
-      ) {
+      const pregunta =
+        esSalon || barraBloqueo.dataset.salon
+          ? `¿Liberar esta fecha del salón${nota ? ` (${nota})` : ''}?`
+          : `¿Quitar este bloqueo${nota ? ` (${nota})` : ''}? Las fechas vuelven a quedar disponibles.`;
+      if (!confirm(pregunta)) {
         return;
       }
       const res = await fetch('/api/panel/admin/bloqueos', {

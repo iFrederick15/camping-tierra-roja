@@ -158,11 +158,12 @@ Todo lo anterior, más:
 
 - **Vista operativa**: un resumen ejecutivo del día — llegadas, salidas, pagos pendientes, y la ocupación actual de cada tipo de alojamiento (por ejemplo, "3 de 25 motorhomes ocupados"). Cada fila de ocupación lleva directo al calendario de ese tipo de alojamiento.
 
-- **Calendario de ocupación**: la herramienta visual para planificar. Se navega por pestañas (Camping / Motorhome / Cabaña / Quinchos) y muestra, día por día, quién ocupa cada lugar:
+- **Calendario de ocupación**: la herramienta visual para planificar. Se navega por pestañas (Camping / Motorhome / Cabaña / Quinchos / Salón) y muestra, día por día, quién ocupa cada lugar:
   - Cada **fila** es un lugar físico real (por ejemplo, cada parcela de motorhome) o, para Camping, un "carril" virtual que representa un cupo disponible.
   - Cada **reserva** se ve como una barra de color a lo largo de las fechas que ocupa, con un color según su estado: **Reserva** (confirmada, azul), **Checkin** (huésped ya ingresó, verde), **Adeudado** (todavía debe plata, ámbar) y **Checkout** (estadía finalizada, marrón). Tocar una barra abre el detalle de esa reserva.
   - Por defecto el calendario **arranca en el día de hoy** (los días que ya pasaron no ayudan a decidir dónde ubicar una reserva nueva), pero hay un botón para volver a ver los días anteriores del mes si hace falta consultarlos.
   - **Se puede crear una reserva directamente desde el calendario**: clickeando (o arrastrando el mouse sobre varias fechas) en una celda vacía, el sistema abre el formulario de "Nueva reserva" con el tipo de alojamiento y las fechas ya precargadas — solo falta completar los datos del huésped.
+  - La pestaña **Salón** (el salón de eventos) es privada: no aparece en la página web ni se puede reservar online. Sirve para anotar cuándo está ocupado: se seleccionan los días, se toca "Marcar como ocupado" y se escribe el detalle del evento (por ejemplo, "Cumpleaños de Ana · 376 412-3456"). Para liberar una fecha, se toca la ocupación. El sistema no deja anotar dos eventos el mismo día.
 
 - **Configuración**: permite editar, sin tocar código, los cupos de cada tipo de alojamiento, los precios por ítem (por ejemplo, precio por acompañante o por categoría de quincho) y los plazos de pago (cuántas horas tiene un cliente para transferir según cuán próxima esté la fecha de su reserva).
 

@@ -14,6 +14,7 @@ import {
   calcularPrecio,
   diaSiguiente,
   CAPACIDAD_MAXIMA_CABANA,
+  esTipoPublico,
 } from '../../../../lib/reservas';
 import { validarDatosCliente } from '../../../../lib/validacion';
 
@@ -50,6 +51,11 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     cantidadMenores,
     cantidadMayores,
   } = body;
+
+  // El salón de eventos no lleva reservas (ver manual.ts).
+  if (!esTipoPublico(unidadTipo)) {
+    return new Response(JSON.stringify({ error: 'Unidad no válida' }), { status: 400 });
+  }
 
   if (!nombreCliente || !dni || !fechaIngreso || !fechaSalida) {
     return new Response(

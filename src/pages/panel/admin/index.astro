@@ -1,6 +1,6 @@
 ---
 import PanelLayout from '../../../layouts/PanelLayout.astro';
-import { listarReservas } from '../../../lib/reservas';
+import { listarReservas, listarBloqueos, hoyISO, diaSiguiente } from '../../../lib/reservas';
 import { supabaseAdmin } from '../../../lib/supabase';
 
 const [llegadas, salidas, pendientesPago] = await Promise.all([
@@ -15,6 +15,16 @@ const { data: unidades } = await supabaseAdmin
   .from('unidades')
   .select('id, tipo, nombre, cupo_total, parcelas(id, activa)');
 
+// El salón de eventos no lleva reservas: está ocupado si hoy cae dentro de
+// alguna de las fechas que la dueña marcó en el Calendario (un bloqueo, ver
+// sql/010_salon_eventos.sql). Si la lectura falla se muestra como libre en
+// vez de tirar abajo toda la Vista operativa.
+const hoy = hoyISO();
+const salon = (unidades ?? []).find((u: any) => u.tipo === 'SALON');
+const eventosSalonHoy = salon
+  ? await listarBloqueos(salon.id, hoy, diaSiguiente(hoy)).catch(() => [])
+  : [];
+
 const { data: ocupadas } = await supabaseAdmin
   .from('reservas')
   .select('unidad_id')
@@ -26,12 +36,16 @@ for (const r of ocupadas ?? []) {
 }
 
 const ocupacion = (unidades ?? []).map((u: any) => {
-  const capacidad = u.tipo === 'CABANA' ? 1 : u.tipo === 'CAMPING' ? u.cupo_total ?? 0 : (u.parcelas ?? []).filter((p: any) => p.activa).length;
-  return { tipo: u.tipo, nombre: u.nombre, ocupadas: conteoOcupadas.get(u.id) ?? 0, capacidad };
+  const capacidad = u.tipo === 'CABANA' || u.tipo === 'SALON' ? 1 : u.tipo === 'CAMPING' ? u.cupo_total ?? 0 : (u.parcelas ?? []).filter((p: any) => p.activa).length;
+  const ocupadas = u.tipo === 'SALON' ? Math.min(eventosSalonHoy.length, 1) : conteoOcupadas.get(u.id) ?? 0;
+  return { tipo: u.tipo, nombre: u.nombre, ocupadas, capacidad };
 });
 
-const capacidadTotal = ocupacion.reduce((acc, u) => acc + u.capacidad, 0);
-const ocupadasTotal = ocupacion.reduce((acc, u) => acc + u.ocupadas, 0);
+// El porcentaje total es de alojamiento: el salón se ve en su fila pero no
+// suma lugares.
+const ocupacionAlojamiento = ocupacion.filter((u) => u.tipo !== 'SALON');
+const capacidadTotal = ocupacionAlojamiento.reduce((acc, u) => acc + u.capacidad, 0);
+const ocupadasTotal = ocupacionAlojamiento.reduce((acc, u) => acc + u.ocupadas, 0);
 const porcentajeOcupacion = capacidadTotal > 0 ? Math.round((ocupadasTotal / capacidadTotal) * 100) : 0;
 
 const fmtHora = (f: string) =>
@@ -39,6 +53,7 @@ const fmtHora = (f: string) =>
 
 type Atencion = {
   id: string;
+  href: string;
   nombreCliente: string;
   sub: string;
   chipLabel: string;
@@ -49,6 +64,7 @@ type Atencion = {
 const atencion: Atencion[] = [
   ...llegadas.map((r) => ({
     id: r.id,
+    href: `/panel/reservas/${r.id}`,
     nombreCliente: r.nombreCliente,
     sub: r.parcelaNombre ? `${r.unidadNombre} · ${r.parcelaNombre}` : r.unidadNombre,
     chipLabel: 'Check-in',
@@ -57,6 +73,7 @@ const atencion: Atencion[] = [
   })),
   ...salidas.map((r) => ({
     id: r.id,
+    href: `/panel/reservas/${r.id}`,
     nombreCliente: r.nombreCliente,
     sub: r.parcelaNombre ? `${r.unidadNombre} · ${r.parcelaNombre}` : r.unidadNombre,
     chipLabel: 'Check-out',
@@ -65,11 +82,21 @@ const atencion: Atencion[] = [
   })),
   ...pendientesPago.map((r) => ({
     id: r.id,
+    href: `/panel/reservas/${r.id}`,
     nombreCliente: r.nombreCliente,
     sub: r.fechaLimitePago ? `Vence ${fmtHora(r.fechaLimitePago)}` : 'Sin plazo',
     chipLabel: 'Avisar pago',
     chipClassName: 'text-advertencia bg-advertencia/10',
     dotClassName: 'bg-advertencia',
+  })),
+  ...eventosSalonHoy.map((b) => ({
+    id: b.id,
+    href: `/panel/admin/calendario?tipo=SALON&vista=dia&fecha=${hoy}`,
+    nombreCliente: b.nota?.trim() || 'Evento sin detalle',
+    sub: salon?.nombre ?? 'Salón',
+    chipLabel: 'Evento hoy',
+    chipClassName: 'text-primario bg-primario/10',
+    dotClassName: 'bg-primario',
   })),
 ];
 ---
@@ -129,7 +156,7 @@ const atencion: Atencion[] = [
           ) : (
             atencion.map((a) => (
               <a
-                href={`/panel/reservas/${a.id}`}
+                href={a.href}
                 class="flex items-center gap-3 px-5 py-2.5 border-t border-fondo-alt hover:bg-fondo-alt/60 transition-colors"
               >
                 <span class:list={['w-2 h-2 rounded-full shrink-0', a.dotClassName]} />
