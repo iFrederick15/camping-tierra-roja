@@ -716,7 +716,7 @@ export default function BookingWidget({
       {paso === 'unidad' && (
         <section className="flex flex-col gap-6 relative z-10">
           <h2 className="font-titulo font-bold text-3xl text-negro">{T.queReservar}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {UNIDADES.map((u) => {
               const seleccionada = unidad === u.tipo;
               return (
@@ -725,7 +725,7 @@ export default function BookingWidget({
                   type="button"
                   aria-pressed={seleccionada}
                   onClick={() => setUnidad(u.tipo)}
-                  className={`text-left rounded-card p-5 h-full transition-[background-color,box-shadow] duration-150 ${
+                  className={`text-left rounded-card p-4 sm:p-5 h-full transition-[background-color,box-shadow] duration-150 ${
                     seleccionada
                       ? 'bg-fondo-alt shadow-suave ring-2 ring-primario/30'
                       : 'bg-fondo-alt/50 hover:bg-fondo-alt'
@@ -754,10 +754,12 @@ export default function BookingWidget({
                       check_circle
                     </span>
                   </div>
-                  <h3 className="font-titulo font-bold text-lg text-negro leading-tight">
+                  <h3 className="font-titulo font-bold text-base sm:text-lg text-negro leading-tight">
                     {T.unidades[u.tipo].label}
                   </h3>
-                  <p className="text-sm text-texto-suave mt-1">{T.unidades[u.tipo].descripcion}</p>
+                  <p className="text-xs sm:text-sm text-texto-suave mt-1">
+                    {T.unidades[u.tipo].descripcion}
+                  </p>
                 </button>
               );
             })}
