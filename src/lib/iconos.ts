@@ -45,6 +45,7 @@ export const ICONOS_MATERIAL = [
   'child_care',
   'close',
   'cottage',
+  'delete',
   'download',
   'error',
   'event_available',

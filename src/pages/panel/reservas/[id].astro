@@ -168,6 +168,9 @@ const eventos = [
   .filter((e) => e.fecha)
   .sort((a, b) => a.fecha.localeCompare(b.fecha));
 
+// Borrar un pago cargado por error es solo de Admin (sql/017).
+const esAdmin = Astro.locals.usuario?.rol === 'admin';
+
 const encabezadoSeccion = 'font-titulo font-bold text-negro text-lg';
 const etiqueta = 'text-texto-suave text-xs font-titulo font-medium uppercase tracking-wide';
 ---
@@ -464,6 +467,11 @@ const etiqueta = 'text-texto-suave text-xs font-titulo font-medium uppercase tra
                     <th class={`${etiqueta} px-3 py-3`}>Método</th>
                     <th class={`${etiqueta} px-3 py-3`}>Registró</th>
                     <th class={`${etiqueta} px-5 py-3 text-right`}>Monto</th>
+                    {esAdmin && (
+                      <th class="px-3 py-3">
+                        <span class="sr-only">Acciones</span>
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -478,6 +486,20 @@ const etiqueta = 'text-texto-suave text-xs font-titulo font-medium uppercase tra
                       <td class="px-5 py-3 text-right font-titulo font-bold text-negro whitespace-nowrap">
                         {fmtMoneda(p.monto)}
                       </td>
+                      {esAdmin && (
+                        <td class="pr-3 py-3 text-right">
+                          <button
+                            type="button"
+                            data-eliminar-pago={p.id}
+                            data-monto={fmtMoneda(p.monto)}
+                            title="Eliminar pago"
+                            aria-label={`Eliminar pago de ${fmtMoneda(p.monto)}`}
+                            class="inline-flex items-center justify-center w-8 h-8 rounded-full text-texto-suave hover:text-primario hover:bg-fondo-alt transition-colors"
+                          >
+                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -685,6 +707,31 @@ const etiqueta = 'text-texto-suave text-xs font-titulo font-medium uppercase tra
         }
       });
     }
+
+    // Solo se renderiza para Admin; el endpoint vuelve a exigir el rol.
+    document.querySelectorAll('[data-eliminar-pago]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const motivo = prompt(
+          `¿Eliminar el pago de ${btn.dataset.monto}? Se resta de lo pagado y queda una nota interna.\n\nMotivo:`
+        );
+        if (motivo === null) return;
+        if (!motivo.trim()) {
+          alert('Indica el motivo para eliminar el pago');
+          return;
+        }
+        const res = await fetch(`/api/panel/reservas/${id}/pagos/${btn.dataset.eliminarPago}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ motivo: motivo.trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error ?? 'Ocurrió un error');
+          return;
+        }
+        window.location.reload();
+      });
+    });
 
     // El menú "Más" es un <details>: se cierra al hacer click fuera de él.
     const menuAcciones = document.getElementById('menu-acciones');
