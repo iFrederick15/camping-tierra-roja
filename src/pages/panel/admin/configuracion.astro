@@ -102,14 +102,14 @@ const claseGuardar =
             <div class="flex flex-col gap-2">
               {(opcionesPorUnidad.get(u.id) ?? []).map((op: any) => (
                 <form
-                  class="form-opcion-precio flex flex-wrap items-end gap-3 bg-fondo-alt rounded-card px-4 py-3"
+                  class="form-opcion-precio flex flex-wrap items-center gap-3 bg-fondo-alt rounded-card px-4 py-3"
                   data-id={op.id}
                   data-etiqueta={`${u.nombre} · ${op.etiqueta}`}
                   data-unidad={u.tipo === 'QUINCHOS' ? 'por día' : 'por noche'}
                 >
-                  <span class="text-sm text-texto flex-1 min-w-48 self-center">{op.etiqueta}</span>
-                  <label class="flex flex-col gap-1 text-sm text-texto-suave">
-                    {u.tipo === 'QUINCHOS' ? '$ por día' : '$ por noche'}
+                  <span class="text-sm text-texto flex-1 min-w-48">{op.etiqueta}</span>
+                  <label class="flex items-center gap-2 text-sm text-texto-suave">
+                    $
                     <input
                       type="number"
                       name="precioPorNoche"
@@ -121,6 +121,7 @@ const claseGuardar =
                       required
                       class={`${claseInput} w-32`}
                     />
+                    {u.tipo === 'QUINCHOS' ? 'por día' : 'por noche'}
                   </label>
                   <button type="submit" class={claseGuardar}>
                     Guardar
