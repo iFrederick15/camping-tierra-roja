@@ -4,7 +4,13 @@
 // son distintos entre sí— y el escapado del nombre.
 
 import { describe, it, expect } from 'vitest';
-import { construirEmailConfirmacion, construirEmailPago } from './email';
+import {
+  cambiosReserva,
+  construirEmailCancelacion,
+  construirEmailConfirmacion,
+  construirEmailModificacion,
+  construirEmailPago,
+} from './email';
 import { codigoReserva } from './codigo-reserva';
 
 const BASE = {
@@ -151,5 +157,129 @@ describe('construirEmailPago', () => {
   it('escapa el método de pago', () => {
     const { html } = construirEmailPago({ ...PAGO, metodo: '<b>x</b>' });
     expect(html).not.toContain('<b>x</b>');
+  });
+});
+
+describe('construirEmailCancelacion', () => {
+  const CANCELACION = {
+    reservaId: BASE.reservaId,
+    email: BASE.email,
+    nombreCliente: BASE.nombreCliente,
+    unidadNombre: BASE.unidadNombre,
+    parcelaNombre: BASE.parcelaNombre,
+    fechaIngreso: BASE.fechaIngreso,
+    fechaSalida: BASE.fechaSalida,
+    montoPagado: 0,
+    motivo: 'PANEL' as const,
+  };
+
+  it('cancelada desde el Panel: no habla de plazo vencido ni de pagos', () => {
+    const { html, text, subject } = construirEmailCancelacion(CANCELACION);
+    expect(subject).toContain('Reserva cancelada');
+    expect(html).toContain('A3F91C2D');
+    expect(html).not.toContain('venció');
+    expect(text).not.toContain('LO QUE YA ABONASTE');
+  });
+
+  it('vencida: muestra el plazo en hora de Argentina', () => {
+    const { html, subject } = construirEmailCancelacion({
+      ...CANCELACION,
+      motivo: 'VENCIDA',
+      fechaLimitePago: BASE.fechaLimitePago,
+    });
+    expect(subject).toContain('falta de pago');
+    expect(html).toContain('18:30 hs');
+    expect(html).toContain('ningún pago');
+  });
+
+  it('con pagos registrados avisa del importe sin prometer devolución', () => {
+    const { html, text } = construirEmailCancelacion({ ...CANCELACION, montoPagado: 27000 });
+    expect(html).toContain('$27.000');
+    expect(text).toContain('LO QUE YA ABONASTE');
+    expect(html.toLowerCase()).not.toContain('reembols');
+    expect(html.toLowerCase()).not.toContain('devolvemos');
+  });
+
+  it('escapa el nombre del cliente', () => {
+    const { html } = construirEmailCancelacion({ ...CANCELACION, nombreCliente: '<i>x</i>' });
+    expect(html).not.toContain('<i>x</i>');
+  });
+});
+
+describe('cambiosReserva', () => {
+  const ANTES = {
+    unidadNombre: 'Motorhome',
+    parcelaNombre: 'Parcela 12',
+    fechaIngreso: '2026-10-09',
+    fechaSalida: '2026-10-12',
+    montoTotal: 54000,
+    detallePrecio: BASE.detalle,
+  };
+
+  it('sin cambios visibles para el cliente no hay nada que avisar', () => {
+    expect(cambiosReserva(ANTES, { ...ANTES })).toEqual([]);
+  });
+
+  it('detecta fechas y total con el antes y el después', () => {
+    const cambios = cambiosReserva(ANTES, {
+      ...ANTES,
+      fechaSalida: '2026-10-13',
+      montoTotal: 72000,
+    });
+    expect(cambios).toEqual([
+      { etiqueta: 'Salida', antes: 'lunes, 12 de octubre', ahora: 'martes, 13 de octubre' },
+      { etiqueta: 'Total', antes: '$54.000', ahora: '$72.000' },
+    ]);
+  });
+});
+
+describe('construirEmailModificacion', () => {
+  const MODIFICACION = {
+    reservaId: BASE.reservaId,
+    email: BASE.email,
+    nombreCliente: BASE.nombreCliente,
+    unidadNombre: BASE.unidadNombre,
+    parcelaNombre: BASE.parcelaNombre,
+    fechaIngreso: BASE.fechaIngreso,
+    fechaSalida: '2026-10-13',
+    noches: 4,
+    detalle: [{ ...BASE.detalle[0], subtotal: 72000 }],
+    montoTotal: 72000,
+    descuento: 0,
+    montoPagado: 27000,
+    fechaLimitePago: null,
+    cambios: [
+      { etiqueta: 'Salida', antes: 'lunes, 12 de octubre', ahora: 'martes, 13 de octubre' },
+      { etiqueta: 'Total', antes: '$54.000', ahora: '$72.000' },
+    ],
+  };
+
+  it('muestra qué cambió y el saldo recalculado', () => {
+    const { html, text, subject } = construirEmailModificacion(MODIFICACION);
+    expect(subject).toContain('Reserva modificada');
+    expect(text).toContain('Salida: lunes, 12 de octubre → martes, 13 de octubre');
+    expect(text).toContain('Saldo al ingresar: $45.000');
+    expect(html).toContain('line-through');
+    expect(html).not.toContain('plazo de pago');
+  });
+
+  it('sin pagos recuerda el plazo vigente con la seña del total nuevo', () => {
+    const { html } = construirEmailModificacion({
+      ...MODIFICACION,
+      montoPagado: 0,
+      fechaLimitePago: BASE.fechaLimitePago,
+    });
+    expect(html).toContain('18:30 hs');
+    expect(html).toContain('seña de $36.000');
+    expect(html).not.toContain('Saldo al ingresar');
+  });
+
+  it('muestra el descuento aplicado', () => {
+    const { text } = construirEmailModificacion({
+      ...MODIFICACION,
+      descuento: 5000,
+      montoTotal: 67000,
+    });
+    expect(text).toContain('Descuento: −$5.000');
   });
 });

@@ -8,6 +8,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabase';
+import { enviarEmailCancelacion } from '../../../lib/email';
 
 // Comparación en tiempo constante para no filtrar el secreto por timing.
 function tokenValido(recibido: string | null, esperado: string): boolean {
@@ -42,7 +43,9 @@ export const GET: APIRoute = async ({ request }) => {
 
   const { data: vencidas, error: errBusqueda } = await supabaseAdmin
     .from('reservas')
-    .select('id, monto_total, monto_pagado')
+    .select(
+      'id, monto_total, monto_pagado, email, nombre_cliente, fecha_ingreso, fecha_salida, fecha_limite_pago, unidades(nombre), parcelas(nombre)'
+    )
     // Las impagas son REALIZADA (sql/012); CONFIRMADA queda por las que se
     // crearon antes de esa migración. El filtro de monto_pagado de abajo es
     // el que decide igual.
@@ -62,9 +65,10 @@ export const GET: APIRoute = async ({ request }) => {
   // Antes se cancelaba todo lo que no estuviera pagado al 100%, y eso daba de
   // baja justamente a los clientes que habían hecho lo que se les pidió.
   // Una reserva con descuento del 100% (total 0, sql/016) no espera ningún pago.
-  const idsACancelar = (vencidas ?? [])
-    .filter((r) => Number(r.monto_pagado) <= 0 && Number(r.monto_total) > 0)
-    .map((r) => r.id);
+  const aCancelar = (vencidas ?? []).filter(
+    (r) => Number(r.monto_pagado) <= 0 && Number(r.monto_total) > 0
+  );
+  const idsACancelar = aCancelar.map((r) => r.id);
 
   if (idsACancelar.length === 0) {
     return new Response(JSON.stringify({ ok: true, canceladas: 0 }), { status: 200 });
@@ -79,6 +83,28 @@ export const GET: APIRoute = async ({ request }) => {
     console.error('Cron cancelar-vencidas — error actualizando reservas:', errUpdate);
     return new Response(JSON.stringify({ error: 'Error interno' }), { status: 500 });
   }
+
+  // Sin este aviso el cliente se entera de que perdió la reserva al llegar a
+  // la entrada. Cada envío atrapa sus propios errores (enviarAviso), así que
+  // un rebote no deja sin email al resto.
+  await Promise.all(
+    aCancelar
+      .filter((r) => r.email)
+      .map((r: any) =>
+        enviarEmailCancelacion({
+          reservaId: r.id,
+          email: r.email,
+          nombreCliente: r.nombre_cliente,
+          unidadNombre: r.unidades?.nombre ?? '',
+          parcelaNombre: r.parcelas?.nombre ?? null,
+          fechaIngreso: r.fecha_ingreso,
+          fechaSalida: r.fecha_salida,
+          montoPagado: 0,
+          motivo: 'VENCIDA',
+          fechaLimitePago: new Date(r.fecha_limite_pago),
+        })
+      )
+  );
 
   return new Response(JSON.stringify({ ok: true, canceladas: idsACancelar.length }), {
     status: 200,

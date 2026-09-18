@@ -21,7 +21,7 @@ import { NEGOCIO, DIRECCION_COMPLETA } from './negocio';
 // existe para apuntar a otro host mientras el dominio definitivo no esté
 // conectado en Vercel (ver DATOS-PENDIENTES.md): si el logo apunta a un
 // dominio que todavía no resuelve, el email llega con un cuadro roto.
-const BASE_URL = (
+export const BASE_URL = (
   import.meta.env.EMAIL_BASE_URL ||
   import.meta.env.SITE ||
   'https://tierrarojaiguazu.com'

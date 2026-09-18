@@ -18,6 +18,7 @@ import {
   esTipoPublico,
 } from '../../../../lib/reservas';
 import { validarDatosCliente } from '../../../../lib/validacion';
+import { cambiosReserva, enviarEmailModificacion } from '../../../../lib/email';
 
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
   if (!locals.usuario) {
@@ -204,5 +205,33 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   }
 
   const actualizada = await obtenerReserva(id);
+
+  // Solo se avisa si cambió algo que el cliente ve (fechas, alojamiento,
+  // personas, total): corregir un teléfono o un DNI no merece un email.
+  const cambios = actualizada ? cambiosReserva(reserva, actualizada) : [];
+  if (actualizada?.email && cambios.length > 0) {
+    const sinPagos =
+      actualizada.estado === 'REALIZADA' &&
+      actualizada.montoPagado <= 0 &&
+      actualizada.montoTotal > 0;
+    await enviarEmailModificacion({
+      reservaId: id,
+      email: actualizada.email,
+      nombreCliente: actualizada.nombreCliente,
+      unidadNombre: actualizada.unidadNombre,
+      parcelaNombre: actualizada.parcelaNombre,
+      fechaIngreso: actualizada.fechaIngreso,
+      fechaSalida: actualizada.fechaSalida,
+      noches,
+      detalle: actualizada.detallePrecio,
+      montoTotal: actualizada.montoTotal,
+      descuento: actualizada.descuento,
+      montoPagado: actualizada.montoPagado,
+      fechaLimitePago:
+        sinPagos && actualizada.fechaLimitePago ? new Date(actualizada.fechaLimitePago) : null,
+      cambios,
+    });
+  }
+
   return new Response(JSON.stringify({ ok: true, reserva: actualizada }), { status: 200 });
 };

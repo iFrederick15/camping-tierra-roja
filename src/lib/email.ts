@@ -8,6 +8,7 @@ import { escaparHtml } from './html';
 import type { ItemPrecio } from './reservas';
 import { codigoReserva } from './codigo-reserva';
 import {
+  BASE_URL,
   C,
   FUENTE_CUERPO,
   FUENTE_TITULO,
@@ -585,6 +586,415 @@ export async function enviarEmailPago(datos: DatosPago) {
   } catch (e) {
     console.error('No se pudo enviar el email de pago:', e);
   }
+}
+
+/**
+ * Envío "mejor esfuerzo" compartido por los avisos que dispara Staff o el
+ * cron: el cambio ya quedó guardado en la base y un fallo de Resend no puede
+ * deshacerlo ni hacer que el Panel muestre un error por algo que sí se hizo.
+ */
+async function enviarAviso(
+  tipo: string,
+  reservaId: string,
+  email: string,
+  armado: { subject: string; html: string; text: string }
+) {
+  try {
+    if (!import.meta.env.RESEND_API_KEY) {
+      console.error(
+        `RESEND_API_KEY no está configurada — la reserva ${reservaId} se actualizó, ` +
+          `pero el cliente NO recibió el email de ${tipo}.`
+      );
+      return;
+    }
+
+    const resend = new Resend(import.meta.env.RESEND_API_KEY);
+    const { error } = await resend.emails.send({
+      from: remitente('Tierra Roja <reservas@tierrarojaiguazu.com>'),
+      to: email,
+      replyTo: NEGOCIO.email,
+      ...armado,
+    });
+
+    if (error) {
+      console.error(`Resend rechazó el email de ${tipo} de la reserva ${reservaId}:`, error);
+    }
+  } catch (e) {
+    console.error(`No se pudo enviar el email de ${tipo}:`, e);
+  }
+}
+
+/** Pie con los datos de contacto, citando el código de la reserva. */
+function cierreContacto(pregunta: string, codigo: string, waUrl: string): string {
+  return bloque(
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ${C.borde};">
+        <tr>
+          <td style="padding:22px 0 0;">
+            <p style="margin:0;font-family:${FUENTE_CUERPO};font-size:14px;line-height:22px;color:${C.textoSuave};">
+              ${pregunta} Escríbenos por
+              <a href="${waUrl}" style="color:${C.primario};font-weight:600;text-decoration:none;">WhatsApp</a>
+              o llámanos al <a href="tel:${NEGOCIO.telefonoE164}" style="color:${C.primario};font-weight:600;text-decoration:none;">${NEGOCIO.telefono}</a>, citando el código ${codigo}.
+            </p>
+          </td>
+        </tr>
+      </table>`,
+    '30px'
+  );
+}
+
+function waReserva(codigo: string, nombreCliente: string): string {
+  return `https://wa.me/${NEGOCIO.whatsapp}?text=${encodeURIComponent(
+    `Hola Camping Tierra Roja, consulto por la reserva ${codigo} a nombre de ${nombreCliente}.`
+  )}`;
+}
+
+/** Aviso destacado con borde lateral, igual al bloque de pago de la confirmación. */
+function cajaAviso(titulo: string, cuerpo: string): string {
+  return bloque(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${C.fondoCrema};border:1px solid ${C.borde};border-left:4px solid ${C.primario};border-radius:10px;">
+        <tr>
+          <td class="pad" style="padding:22px 24px;">
+            ${tituloSeccion(titulo)}
+            <p style="margin:0;font-family:${FUENTE_CUERPO};font-size:15px;line-height:23px;color:${C.texto};">${cuerpo}</p>
+          </td>
+        </tr>
+      </table>`);
+}
+
+function encabezadoAviso(nombreCliente: string, titulo: string, bajada: string): string {
+  return bloque(`
+      <p style="margin:0 0 10px;font-family:${FUENTE_CUERPO};font-size:16px;color:${C.texto};">Hola ${escaparHtml(nombreCliente)},</p>
+      <h1 style="margin:0 0 12px;font-family:${FUENTE_TITULO};font-size:27px;line-height:1.2;font-weight:700;color:${C.texto};">${titulo}</h1>
+      <p style="margin:0;font-family:${FUENTE_CUERPO};font-size:15px;line-height:23px;color:${C.textoSuave};">${bajada}</p>`);
+}
+
+const PIE_TEXTO = ['', NEGOCIO.nombre, `${NEGOCIO.telefono} · ${NEGOCIO.email}`];
+
+interface DatosCancelacion {
+  reservaId: string;
+  email: string;
+  nombreCliente: string;
+  unidadNombre: string;
+  parcelaNombre?: string | null;
+  fechaIngreso: string;
+  fechaSalida: string;
+  /** Lo abonado hasta la cancelación: si hay, el cliente tiene que saber que
+   *  se resuelve aparte (Términos § 6, "evaluando cada caso"). */
+  montoPagado: number;
+  /**
+   * `PANEL`: la canceló Staff (casi siempre a pedido del cliente).
+   * `VENCIDA`: la canceló el cron porque venció el plazo sin ningún pago.
+   */
+  motivo: 'PANEL' | 'VENCIDA';
+  /** Solo para `VENCIDA`: el plazo que venció, para que el cliente lo reconozca. */
+  fechaLimitePago?: Date | null;
+}
+
+/**
+ * Arma el email de reserva cancelada sin enviarlo (mismo motivo que
+ * `construirEmailConfirmacion`: previsualizar y testear sin Resend).
+ *
+ * No promete devolución: los Términos dicen que la seña se evalúa caso por
+ * caso, así que el email solo le avisa al cliente que lo abonado se conversa.
+ */
+export function construirEmailCancelacion(datos: DatosCancelacion): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const codigo = codigoReserva(datos.reservaId);
+  const vencida = datos.motivo === 'VENCIDA';
+  const plazo = vencida && datos.fechaLimitePago ? fmtFechaHora(datos.fechaLimitePago) : null;
+  const estadia = `${fmtFechaCorta(datos.fechaIngreso)} al ${fmtFechaCorta(datos.fechaSalida)}`;
+  const urlReservar = `${BASE_URL}/reservar`;
+
+  const bajada = vencida
+    ? `${plazo ? `El plazo para transferir venció el ${plazo}` : 'El plazo para transferir venció'} sin que registráramos ningún pago, así que la reserva se canceló y las fechas quedaron libres.`
+    : 'Cancelamos tu reserva y las fechas quedaron libres. Si no lo pediste tú, avísanos cuanto antes.';
+
+  const filas = [
+    filaDato('Código de reserva', codigo),
+    filaDato('Alojamiento', escaparHtml(datos.unidadNombre)),
+    datos.parcelaNombre ? filaDato('Ubicación', escaparHtml(datos.parcelaNombre)) : '',
+    filaDato('Estadía', estadia, true),
+  ].join('');
+
+  const detalle = bloque(`
+      ${tituloSeccion('Reserva cancelada')}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${filas}</table>`);
+
+  const hayPagos = datos.montoPagado > 0;
+  const pagos = hayPagos
+    ? cajaAviso(
+        'Lo que ya abonaste',
+        `Registramos pagos por <strong style="color:${C.primario};">${fmtMoneda(datos.montoPagado)}</strong> en esta reserva. Escríbenos por WhatsApp citando el código ${codigo} y lo resolvemos según la anticipación de la cancelación.`
+      )
+    : '';
+
+  const volver = bloque(`
+      <p style="margin:0 0 16px;font-family:${FUENTE_CUERPO};font-size:15px;line-height:23px;color:${C.texto};">
+        ${vencida ? 'Si todavía quieres venir, puedes reservar de nuevo: el precio y la disponibilidad se calculan al momento.' : 'Si quieres venir en otras fechas, puedes hacer una reserva nueva cuando quieras.'}
+      </p>
+      ${boton(urlReservar, 'Reservar de nuevo')}`);
+
+  const html = plantillaEmail({
+    preheader: `Reserva ${codigo} · ${datos.unidadNombre}, ${estadia} · Cancelada`,
+    contenido:
+      encabezadoAviso(datos.nombreCliente, 'Tu reserva fue cancelada.', bajada) +
+      detalle +
+      pagos +
+      volver +
+      cierreContacto('¿Crees que es un error?', codigo, waReserva(codigo, datos.nombreCliente)),
+  });
+
+  const text = [
+    `Hola ${datos.nombreCliente},`,
+    '',
+    'Tu reserva fue cancelada.',
+    bajada,
+    '',
+    'RESERVA CANCELADA',
+    `Código de reserva: ${codigo}`,
+    `Alojamiento: ${datos.unidadNombre}`,
+    ...(datos.parcelaNombre ? [`Ubicación: ${datos.parcelaNombre}`] : []),
+    `Estadía: ${estadia}`,
+    ...(hayPagos
+      ? [
+          '',
+          'LO QUE YA ABONASTE',
+          `Registramos pagos por ${fmtMoneda(datos.montoPagado)} en esta reserva. Escríbenos por WhatsApp citando el código ${codigo} y lo resolvemos según la anticipación de la cancelación.`,
+        ]
+      : []),
+    '',
+    `Para reservar de nuevo: ${urlReservar}`,
+    '',
+    `¿Crees que es un error? Escríbenos al ${NEGOCIO.telefono} citando el código ${codigo}.`,
+    ...PIE_TEXTO,
+  ].join('\n');
+
+  return {
+    subject: vencida
+      ? `Reserva ${codigo} cancelada por falta de pago`
+      : `Reserva cancelada — ${datos.unidadNombre}, ${fmtFechaCorta(datos.fechaIngreso)}`,
+    html,
+    text,
+  };
+}
+
+export async function enviarEmailCancelacion(datos: DatosCancelacion) {
+  await enviarAviso('cancelación', datos.reservaId, datos.email, construirEmailCancelacion(datos));
+}
+
+/** Lo que el cliente ve de una reserva: alcanza para detectar y describir cambios. */
+export interface VistaReserva {
+  unidadNombre: string;
+  parcelaNombre: string | null;
+  fechaIngreso: string;
+  fechaSalida: string;
+  montoTotal: number;
+  detallePrecio: ItemPrecio[];
+}
+
+export interface CambioReserva {
+  etiqueta: string;
+  antes: string;
+  ahora: string;
+}
+
+/**
+ * Qué cambió entre dos versiones de una reserva, en términos del cliente.
+ *
+ * Solo mira lo que figura en el email de confirmación: si Staff corrige un
+ * teléfono o un DNI no hay nada que avisarle al cliente, y un email por cada
+ * retoque de datos internos le quitaría peso a los avisos que sí importan.
+ * Devuelve lista vacía cuando no hay nada que avisar.
+ */
+export function cambiosReserva(antes: VistaReserva, despues: VistaReserva): CambioReserva[] {
+  const personas = (d: ItemPrecio[]) =>
+    d.map((i) => `${i.etiqueta}${i.cantidad > 1 ? ` × ${i.cantidad}` : ''}`).join(', ');
+
+  const comparar: Array<[string, string, string]> = [
+    ['Alojamiento', antes.unidadNombre, despues.unidadNombre],
+    ['Ubicación', antes.parcelaNombre ?? '—', despues.parcelaNombre ?? '—'],
+    ['Ingreso', fmtFecha(antes.fechaIngreso), fmtFecha(despues.fechaIngreso)],
+    ['Salida', fmtFecha(antes.fechaSalida), fmtFecha(despues.fechaSalida)],
+    ['Incluye', personas(antes.detallePrecio), personas(despues.detallePrecio)],
+    ['Total', fmtMoneda(antes.montoTotal), fmtMoneda(despues.montoTotal)],
+  ];
+
+  return comparar
+    .filter(([, a, b]) => a !== b)
+    .map(([etiqueta, a, b]) => ({ etiqueta, antes: a, ahora: b }));
+}
+
+interface DatosModificacion {
+  reservaId: string;
+  email: string;
+  nombreCliente: string;
+  unidadNombre: string;
+  parcelaNombre?: string | null;
+  fechaIngreso: string;
+  fechaSalida: string;
+  noches: number;
+  detalle: ItemPrecio[];
+  /** Ya con el descuento restado (sql/016). */
+  montoTotal: number;
+  descuento: number;
+  montoPagado: number;
+  /** Plazo vigente si la reserva web sigue sin ningún pago; si no, `null`. */
+  fechaLimitePago: Date | null;
+  cambios: CambioReserva[];
+}
+
+/**
+ * Arma el email de reserva modificada sin enviarlo. Muestra primero qué
+ * cambió (antes → ahora) y después la reserva completa como quedó, para que
+ * este email reemplace al de confirmación como la constancia vigente.
+ */
+export function construirEmailModificacion(datos: DatosModificacion): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const codigo = codigoReserva(datos.reservaId);
+  const saldo = Math.max(datos.montoTotal - datos.montoPagado, 0);
+
+  const filasCambios = datos.cambios
+    .map((c, i, todos) =>
+      filaDato(
+        escaparHtml(c.etiqueta),
+        `<span style="font-weight:400;color:${C.textoSuave};text-decoration:line-through;">${escaparHtml(c.antes)}</span><br>${escaparHtml(c.ahora)}`,
+        i === todos.length - 1
+      )
+    )
+    .join('');
+
+  const cambios = bloque(`
+      ${tituloSeccion('Qué cambió')}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${filasCambios}</table>`);
+
+  const filasEstadia = [
+    filaDato('Código de reserva', codigo),
+    filaDato('Alojamiento', escaparHtml(datos.unidadNombre)),
+    datos.parcelaNombre ? filaDato('Ubicación asignada', escaparHtml(datos.parcelaNombre)) : '',
+    filaDato('Ingreso', fmtFecha(datos.fechaIngreso)),
+    filaDato('Salida', `${fmtFecha(datos.fechaSalida)}, hasta las 10:00 hs`),
+    filaDato('Noches', String(datos.noches), true),
+  ].join('');
+
+  const estadia = bloque(`
+      ${tituloSeccion('Tu reserva actualizada')}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${filasEstadia}</table>`);
+
+  const filasDetalle = [
+    ...datos.detalle.map((i) =>
+      filaDato(
+        `${escaparHtml(i.etiqueta)}${i.cantidad > 1 ? ` × ${i.cantidad}` : ''}`,
+        fmtMoneda(i.subtotal)
+      )
+    ),
+    datos.descuento > 0 ? filaDato('Descuento', `−${fmtMoneda(datos.descuento)}`) : '',
+  ].join('');
+
+  const precio = bloque(`
+      ${tituloSeccion('Detalle')}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        ${filasDetalle}
+        <tr>
+          <td style="padding:14px 0 0;font-family:${FUENTE_TITULO};font-size:17px;font-weight:700;color:${C.texto};">Total</td>
+          <td align="right" style="padding:14px 0 0;font-family:${FUENTE_TITULO};font-size:20px;font-weight:700;color:${C.primario};">${fmtMoneda(datos.montoTotal)}</td>
+        </tr>
+      </table>
+      ${
+        datos.montoPagado > 0
+          ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;">
+              ${filaDato('Pagado hasta hoy', fmtMoneda(datos.montoPagado), saldo === 0)}
+              ${saldo > 0 ? filaDato('Saldo al ingresar', fmtMoneda(saldo), true) : ''}
+            </table>`
+          : ''
+      }`);
+
+  // Editar la reserva no mueve el plazo (el PATCH no toca fecha_limite_pago):
+  // si sigue sin pagos, el cliente tiene que saber que el vencimiento sigue en
+  // pie. La seña se recalcula sobre el total nuevo: la del email de
+  // confirmación puede haber quedado corta.
+  const sena = calcularSena(datos.montoTotal);
+  const minimo =
+    sena.saldo > 0
+      ? `al menos la seña de ${fmtMoneda(sena.monto)}`
+      : `el total de ${fmtMoneda(datos.montoTotal)}`;
+  const plazo = datos.fechaLimitePago
+    ? cajaAviso(
+        'Tu plazo de pago sigue igual',
+        `Para no perder la reserva, transfiere ${minimo} antes del <strong style="color:${C.primario};">${fmtFechaHora(datos.fechaLimitePago)}</strong> y envíanos el comprobante por WhatsApp. Los datos para transferir son los del email de confirmación.`
+      )
+    : '';
+
+  const html = plantillaEmail({
+    preheader: `Reserva ${codigo} · Cambios en: ${datos.cambios.map((c) => c.etiqueta.toLowerCase()).join(', ')}`,
+    contenido:
+      encabezadoAviso(
+        datos.nombreCliente,
+        'Actualizamos tu reserva.',
+        'Estos son los cambios. El código de reserva es el mismo y este correo reemplaza al resumen anterior.'
+      ) +
+      cambios +
+      estadia +
+      precio +
+      plazo +
+      cierreContacto('¿Algo no coincide?', codigo, waReserva(codigo, datos.nombreCliente)),
+  });
+
+  const text = [
+    `Hola ${datos.nombreCliente},`,
+    '',
+    'Actualizamos tu reserva. El código es el mismo y este correo reemplaza al resumen anterior.',
+    '',
+    'QUÉ CAMBIÓ',
+    ...datos.cambios.map((c) => `${c.etiqueta}: ${c.antes} → ${c.ahora}`),
+    '',
+    'TU RESERVA ACTUALIZADA',
+    `Código de reserva: ${codigo}`,
+    `Alojamiento: ${datos.unidadNombre}`,
+    ...(datos.parcelaNombre ? [`Ubicación asignada: ${datos.parcelaNombre}`] : []),
+    `Ingreso: ${fmtFecha(datos.fechaIngreso)}`,
+    `Salida: ${fmtFecha(datos.fechaSalida)}, hasta las 10:00 hs`,
+    `Noches: ${datos.noches}`,
+    '',
+    'DETALLE',
+    ...datos.detalle.map(
+      (i) => `- ${i.etiqueta}${i.cantidad > 1 ? ` x ${i.cantidad}` : ''}: ${fmtMoneda(i.subtotal)}`
+    ),
+    ...(datos.descuento > 0 ? [`- Descuento: −${fmtMoneda(datos.descuento)}`] : []),
+    `Total: ${fmtMoneda(datos.montoTotal)}`,
+    ...(datos.montoPagado > 0 ? [`Pagado hasta hoy: ${fmtMoneda(datos.montoPagado)}`] : []),
+    ...(datos.montoPagado > 0 && saldo > 0 ? [`Saldo al ingresar: ${fmtMoneda(saldo)}`] : []),
+    ...(datos.fechaLimitePago
+      ? [
+          '',
+          'TU PLAZO DE PAGO SIGUE IGUAL',
+          `Transfiere ${minimo} antes del ${fmtFechaHora(datos.fechaLimitePago)} y envíanos el comprobante por WhatsApp.`,
+        ]
+      : []),
+    '',
+    `¿Algo no coincide? Escríbenos al ${NEGOCIO.telefono} citando el código ${codigo}.`,
+    ...PIE_TEXTO,
+  ].join('\n');
+
+  return {
+    subject: `Reserva modificada — ${datos.unidadNombre}, ${fmtFechaCorta(datos.fechaIngreso)}`,
+    html,
+    text,
+  };
+}
+
+export async function enviarEmailModificacion(datos: DatosModificacion) {
+  await enviarAviso(
+    'modificación',
+    datos.reservaId,
+    datos.email,
+    construirEmailModificacion(datos)
+  );
 }
 
 interface DatosContacto {

@@ -1,4 +1,4 @@
-// Genera los emails de confirmación con datos de ejemplo y los abre en el
+// Genera los emails al cliente con datos de ejemplo y los abre en el
 // navegador, para revisar el diseño sin gastar envíos de Resend ni crear
 // reservas de prueba.
 //
@@ -76,14 +76,43 @@ const servidor = await createServer({
   appType: 'custom',
   envPrefix: ['VITE_', 'PAGO_', 'EMAIL_'],
 });
-const { construirEmailConfirmacion } = await servidor.ssrLoadModule('/src/lib/email.ts');
+const { construirEmailConfirmacion, construirEmailCancelacion, construirEmailModificacion } =
+  await servidor.ssrLoadModule('/src/lib/email.ts');
+
+const web = CASOS['reserva-web'];
+const armar = {
+  'reserva-web': () => construirEmailConfirmacion(web),
+  'reserva-manual': () => construirEmailConfirmacion(CASOS['reserva-manual']),
+  'cancelacion-panel': () =>
+    construirEmailCancelacion({ ...web, montoPagado: 40500, motivo: 'PANEL' }),
+  'cancelacion-vencida': () =>
+    construirEmailCancelacion({ ...web, montoPagado: 0, motivo: 'VENCIDA' }),
+  modificacion: () =>
+    construirEmailModificacion({
+      ...web,
+      fechaSalida: '2026-10-13',
+      noches: 4,
+      detalle: [
+        { ...web.detalle[0], subtotal: 72000 },
+        { ...web.detalle[1], subtotal: 36000 },
+      ],
+      montoTotal: 108000,
+      descuento: 0,
+      montoPagado: 40500,
+      fechaLimitePago: null,
+      cambios: [
+        { etiqueta: 'Salida', antes: 'lunes, 12 de octubre', ahora: 'martes, 13 de octubre' },
+        { etiqueta: 'Total', antes: '$81.000', ahora: '$108.000' },
+      ],
+    }),
+};
 
 await mkdir(SALIDA, { recursive: true });
 const generados = [];
 const armados = [];
 
-for (const [nombre, datos] of Object.entries(CASOS)) {
-  const { subject, html, text } = construirEmailConfirmacion(datos);
+for (const [nombre, construir] of Object.entries(armar)) {
+  const { subject, html, text } = construir();
   const archivo = resolve(SALIDA, `${nombre}.html`);
   await writeFile(archivo, html);
   await writeFile(resolve(SALIDA, `${nombre}.txt`), `Asunto: ${subject}\n\n${text}`);
