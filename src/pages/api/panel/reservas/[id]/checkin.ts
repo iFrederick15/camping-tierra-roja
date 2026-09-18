@@ -12,6 +12,13 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   if (!reserva) {
     return new Response(JSON.stringify({ error: 'Reserva no encontrada' }), { status: 404 });
   }
+  // Una reserva REALIZADA todavía no tiene seña: el primer pago la confirma.
+  if (reserva.estado === 'REALIZADA') {
+    return new Response(
+      JSON.stringify({ error: 'No se puede hacer check-in sin al menos un pago registrado' }),
+      { status: 400 }
+    );
+  }
   if (reserva.estado !== 'CONFIRMADA') {
     return new Response(JSON.stringify({ error: 'Esta reserva no está en estado Confirmada' }), {
       status: 400,
@@ -32,6 +39,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     .from('reservas')
     .update({
       estado: 'CHECKIN_HECHO',
+      checkin_en: new Date().toISOString(),
       cantidad_acompanantes: cantidadAcompanantes,
       datos_vehiculo: datosVehiculo,
     })

@@ -25,7 +25,7 @@ export const POST: APIRoute = async ({ params, locals }) => {
 
   const { error } = await supabaseAdmin
     .from('reservas')
-    .update({ estado: 'CHECKOUT_HECHO' })
+    .update({ estado: 'CHECKOUT_HECHO', checkout_en: new Date().toISOString() })
     .eq('id', id);
 
   if (error) {

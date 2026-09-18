@@ -52,13 +52,19 @@ export default function ComentariosReserva({ reservaId, comentariosIniciales }: 
     });
 
   return (
-    <div className="bg-superficie rounded-card border-2 border-borde p-5 flex flex-col gap-4">
-      <h2 className="font-titulo font-bold text-negro">Comentarios</h2>
+    <div className="bg-superficie-elevada rounded-card p-5 flex flex-col gap-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-titulo font-bold text-negro">Notas internas</h2>
+        <span className="flex items-center gap-1 text-texto-suave text-xs">
+          <span className="material-symbols-outlined text-[15px]">lock</span>
+          Solo visible para el equipo
+        </span>
+      </div>
 
       <form onSubmit={agregar} className="flex flex-col gap-3">
         <textarea
           placeholder="Deja asentado cualquier inconveniente o novedad."
-          className="w-full border-2 border-borde rounded-card px-4 py-2.5 focus:border-primario focus:outline-none transition-colors resize-y min-h-[80px]"
+          className="w-full bg-superficie border-2 border-borde rounded-card px-4 py-2.5 focus:border-primario focus:outline-none transition-colors resize-y min-h-[80px]"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           maxLength={2000}
@@ -70,12 +76,12 @@ export default function ComentariosReserva({ reservaId, comentariosIniciales }: 
           disabled={enviando || !texto.trim()}
           className="self-start inline-flex items-center gap-2 bg-primario text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors disabled:opacity-40"
         >
-          {enviando ? 'Guardando…' : 'Agregar comentario'}
+          {enviando ? 'Guardando…' : 'Agregar nota'}
         </button>
       </form>
 
       {comentarios.length === 0 ? (
-        <p className="text-texto-suave text-sm">Todavía no hay comentarios.</p>
+        <p className="text-texto-suave text-sm">Todavía no hay notas.</p>
       ) : (
         <ul className="flex flex-col gap-3 pt-1">
           {comentarios.map((c) => (

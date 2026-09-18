@@ -1,0 +1,21 @@
+-- ============================================================
+-- Tierra Roja — Migración 011: estado REALIZADA (parte 1 de 2).
+--
+-- Una reserva recién hecha todavía no está confirmada: se confirma cuando
+-- el cliente abona al menos la seña. Hasta ahora las dos cosas se guardaban
+-- como CONFIRMADA. REALIZADA pasa a ser el estado inicial y el primer pago
+-- la mueve a CONFIRMADA (ver 012).
+--
+-- Va sola en su archivo: Postgres no deja usar un valor de enum en la misma
+-- transacción que lo agrega, y el editor SQL de Supabase corre cada script
+-- entero en una transacción.
+--
+-- ORDEN DE DESPLIEGUE:
+--   1. Correr este archivo.
+--   2. Deployar el código que cuenta REALIZADA como ocupada.
+--   3. Correr 012_realizada_datos.sql.
+-- Correr 012 antes del deploy dejaría al código viejo sin ver las reservas
+-- REALIZADA como ocupadas (fechas vendibles dos veces).
+-- ============================================================
+
+alter type estado_reserva add value if not exists 'REALIZADA' before 'CONFIRMADA';

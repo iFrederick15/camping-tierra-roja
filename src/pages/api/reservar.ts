@@ -160,7 +160,8 @@ export const POST: APIRoute = async ({ request }) => {
       fecha_salida: fechaSalida,
       monto_total: montoTotal,
       fecha_limite_pago: fechaLimitePago.toISOString(),
-      estado: 'CONFIRMADA',
+      // Se confirma con el primer pago (registrar_pago, sql/012).
+      estado: 'REALIZADA',
       origen: 'WEB',
     })
     .select('id')

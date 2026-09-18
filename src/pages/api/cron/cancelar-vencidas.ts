@@ -43,7 +43,10 @@ export const GET: APIRoute = async ({ request }) => {
   const { data: vencidas, error: errBusqueda } = await supabaseAdmin
     .from('reservas')
     .select('id, monto_pagado')
-    .eq('estado', 'CONFIRMADA')
+    // Las impagas son REALIZADA (sql/012); CONFIRMADA queda por las que se
+    // crearon antes de esa migración. El filtro de monto_pagado de abajo es
+    // el que decide igual.
+    .in('estado', ['REALIZADA', 'CONFIRMADA'])
     .eq('origen', 'WEB')
     .not('fecha_limite_pago', 'is', null)
     .lt('fecha_limite_pago', ahora);

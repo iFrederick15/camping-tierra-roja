@@ -108,6 +108,11 @@ export type Disponibilidad =
 // ------------------------------------------------------------
 const FORMATO_FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
+// Estados de reserva que ocupan lugar. REALIZADA (sin seña todavía) ocupa
+// igual que CONFIRMADA hasta que se paga o la cancela el cron de vencidas:
+// si no, esas fechas se podrían vender dos veces. Ver sql/011 y 012.
+const ESTADOS_QUE_OCUPAN = ['REALIZADA', 'CONFIRMADA', 'CHECKIN_HECHO'];
+
 export interface Bloqueo {
   id: string;
   unidadId: string;
@@ -241,7 +246,7 @@ export async function obtenerDisponibilidad(
     .from('reservas')
     .select('parcela_id')
     .eq('unidad_id', unidad.id)
-    .in('estado', ['CONFIRMADA', 'CHECKIN_HECHO'])
+    .in('estado', ESTADOS_QUE_OCUPAN)
     .lt('fecha_ingreso', hasta)
     .gt('fecha_salida', desde);
   if (excluirReservaId) queryReservas = queryReservas.neq('id', excluirReservaId);
@@ -346,7 +351,7 @@ export async function asignarParcelaMotorhome(
     .from('reservas')
     .select('parcela_id')
     .eq('unidad_id', unidadId)
-    .in('estado', ['CONFIRMADA', 'CHECKIN_HECHO'])
+    .in('estado', ESTADOS_QUE_OCUPAN)
     .lt('fecha_ingreso', hasta)
     .gt('fecha_salida', desde);
   if (excluirReservaId) querySolapadas = querySolapadas.neq('id', excluirReservaId);
@@ -467,7 +472,7 @@ export async function crearBloqueo(
         .from('reservas')
         .select('parcela_id, fecha_ingreso, fecha_salida')
         .eq('unidad_id', unidad.id)
-        .in('estado', ['CONFIRMADA', 'CHECKIN_HECHO'])
+        .in('estado', ESTADOS_QUE_OCUPAN)
         .lt('fecha_ingreso', fechaFin)
         .gt('fecha_salida', fechaInicio),
       listarBloqueos(unidad.id, fechaInicio, fechaFin),
@@ -638,7 +643,12 @@ export function diaSiguiente(fechaISO: string): string {
   return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
 }
 
-export type EstadoReserva = 'CONFIRMADA' | 'CHECKIN_HECHO' | 'CHECKOUT_HECHO' | 'CANCELADA';
+export type EstadoReserva =
+  | 'REALIZADA'
+  | 'CONFIRMADA'
+  | 'CHECKIN_HECHO'
+  | 'CHECKOUT_HECHO'
+  | 'CANCELADA';
 
 export interface ReservaResumen {
   id: string;
@@ -663,6 +673,10 @@ export interface ReservaResumen {
   parcelaId: string | null;
   categoriaSeleccionada: string | null;
   datosVehiculo: string | null;
+  creadoEn: string;
+  // null en las reservas anteriores a sql/013 o que todavía no llegaron/salieron.
+  checkinEn: string | null;
+  checkoutEn: string | null;
 }
 
 type FiltroReservas =
@@ -675,7 +689,7 @@ type FiltroReservas =
   | { modo: 'del-dia'; fecha: string };
 
 const SELECT_RESUMEN =
-  'id, nombre_cliente, dni, telefono, email, fecha_ingreso, fecha_salida, monto_total, monto_pagado, fecha_limite_pago, estado, origen, cantidad_acompanantes, cantidad_menores, cantidad_mayores, detalle_precio, parcela_id, categoria_seleccionada, datos_vehiculo, unidades(nombre, tipo), parcelas(nombre)';
+  'id, nombre_cliente, dni, telefono, email, fecha_ingreso, fecha_salida, monto_total, monto_pagado, fecha_limite_pago, estado, origen, cantidad_acompanantes, cantidad_menores, cantidad_mayores, detalle_precio, parcela_id, categoria_seleccionada, datos_vehiculo, creado_en, checkin_en, checkout_en, unidades(nombre, tipo), parcelas(nombre)';
 
 function mapearResumen(r: any): ReservaResumen {
   return {
@@ -701,6 +715,9 @@ function mapearResumen(r: any): ReservaResumen {
     parcelaId: r.parcela_id ?? null,
     categoriaSeleccionada: r.categoria_seleccionada ?? null,
     datosVehiculo: r.datos_vehiculo ?? null,
+    creadoEn: r.creado_en,
+    checkinEn: r.checkin_en ?? null,
+    checkoutEn: r.checkout_en ?? null,
   };
 }
 
@@ -712,7 +729,7 @@ export async function listarReservas(filtro: FiltroReservas): Promise<ReservaRes
   let query = supabaseAdmin.from('reservas').select(SELECT_RESUMEN);
 
   if (filtro.modo === 'llegadas-hoy') {
-    query = query.eq('fecha_ingreso', hoy).eq('estado', 'CONFIRMADA');
+    query = query.eq('fecha_ingreso', hoy).in('estado', ['REALIZADA', 'CONFIRMADA']);
   } else if (filtro.modo === 'salidas-hoy') {
     query = query.eq('fecha_salida', hoy).eq('estado', 'CHECKIN_HECHO');
   } else if (filtro.modo === 'del-dia') {
@@ -752,7 +769,7 @@ export async function listarReservas(filtro: FiltroReservas): Promise<ReservaRes
     query = query.or(condiciones.join(',')).order('fecha_ingreso', { ascending: false }).limit(30);
   } else {
     query = query
-      .eq('estado', 'CONFIRMADA')
+      .in('estado', ['REALIZADA', 'CONFIRMADA'])
       .not('fecha_limite_pago', 'is', null)
       .order('fecha_limite_pago', { ascending: true });
   }
@@ -939,6 +956,49 @@ export async function agregarComentario(
     return null;
   }
   return { id: data.id, texto: data.texto, autor: data.autor, creadoEn: data.creado_en };
+}
+
+// ------------------------------------------------------------
+// Lecturas para la pantalla de Detalle: pagos de la reserva e historial del
+// cliente. Solo leen — el alta de pagos sigue siendo la RPC registrar_pago.
+// ------------------------------------------------------------
+export interface PagoReserva {
+  id: string;
+  monto: number;
+  metodo: string;
+  nota: string | null;
+  registradoPor: string | null;
+  creadoEn: string;
+}
+
+export async function listarPagos(reservaId: string): Promise<PagoReserva[]> {
+  const { data, error } = await supabaseAdmin
+    .from('pagos')
+    .select('id, monto, metodo, nota, registrado_por, creado_en')
+    .eq('reserva_id', reservaId)
+    .order('creado_en', { ascending: true });
+  if (error || !data) return [];
+  return data.map((p: any) => ({
+    id: p.id,
+    monto: Number(p.monto),
+    metodo: p.metodo,
+    nota: p.nota,
+    registradoPor: p.registrado_por,
+    creadoEn: p.creado_en,
+  }));
+}
+
+// No hay tabla de clientes: el DNI es lo único que identifica a la misma
+// persona entre reservas. Las canceladas no cuentan como estadía.
+export async function contarReservasPrevias(dni: string, excluirId: string): Promise<number> {
+  const { count, error } = await supabaseAdmin
+    .from('reservas')
+    .select('id', { count: 'exact', head: true })
+    .eq('dni', dni)
+    .neq('id', excluirId)
+    .neq('estado', 'CANCELADA');
+  if (error) return 0;
+  return count ?? 0;
 }
 
 // Detalle de una reserva puntual — Detalle/Check-in/Check-out.
