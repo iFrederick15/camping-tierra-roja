@@ -19,11 +19,15 @@ const estadoPago = calcularEstadoPago(reserva.montoTotal, reserva.montoPagado);
 const estilo = ESTILO_ESTADO_PAGO[estadoPago];
 const fmt = (f: string) =>
   new Date(f + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+// Lo que falta cobrar: el check-in pide al menos un pago y el check-out el
+// pago completo, así que en el mostrador el monto importa más que el estado.
+const saldo = Math.max(0, reserva.montoTotal - reserva.montoPagado);
+const fmtMoneda = (n: number) => `$${n.toLocaleString('es-AR')}`;
 ---
 
 <a
   href={`/panel/reservas/${reserva.id}`}
-  class="flex items-center justify-between gap-4 rounded-card border-2 border-borde px-5 py-4 hover:border-primario-claro transition-colors bg-superficie"
+  class="group flex items-center justify-between gap-4 rounded-card border-2 border-borde bg-superficie py-4 pl-5 pr-3 transition-colors hover:border-primario-claro focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 focus-visible:ring-offset-2 focus-visible:ring-offset-fondo sm:pr-4"
 >
   <div class="flex flex-col gap-0.5 min-w-0">
     <span class="font-titulo font-bold text-negro truncate">{reserva.nombreCliente}</span>
@@ -33,24 +37,42 @@ const fmt = (f: string) =>
     </span>
     <!-- El código del email: al buscar por él, confirma de un vistazo que esta
          es la fila que el cliente está dictando. -->
-    <span class="text-texto-suave/80 text-xs font-titulo tracking-wider">
+    <span class="text-texto-suave text-xs font-titulo tracking-wider">
       {codigoReserva(reserva.id)}
     </span>
   </div>
-  <div class="shrink-0 flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
-    {
-      chipExtra && (
+  <div class="shrink-0 flex items-center gap-2 sm:gap-3">
+    <div class="flex flex-col items-end gap-1.5">
+      {
+        saldo > 0 && (
+          <p class="whitespace-nowrap text-xs text-texto-suave">
+            Saldo{' '}
+            <span class="font-titulo text-sm font-bold tabular-nums text-negro">
+              {fmtMoneda(saldo)}
+            </span>
+          </p>
+        )
+      }
+      <div class="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
+        {
+          chipExtra && (
+            <span
+              class={`whitespace-nowrap border rounded-pill px-3 py-1 text-xs font-titulo font-bold ${chipExtra.className}`}
+            >
+              {chipExtra.label}
+            </span>
+          )
+        }
         <span
-          class={`whitespace-nowrap border rounded-pill px-3 py-1 text-xs font-titulo font-bold ${chipExtra.className}`}
+          class={`whitespace-nowrap border rounded-pill px-3 py-1 text-xs font-titulo font-bold ${estilo.className}`}
         >
-          {chipExtra.label}
+          {estilo.label}
         </span>
-      )
-    }
+      </div>
+    </div>
     <span
-      class={`whitespace-nowrap border rounded-pill px-3 py-1 text-xs font-titulo font-bold ${estilo.className}`}
+      class="material-symbols-outlined text-xl text-texto-suave transition-colors group-hover:text-primario"
+      aria-hidden="true">chevron_right</span
     >
-      {estilo.label}
-    </span>
   </div>
 </a>

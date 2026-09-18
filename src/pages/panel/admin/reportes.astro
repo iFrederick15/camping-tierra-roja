@@ -1,95 +1,672 @@
 ---
-// Números simples del mes (Documento de Producto §5.3), calculados
-// server-side, más la descarga del reporte completo en Excel. El cálculo
-// vive en lib/reservas (obtenerReporteMensual), compartido con la ruta
-// /api/panel/admin/reportes que arma el .xlsx.
+// Reportes del Panel Admin (Documento de Producto §5.3), calculados
+// server-side. Cada bloque es un reporte de lib/reportes — las mismas
+// funciones que exponen las rutas JSON /api/panel/admin/reportes/[reporte] y
+// la descarga Excel /api/panel/admin/reportes. Si un reporte falla, solo ese
+// bloque muestra el error: el resto de la pantalla sigue sirviendo.
 import PanelLayout from '../../../layouts/PanelLayout.astro';
-import { obtenerReporteMensual, mesValido, hoyISO } from '../../../lib/reservas';
+import BarrasHorizontales from '../../../components/panel/BarrasHorizontales.astro';
+import GraficoLineaPorcentaje from '../../../components/panel/GraficoLineaPorcentaje.astro';
+import { hoyISO } from '../../../lib/reservas';
+import {
+  NOMBRE_RUBRO,
+  TIPOS_REPORTE,
+  crearLector,
+  filtroAQuery,
+  leerFiltro,
+  nombreMes,
+  obtenerAnticipacion,
+  obtenerCancelacionesPorRubro,
+  obtenerIngresosPorRubro,
+  obtenerKpis,
+  obtenerOcupacionHistorica,
+  obtenerOrigen,
+  obtenerTemporadas,
+  obtenerUnidadesMasUsadas,
+  periodoDeLaPantalla,
+  sumarDias,
+  sumarMeses,
+  type Periodo,
+} from '../../../lib/reportes';
 
-const mes = mesValido(Astro.url.searchParams.get('mes'));
-const reporte = await obtenerReporteMensual(mes);
-const { facturadoDelMes, nochesOcupadas, reservasTotales, nombreMes } = reporte;
+// Solo-admin. El middleware ya gatea /panel/admin por prefijo; esto es
+// defensa en profundidad (igual que exigirAdmin en las rutas /api): si el
+// path llegara de una forma que el prefijo no reconoce, la página igual no
+// expone ingresos ni datos de huéspedes a Staff.
+if (Astro.locals.usuario?.rol !== 'admin') return Astro.redirect('/panel');
 
-const mesMaximo = hoyISO().slice(0, 7);
+const filtro = leerFiltro(Astro.url.searchParams);
+const verTodasLasUnidades = Astro.url.searchParams.get('todas') === '1';
+const UNIDADES_VISIBLES = 10;
+
+// Una sola lectura de Supabase para los 8 reportes: se precarga el rango que
+// los cubre a todos y cada reporte filtra su parte en memoria.
+const lector = crearLector();
+lector.precargar(periodoDeLaPantalla(filtro));
+
+const [kpis, ingresosRubro, historico, cancelaciones, origen, temporadas, anticipacion, unidades] =
+  await Promise.allSettled([
+    obtenerKpis(filtro, lector),
+    obtenerIngresosPorRubro(filtro, lector),
+    obtenerOcupacionHistorica(filtro, lector),
+    obtenerCancelacionesPorRubro(filtro, lector),
+    obtenerOrigen(filtro, lector),
+    obtenerTemporadas(filtro.rubro, lector),
+    obtenerAnticipacion(filtro, lector),
+    obtenerUnidadesMasUsadas(filtro, lector),
+  ]);
+
+for (const r of [
+  kpis,
+  ingresosRubro,
+  historico,
+  cancelaciones,
+  origen,
+  temporadas,
+  anticipacion,
+  unidades,
+]) {
+  if (r.status === 'rejected') console.error('reportes:', r.reason);
+}
+
+// --- Formato ---------------------------------------------------------------
+const fmtPlata = (n: number) => `$ ${Math.round(n).toLocaleString('es-AR')}`;
+const fmtPct = (n: number | null) =>
+  n === null ? '—' : `${n.toLocaleString('es-AR', { maximumFractionDigits: 1 })} %`;
+const fmtFecha = (f: string) => `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}`;
+
+// "septiembre de 2026", "jul – sep 2026" o "01/09/2026 al 15/09/2026".
+function describirPeriodo({ desde, hasta }: Periodo): string {
+  if (desde.endsWith('-01') && hasta.endsWith('-01')) {
+    const ultimoMes = sumarMeses(hasta, -1).slice(0, 7);
+    if (desde.slice(0, 7) === ultimoMes) return nombreMes(ultimoMes);
+    return `${nombreMes(desde.slice(0, 7), 'short')} – ${nombreMes(ultimoMes, 'short')}`;
+  }
+  return `${fmtFecha(desde)} al ${fmtFecha(sumarDias(hasta, -1))}`;
+}
+
+// Variación con signo y flecha: el color acompaña, no es lo único que la dice.
+function fmtVariacion(valor: number | null, unidad: '%' | 'p.p.') {
+  if (valor === null) return null;
+  const redondeado = Math.round(valor * 10) / 10;
+  const signo = redondeado > 0 ? '▲ +' : redondeado < 0 ? '▼ ' : '';
+  return {
+    texto: `${signo}${redondeado.toLocaleString('es-AR')} ${unidad}`,
+    clase:
+      redondeado > 0 ? 'text-confirmado' : redondeado < 0 ? 'text-primario' : 'text-texto-suave',
+  };
+}
+
+// --- Filtro y atajos -------------------------------------------------------
+const hoy = hoyISO();
+const inicioMes = `${hoy.slice(0, 7)}-01`;
+const hastaInclusiva = sumarDias(filtro.hasta, -1);
+const rubroFiltrado = filtro.rubro ? NOMBRE_RUBRO[filtro.rubro] : 'Todo el alojamiento';
+const queryActual = filtroAQuery(filtro);
+
+const atajo = (desde: string, hastaExclusiva: string) =>
+  `?${filtroAQuery({ desde, hasta: hastaExclusiva, rubro: filtro.rubro })}`;
+// El atajo que coincide con el período elegido queda marcado como activo.
+const atajos = [
+  { label: 'Este mes', href: atajo(inicioMes, sumarMeses(inicioMes, 1)) },
+  { label: 'Mes anterior', href: atajo(sumarMeses(inicioMes, -1), inicioMes) },
+  { label: 'Últimos 3 meses', href: atajo(sumarMeses(inicioMes, -2), sumarMeses(inicioMes, 1)) },
+  {
+    label: 'Este año',
+    href: atajo(`${hoy.slice(0, 4)}-01-01`, `${Number(hoy.slice(0, 4)) + 1}-01-01`),
+  },
+].map((a) => ({ ...a, activo: a.href === `?${queryActual}` }));
+
+// Todos los controles del filtro miden lo mismo (h-10), así los rótulos y
+// los botones quedan alineados en una fila.
+const campo =
+  'h-10 w-full bg-fondo-alt rounded-pill border border-borde px-4 text-sm text-texto outline-none focus:ring-2 focus:ring-primario/25';
+
+// "septiembre de 2026" → "Septiembre de 2026" (`capitalize` de CSS también
+// subiría la "de").
+const conMayuscula = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1);
+
+const tarjeta =
+  'bg-superficie rounded-card border-2 border-borde p-5 sm:p-6 print:p-4 flex flex-col gap-4 break-inside-avoid';
+const tituloTarjeta = 'font-titulo font-bold text-lg text-negro';
+const nota = 'text-texto-suave text-xs';
+const errorReporte = 'No se pudo calcular este reporte. Probá recargar la página.';
+
+// En pantalla se ven las primeras 10 unidades (o todas con ?todas=1); el PDF
+// siempre lleva la lista completa, así que las demás se renderizan igual y
+// quedan ocultas solo en pantalla.
+const listaUnidades = unidades.status === 'fulfilled' ? unidades.value : [];
+const soloEnPdf = (i: number) => !verTodasLasUnidades && i >= UNIDADES_VISIBLES;
+
+// PDF: el navegador lo arma desde el diálogo de impresión ("Guardar como
+// PDF") con las reglas print: de esta página y de PanelLayout. El nombre del
+// archivo sale de document.title, que el script cambia mientras imprime.
+const generadoEl = new Date().toLocaleString('es-AR', {
+  timeZone: 'America/Argentina/Buenos_Aires',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+const nombrePdf = `reporte-tierra-roja-${filtro.desde}-al-${hastaInclusiva}${
+  filtro.rubro ? `-${filtro.rubro.toLowerCase()}` : ''
+}`;
 ---
 
 <PanelLayout title="Reportes" activo="reportes">
   <div class="flex flex-col gap-7">
     <div>
       <h1 class="font-titulo font-bold text-3xl text-negro">Reportes</h1>
-      <p class="text-texto-suave capitalize">{nombreMes}</p>
+      <p class="text-texto-suave">
+        {conMayuscula(describirPeriodo(filtro))} · {rubroFiltrado}
+      </p>
+      <p class="hidden print:block text-texto-suave text-sm">
+        Camping Tierra Roja · generado el {generadoEl}
+      </p>
     </div>
 
-    <form
-      method="GET"
-      class="bg-superficie rounded-card border-2 border-borde flex flex-col sm:flex-row sm:items-end gap-3 p-5"
+    <div
+      class="print:hidden bg-superficie rounded-card border-2 border-borde flex flex-col gap-4 p-5"
     >
-      <label class="flex flex-col gap-1.5 flex-1">
-        <span class="text-texto-suave text-sm">Mes del reporte</span>
-        <input
-          type="month"
-          name="mes"
-          value={mes}
-          max={mesMaximo}
-          class="bg-fondo-alt rounded-pill border border-borde px-4 py-2 text-sm text-texto outline-none focus:ring-2 focus:ring-primario/25"
-        />
-      </label>
-      <div class="flex gap-2">
-        <button
-          type="submit"
-          class="inline-flex items-center gap-1.5 bg-fondo-alt text-texto rounded-pill px-4 py-2 font-titulo font-bold text-sm hover:bg-borde/60 transition-colors"
-        >
-          Ver mes
-        </button>
-        <a
-          href={`/api/panel/admin/reportes?mes=${mes}`}
-          class="inline-flex items-center gap-1.5 bg-primario text-white rounded-pill px-4 py-2 font-titulo font-bold text-sm hover:bg-primario-oscuro transition-colors"
-        >
-          <span class="material-symbols-outlined text-[18px]">download</span>
-          Descargar Excel
-        </a>
-      </div>
-    </form>
-
-    <div class="flex flex-col gap-3 sm:hidden">
-      <div
-        class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5"
-      >
-        <span class="text-texto-suave text-sm">Facturado del mes</span>
-        <span class="font-titulo font-bold text-xl text-negro"
-          >${facturadoDelMes.toLocaleString('es-AR')}</span
-        >
-      </div>
-      <div
-        class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5"
-      >
-        <span class="text-texto-suave text-sm">Noches ocupadas</span>
-        <span class="font-titulo font-bold text-xl text-negro">{nochesOcupadas}</span>
-      </div>
-      <div
-        class="bg-superficie rounded-card border-2 border-borde flex items-center justify-between px-5 py-3.5"
-      >
-        <span class="text-texto-suave text-sm">Reservas totales</span>
-        <span class="font-titulo font-bold text-xl text-negro">{reservasTotales}</span>
-      </div>
+      <form method="GET" class="flex flex-col lg:flex-row lg:items-end gap-3">
+        <div class="grid grid-cols-2 gap-3 lg:flex-1">
+          <label class="flex flex-col gap-1.5">
+            <span class="text-texto-suave text-sm">Desde</span>
+            <input type="date" name="desde" value={filtro.desde} required class={campo} />
+          </label>
+          <label class="flex flex-col gap-1.5">
+            <span class="text-texto-suave text-sm">Hasta (inclusive)</span>
+            <input type="date" name="hasta" value={hastaInclusiva} required class={campo} />
+          </label>
+        </div>
+        <label class="flex flex-col gap-1.5 lg:w-56">
+          <span class="text-texto-suave text-sm">Rubro</span>
+          <span class="relative">
+            <select name="rubro" class={`${campo} appearance-none pr-10 cursor-pointer`}>
+              <option value="" selected={!filtro.rubro}>Todo el alojamiento</option>
+              {
+                TIPOS_REPORTE.map((tipo) => (
+                  <option value={tipo} selected={filtro.rubro === tipo}>
+                    {NOMBRE_RUBRO[tipo]}
+                  </option>
+                ))
+              }
+            </select>
+            <span
+              class="material-symbols-outlined pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[20px] text-texto-suave"
+              aria-hidden="true">expand_more</span
+            >
+          </span>
+        </label>
+        <div class="flex gap-2">
+          <button
+            type="submit"
+            class="inline-flex items-center h-10 bg-fondo-alt text-texto rounded-pill border border-borde px-4 font-titulo font-bold text-sm hover:bg-borde/60 transition-colors"
+          >
+            Ver
+          </button>
+          <div class="relative group" data-exportar>
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="menu-exportar"
+              data-exportar-boton
+              class="inline-flex items-center gap-1.5 h-10 bg-primario text-white rounded-pill pl-4 pr-3 font-titulo font-bold text-sm hover:bg-primario-oscuro transition-colors"
+            >
+              <span class="material-symbols-outlined text-[18px]">download</span>
+              Exportar
+              <span
+                class="material-symbols-outlined text-[18px] transition-transform duration-150 ease-out group-data-abierto:rotate-180"
+                >expand_more</span
+              >
+            </button>
+            <div
+              id="menu-exportar"
+              role="menu"
+              aria-label="Formato de exportación"
+              class="absolute z-10 top-full mt-2 left-0 lg:left-auto lg:right-0 w-64 bg-superficie rounded-campo border border-borde shadow-elevada p-1.5 flex flex-col origin-top-left lg:origin-top-right invisible opacity-0 scale-95 transition-[opacity,transform,visibility] duration-150 ease-out group-data-abierto:visible group-data-abierto:opacity-100 group-data-abierto:scale-100"
+            >
+              <a
+                role="menuitem"
+                href={`/api/panel/admin/reportes?${queryActual}`}
+                class="flex flex-col rounded-campo px-3 py-2 hover:bg-fondo-alt focus-visible:bg-fondo-alt outline-none"
+              >
+                <span class="font-titulo font-bold text-sm text-negro">Excel</span>
+                <span class="text-texto-suave text-xs">Resumen, cada reserva y cada pago</span>
+              </a>
+              <button
+                type="button"
+                role="menuitem"
+                data-descargar-pdf={nombrePdf}
+                class="flex flex-col text-left rounded-campo px-3 py-2 hover:bg-fondo-alt focus-visible:bg-fondo-alt outline-none"
+              >
+                <span class="font-titulo font-bold text-sm text-negro">PDF</span>
+                <span class="text-texto-suave text-xs">Esta pantalla con los gráficos</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+      <nav class="flex flex-wrap gap-2" aria-label="Períodos rápidos">
+        {
+          atajos.map((a) => (
+            <a
+              href={a.href}
+              aria-current={a.activo ? 'true' : undefined}
+              class:list={[
+                'rounded-pill border px-3 py-1 text-sm transition-colors',
+                a.activo
+                  ? 'border-primario/40 bg-superficie-elevada text-primario font-bold'
+                  : 'border-borde text-texto-suave hover:text-primario hover:border-primario/40',
+              ]}
+            >
+              {a.label}
+            </a>
+          ))
+        }
+      </nav>
     </div>
-    <div class="hidden sm:flex bg-superficie rounded-card border-2 border-borde">
-      <div class="flex-1 px-6 py-4">
-        <span class="text-texto-suave text-sm">Facturado del mes</span>
-        <p class="font-titulo font-bold text-[26px] text-negro">
-          ${facturadoDelMes.toLocaleString('es-AR')}
+
+    <!-- 1. KPIs del período -->
+    {
+      kpis.status === 'rejected' ? (
+        <p class={`${tarjeta} text-texto-suave`}>{errorReporte}</p>
+      ) : (
+        (() => {
+          const k = kpis.value;
+          const anterior = describirPeriodo(k.periodoAnterior);
+          const varIngresos = fmtVariacion(k.variacionIngresos, '%');
+          const varOcupacion = fmtVariacion(k.variacionOcupacion, 'p.p.');
+          return (
+            <section
+              class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 print:grid-cols-4 gap-3"
+              aria-label="Resumen del período"
+            >
+              <div class="bg-superficie rounded-card border-2 border-borde px-5 py-4">
+                <span class="text-texto-suave text-sm">Ingresos</span>
+                <p class="font-titulo font-bold text-[26px] text-negro tabular-nums">
+                  {fmtPlata(k.ingresos)}
+                </p>
+                <p class="text-sm">
+                  {varIngresos ? (
+                    <span class={varIngresos.clase}>{varIngresos.texto}</span>
+                  ) : (
+                    <span class="text-texto-suave">Sin ingresos para comparar</span>
+                  )}
+                  <span class="text-texto-suave"> vs. {anterior}</span>
+                </p>
+              </div>
+              <div class="bg-superficie rounded-card border-2 border-borde px-5 py-4">
+                <span class="text-texto-suave text-sm">Ocupación promedio</span>
+                <p class="font-titulo font-bold text-[26px] text-negro tabular-nums">
+                  {fmtPct(k.ocupacion.porcentaje)}
+                </p>
+                <p class="text-sm">
+                  {varOcupacion ? (
+                    <span class={varOcupacion.clase}>{varOcupacion.texto}</span>
+                  ) : (
+                    <span class="text-texto-suave">Sin datos para comparar</span>
+                  )}
+                  <span class="text-texto-suave"> vs. {anterior}</span>
+                </p>
+              </div>
+              <div class="bg-superficie rounded-card border-2 border-borde px-5 py-4">
+                <span class="text-texto-suave text-sm">Cancelación</span>
+                <p class="font-titulo font-bold text-[26px] text-negro tabular-nums">
+                  {fmtPct(k.tasaCancelacion)}
+                </p>
+                <p class="text-sm text-texto-suave">
+                  {k.canceladas} de {k.reservas} reservas
+                </p>
+              </div>
+              <div class="bg-superficie rounded-card border-2 border-borde px-5 py-4">
+                <span class="text-texto-suave text-sm">No-show</span>
+                <p class="font-titulo font-bold text-[26px] text-negro tabular-nums">
+                  {fmtPct(k.tasaNoShow)}
+                </p>
+                <p class="text-sm text-texto-suave">
+                  {k.noShows} de {k.confirmadasVencidas} confirmadas con fecha ya pasada
+                </p>
+              </div>
+            </section>
+          );
+        })()
+      )
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 print:grid-cols-2 gap-5">
+      <!-- 2. Ingresos por rubro -->
+      <section class={tarjeta}>
+        <div>
+          <h2 class={tituloTarjeta}>Ingresos por rubro</h2>
+          <p class={nota}>Monto de las reservas no canceladas que ingresan en el período.</p>
+        </div>
+        {
+          ingresosRubro.status === 'rejected' ? (
+            <p class="text-texto-suave text-sm">{errorReporte}</p>
+          ) : (
+            <BarrasHorizontales
+              filas={ingresosRubro.value.map((r) => ({
+                etiqueta: r.nombre,
+                valor: r.ingresos,
+                texto: fmtPlata(r.ingresos),
+                detalle: `${r.reservas} ${r.reservas === 1 ? 'reserva' : 'reservas'}`,
+              }))}
+            />
+          )
+        }
+      </section>
+
+      <!-- 5. Origen de las reservas -->
+      <section class={tarjeta}>
+        <div>
+          <h2 class={tituloTarjeta}>Origen de las reservas</h2>
+          <p class={nota}>{rubroFiltrado} · sin canceladas.</p>
+        </div>
+        {
+          origen.status === 'rejected' ? (
+            <p class="text-texto-suave text-sm">{errorReporte}</p>
+          ) : (
+            <BarrasHorizontales
+              maximo={100}
+              filas={origen.value.map((o) => ({
+                etiqueta: o.nombre,
+                valor: o.porcentaje ?? 0,
+                texto: fmtPct(o.porcentaje),
+                detalle: `${o.reservas} ${o.reservas === 1 ? 'reserva' : 'reservas'}`,
+              }))}
+            />
+          )
+        }
+      </section>
+    </div>
+
+    <!-- 3. Ocupación histórica -->
+    <section class={tarjeta}>
+      <div>
+        <h2 class={tituloTarjeta}>Ocupación por mes</h2>
+        <p class={nota}>
+          {rubroFiltrado}. Con un solo mes elegido se muestran los 6 meses que terminan en él. Los
+          meses que todavía no terminaron cuentan solo lo reservado hasta hoy.
         </p>
       </div>
-      <div class="w-px bg-borde my-3.5"></div>
-      <div class="flex-1 px-6 py-4">
-        <span class="text-texto-suave text-sm">Noches ocupadas</span>
-        <p class="font-titulo font-bold text-[26px] text-negro">{nochesOcupadas}</p>
-      </div>
-      <div class="w-px bg-borde my-3.5"></div>
-      <div class="flex-1 px-6 py-4">
-        <span class="text-texto-suave text-sm">Reservas totales</span>
-        <p class="font-titulo font-bold text-[26px] text-negro">{reservasTotales}</p>
-      </div>
+      {
+        historico.status === 'rejected' ? (
+          <p class="text-texto-suave text-sm">{errorReporte}</p>
+        ) : (
+          <>
+            <GraficoLineaPorcentaje
+              descripcion={`Ocupación mensual de ${rubroFiltrado}: ${historico.value
+                .map((p) => `${nombreMes(p.mes)} ${fmtPct(p.porcentaje)}`)
+                .join(', ')}`}
+              puntos={historico.value.map((p) => ({
+                etiqueta: p.etiqueta,
+                valor: p.porcentaje,
+                tooltip: `${nombreMes(p.mes)}: ${fmtPct(p.porcentaje)} (${p.ocupadas} de ${p.disponibles})`,
+              }))}
+            />
+            <details class="text-sm print:hidden">
+              <summary class="cursor-pointer text-texto-suave hover:text-primario">
+                Ver como tabla
+              </summary>
+              <table class="mt-3 w-full text-left">
+                <thead class="text-texto-suave">
+                  <tr>
+                    <th class="py-1.5 font-normal">Mes</th>
+                    <th class="py-1.5 font-normal text-right">Ocupadas</th>
+                    <th class="py-1.5 font-normal text-right">Disponibles</th>
+                    <th class="py-1.5 font-normal text-right">Ocupación</th>
+                  </tr>
+                </thead>
+                <tbody class="tabular-nums">
+                  {historico.value.map((p) => (
+                    <tr class="border-t border-fondo-alt">
+                      <td class="py-1.5">{conMayuscula(nombreMes(p.mes))}</td>
+                      <td class="py-1.5 text-right">{p.ocupadas}</td>
+                      <td class="py-1.5 text-right">{p.disponibles}</td>
+                      <td class="py-1.5 text-right font-bold">{fmtPct(p.porcentaje)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          </>
+        )
+      }
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 print:grid-cols-2 gap-5">
+      <!-- 6. Comparativa por temporada -->
+      <section class={tarjeta}>
+        <div>
+          <h2 class={tituloTarjeta}>Ocupación por temporada</h2>
+          <p class={nota}>{rubroFiltrado} · últimos 12 meses, sin importar el período elegido.</p>
+        </div>
+        {
+          temporadas.status === 'rejected' ? (
+            <p class="text-texto-suave text-sm">{errorReporte}</p>
+          ) : (
+            <BarrasHorizontales
+              maximo={100}
+              filas={temporadas.value.map((t) => ({
+                etiqueta: t.nombre,
+                valor: t.porcentaje ?? 0,
+                texto: fmtPct(t.porcentaje),
+                detalle: t.actual ? `${t.meses} · temporada actual` : t.meses,
+                destacado: t.actual,
+              }))}
+            />
+          )
+        }
+      </section>
+
+      <!-- 7. Anticipación promedio -->
+      <section class={tarjeta}>
+        <div>
+          <h2 class={tituloTarjeta}>Anticipación promedio de reserva</h2>
+          <p class={nota}>
+            Días entre que se hizo la reserva y la fecha de ingreso. Sin canceladas.
+          </p>
+        </div>
+        {
+          anticipacion.status === 'rejected' ? (
+            <p class="text-texto-suave text-sm">{errorReporte}</p>
+          ) : (
+            <BarrasHorizontales
+              filas={anticipacion.value.map((a) => ({
+                etiqueta: a.nombre,
+                valor: a.diasPromedio ?? 0,
+                texto:
+                  a.diasPromedio === null
+                    ? '—'
+                    : `${a.diasPromedio.toLocaleString('es-AR', { maximumFractionDigits: 1 })} días`,
+                detalle: `${a.reservas} ${a.reservas === 1 ? 'reserva' : 'reservas'}`,
+              }))}
+            />
+          )
+        }
+      </section>
     </div>
+
+    <!-- 4. Cancelaciones y no-show por rubro -->
+    <section class={tarjeta}>
+      <div>
+        <h2 class={tituloTarjeta}>Cancelaciones y no-show por rubro</h2>
+        <p class={nota}>
+          No-show: reserva confirmada (con seña) cuya fecha de ingreso ya pasó sin check-in
+          registrado. Un check-in que no se marcó en el sistema también cuenta acá.
+        </p>
+      </div>
+      {
+        cancelaciones.status === 'rejected' ? (
+          <p class="text-texto-suave text-sm">{errorReporte}</p>
+        ) : (
+          <div class="overflow-x-auto -mx-1">
+            <table class="w-full min-w-[520px] text-sm text-left">
+              <thead class="text-texto-suave">
+                <tr>
+                  <th class="px-1 py-2 font-normal">Rubro</th>
+                  <th class="px-1 py-2 font-normal text-right">Reservas</th>
+                  <th class="px-1 py-2 font-normal text-right">Canceladas</th>
+                  <th class="px-1 py-2 font-normal text-right">% cancelación</th>
+                  <th class="px-1 py-2 font-normal text-right">No-show</th>
+                  <th class="px-1 py-2 font-normal text-right">% no-show</th>
+                </tr>
+              </thead>
+              <tbody class="tabular-nums">
+                {cancelaciones.value.map((c) => (
+                  <tr class="border-t border-fondo-alt">
+                    <td class="px-1 py-2 text-negro">{c.nombre}</td>
+                    <td class="px-1 py-2 text-right">{c.reservas}</td>
+                    <td class="px-1 py-2 text-right">{c.canceladas}</td>
+                    <td class="px-1 py-2 text-right font-bold">{fmtPct(c.tasaCancelacion)}</td>
+                    <td class="px-1 py-2 text-right">
+                      {c.noShows}
+                      <span class="text-texto-suave"> / {c.confirmadasVencidas}</span>
+                    </td>
+                    <td class="px-1 py-2 text-right font-bold">{fmtPct(c.tasaNoShow)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      }
+    </section>
+
+    <!-- 8. Unidades más utilizadas -->
+    <section id="unidades" class={tarjeta}>
+      <div>
+        <h2 class={tituloTarjeta}>Unidades más utilizadas</h2>
+        <p class={nota}>
+          {filtro.rubro ? rubroFiltrado : 'Todos los rubros, salón incluido'}. Uso: noches (días en
+          quinchos y salón) dentro del período. Ingresos: reservas que ingresan en el período.
+        </p>
+      </div>
+      {
+        unidades.status === 'rejected' ? (
+          <p class="text-texto-suave text-sm">{errorReporte}</p>
+        ) : listaUnidades.length === 0 ? (
+          <p class="text-texto-suave text-sm">No hay unidades para este rubro.</p>
+        ) : (
+          <>
+            <div class="overflow-x-auto -mx-1">
+              <table class="w-full min-w-[480px] text-sm text-left">
+                <thead class="text-texto-suave">
+                  <tr>
+                    <th class="px-1 py-2 font-normal w-8">#</th>
+                    <th class="px-1 py-2 font-normal">Unidad</th>
+                    <th class="px-1 py-2 font-normal text-right">Uso</th>
+                    <th class="px-1 py-2 font-normal text-right">Reservas</th>
+                    <th class="px-1 py-2 font-normal text-right">Ingresos</th>
+                  </tr>
+                </thead>
+                <tbody class="tabular-nums">
+                  {listaUnidades.map((u, i) => (
+                    <tr
+                      class:list={[
+                        'border-t border-fondo-alt',
+                        soloEnPdf(i) && 'hidden print:table-row',
+                      ]}
+                    >
+                      <td class="px-1 py-2 text-texto-suave">{i + 1}</td>
+                      <td class="px-1 py-2">
+                        <span class="text-negro">{u.nombre}</span>
+                        {u.nombre !== u.rubro && <span class="text-texto-suave"> · {u.rubro}</span>}
+                      </td>
+                      <td class="px-1 py-2 text-right">
+                        {u.uso} <span class="text-texto-suave">{u.unidadDeUso}</span>
+                      </td>
+                      <td class="px-1 py-2 text-right">{u.reservas}</td>
+                      <td class="px-1 py-2 text-right font-bold">{fmtPlata(u.ingresos)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {listaUnidades.length > UNIDADES_VISIBLES && (
+              <a
+                href={
+                  verTodasLasUnidades
+                    ? `?${queryActual}#unidades`
+                    : `?${queryActual}&todas=1#unidades`
+                }
+                class="print:hidden self-start text-sm text-primario hover:text-primario-oscuro"
+              >
+                {verTodasLasUnidades
+                  ? `Ver solo las primeras ${UNIDADES_VISIBLES}`
+                  : `Ver las ${listaUnidades.length} unidades`}
+              </a>
+            )}
+          </>
+        )
+      }
+    </section>
   </div>
 </PanelLayout>
+
+<script>
+  // Menú "Exportar": un solo botón que despliega Excel o PDF. Se cierra con
+  // Escape, al hacer click afuera o al elegir una opción.
+  const exportar = document.querySelector<HTMLElement>('[data-exportar]');
+  const botonMenu = exportar?.querySelector<HTMLButtonElement>('[data-exportar-boton]');
+  const opciones = [...(exportar?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
+
+  function abrirMenu(abierto: boolean, enfocar = false) {
+    if (!exportar || !botonMenu) return;
+    exportar.toggleAttribute('data-abierto', abierto);
+    botonMenu.setAttribute('aria-expanded', String(abierto));
+    if (abierto && enfocar) opciones[0]?.focus();
+  }
+
+  botonMenu?.addEventListener('click', () => abrirMenu(!exportar!.hasAttribute('data-abierto')));
+  botonMenu?.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      abrirMenu(true, true);
+    }
+  });
+  exportar?.addEventListener('keydown', (e) => {
+    const actual = opciones.indexOf(document.activeElement as HTMLElement);
+    if (e.key === 'Escape') {
+      abrirMenu(false);
+      botonMenu?.focus();
+    } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && actual >= 0) {
+      e.preventDefault();
+      const paso = e.key === 'ArrowDown' ? 1 : -1;
+      opciones[(actual + paso + opciones.length) % opciones.length].focus();
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (exportar && !exportar.contains(e.target as Node)) abrirMenu(false);
+  });
+  opciones.forEach((o) => o.addEventListener('click', () => abrirMenu(false)));
+
+  // PDF: abre el diálogo de impresión del navegador (destino "Guardar como
+  // PDF"). El título de la pestaña pasa a ser el nombre del archivo mientras
+  // dura la impresión y después se restaura.
+  const botonPdf = document.querySelector<HTMLButtonElement>('[data-descargar-pdf]');
+  botonPdf?.addEventListener('click', () => {
+    const tituloOriginal = document.title;
+    document.title = botonPdf.dataset.descargarPdf ?? tituloOriginal;
+    window.addEventListener('afterprint', () => (document.title = tituloOriginal), { once: true });
+    window.print();
+  });
+</script>
+
+<style is:global>
+  @media print {
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+    /* Sin esto el navegador omite los fondos al imprimir y las barras de los
+       gráficos salen vacías. */
+    html {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+  }
+</style>

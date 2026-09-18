@@ -1,0 +1,58 @@
+---
+// Barras horizontales de una sola serie para los Reportes del Panel, en HTML
+// puro (sin JS). Cada fila: rótulo y valor arriba, la barra abajo, así el
+// valor nunca queda recortado por la barra aunque esté al 100 %.
+// `destacado` resalta una fila (la temporada actual) y apaga el resto; el
+// rótulo de la fila tiene que decir por qué está resaltada — el color solo
+// no alcanza.
+interface Fila {
+  etiqueta: string;
+  valor: number;
+  texto: string; // el valor ya formateado ("$ 120.000", "45 %")
+  detalle?: string; // línea secundaria ("12 reservas")
+  destacado?: boolean;
+}
+
+interface Props {
+  filas: Fila[];
+  maximo?: number; // por defecto, el mayor valor de las filas
+  vacio?: string;
+}
+
+const { filas, maximo, vacio = 'Sin datos en el período.' } = Astro.props;
+const tope = maximo ?? Math.max(0, ...filas.map((f) => f.valor));
+const hayDestacado = filas.some((f) => f.destacado);
+const ancho = (valor: number) => (tope > 0 ? Math.max((valor / tope) * 100, valor > 0 ? 1 : 0) : 0);
+const sinDatos = filas.length === 0 || filas.every((f) => f.valor === 0);
+---
+
+{
+  sinDatos ? (
+    <p class="text-texto-suave text-sm">{vacio}</p>
+  ) : (
+    <ul class="flex flex-col gap-4">
+      {filas.map((f) => (
+        <li title={`${f.etiqueta}: ${f.texto}${f.detalle ? ` · ${f.detalle}` : ''}`}>
+          <div class="flex items-baseline justify-between gap-3 text-sm">
+            <span class="text-texto">
+              {f.etiqueta}
+              {f.detalle && <span class="text-texto-suave"> · {f.detalle}</span>}
+            </span>
+            <span class="font-titulo font-bold text-negro tabular-nums whitespace-nowrap">
+              {f.texto}
+            </span>
+          </div>
+          <div class="mt-1.5 h-2.5">
+            <div
+              class:list={[
+                'h-full rounded-r-[4px]',
+                hayDestacado && !f.destacado ? 'bg-texto-suave/35' : 'bg-primario',
+              ]}
+              style={`width: ${ancho(f.valor)}%`}
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+}

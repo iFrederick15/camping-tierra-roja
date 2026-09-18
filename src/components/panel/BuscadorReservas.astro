@@ -1,0 +1,46 @@
+---
+// Buscador de reservas del panel: lo usan "Hoy" y "Buscar". Antes cada página
+// repetía el formulario con esquinas de tarjeta (24px) y borde de 2px, lo que
+// dejaba el campo y el botón como dos óvalos; ahora sigue el campo del sistema
+// (DESIGN.md → input-campo) y el botón secundario de las filas del panel.
+interface Props {
+  /** Texto ya buscado, para que el campo lo conserve en la página de resultados. */
+  valor?: string;
+  autofocus?: boolean;
+  placeholder?: string;
+  class?: string;
+}
+
+const {
+  valor = '',
+  autofocus = false,
+  placeholder = 'Nombre, DNI o código…',
+  class: clase = '',
+} = Astro.props;
+---
+
+<form method="GET" action="/panel/buscar" role="search" class:list={['flex gap-2', clase]}>
+  <label class="relative min-w-0 flex-1">
+    <span class="sr-only">Buscar reserva</span>
+    <span
+      class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-texto-suave"
+      aria-hidden="true">search</span
+    >
+    <input
+      type="search"
+      name="q"
+      value={valor}
+      placeholder={placeholder}
+      autofocus={autofocus}
+      autocomplete="off"
+      enterkeyhint="search"
+      class="min-h-12 w-full rounded-campo [&::-webkit-search-cancel-button]:hidden border border-borde bg-fondo-alt pl-11 pr-4 text-texto placeholder:text-texto-suave transition-colors focus:border-primario focus:bg-superficie focus:outline-none focus:ring-4 focus:ring-primario/20"
+    />
+  </label>
+  <button
+    type="submit"
+    class="min-h-12 shrink-0 rounded-pill border-2 border-borde px-5 font-titulo font-bold text-negro transition-colors hover:border-primario-claro focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 focus-visible:ring-offset-2"
+  >
+    Buscar
+  </button>
+</form>

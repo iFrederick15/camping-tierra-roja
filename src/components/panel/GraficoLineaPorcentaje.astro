@@ -1,0 +1,136 @@
+---
+// Gráfico de línea de un porcentaje (0–100 %) por mes, en SVG estático para
+// los Reportes del Panel. Un mes sin capacidad (valor null) corta la línea en
+// vez de dibujarse como 0 %. Cada punto tiene su tooltip (<title>) con un
+// área de toque más grande que el punto, y debajo va la tabla con los mismos
+// números para quien no pueda leer el gráfico.
+interface Punto {
+  etiqueta: string;
+  valor: number | null;
+  tooltip: string;
+}
+
+interface Props {
+  puntos: Punto[];
+  descripcion: string; // texto alternativo del gráfico
+}
+
+const { puntos, descripcion } = Astro.props;
+
+const ANCHO = 420;
+const ALTO = 200;
+const IZQ = 34;
+const DER = 14;
+const ARRIBA = 14;
+const ABAJO = 26;
+const plotAncho = ANCHO - IZQ - DER;
+const plotAlto = ALTO - ARRIBA - ABAJO;
+
+const x = (i: number) =>
+  puntos.length === 1 ? IZQ + plotAncho / 2 : IZQ + (i * plotAncho) / (puntos.length - 1);
+const y = (v: number) => ARRIBA + plotAlto - (v / 100) * plotAlto;
+
+// Un tramo de línea por cada racha de meses con dato.
+const tramos: string[] = [];
+let actual: string[] = [];
+puntos.forEach((p, i) => {
+  if (p.valor === null) {
+    if (actual.length) tramos.push(actual.join(' '));
+    actual = [];
+    return;
+  }
+  actual.push(`${actual.length ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.valor).toFixed(1)}`);
+});
+if (actual.length) tramos.push(actual.join(' '));
+
+const lineasGuia = [0, 25, 50, 75, 100];
+// Con muchos meses los rótulos del eje se pisan: se muestra uno cada `paso`.
+const paso = Math.ceil(puntos.length / 8);
+const indiceUltimo = puntos.findLastIndex((p) => p.valor !== null);
+---
+
+<svg
+  viewBox={`0 0 ${ANCHO} ${ALTO}`}
+  class="w-full h-auto overflow-visible"
+  role="img"
+  aria-label={descripcion}
+>
+  {
+    lineasGuia.map((g) => (
+      <g>
+        <line
+          x1={IZQ}
+          x2={ANCHO - DER}
+          y1={y(g)}
+          y2={y(g)}
+          class={g === 0 ? 'stroke-borde' : 'stroke-fondo-alt'}
+          stroke-width="1"
+        />
+        <text
+          x={IZQ - 6}
+          y={y(g)}
+          text-anchor="end"
+          dominant-baseline="middle"
+          class="fill-texto-suave text-[10px]"
+        >
+          {g}%
+        </text>
+      </g>
+    ))
+  }
+  {
+    puntos.map((p, i) =>
+      i % paso === 0 || i === puntos.length - 1 ? (
+        <text
+          x={x(i)}
+          y={ALTO - 6}
+          text-anchor="middle"
+          class="fill-texto-suave text-[10px] capitalize"
+        >
+          {p.etiqueta}
+        </text>
+      ) : null
+    )
+  }
+  {
+    tramos.map((d) => (
+      <path
+        d={d}
+        fill="none"
+        class="stroke-primario"
+        stroke-width="2"
+        stroke-linejoin="round"
+        stroke-linecap="round"
+      />
+    ))
+  }
+  {
+    puntos.map((p, i) =>
+      p.valor === null ? null : (
+        <g class="group">
+          <title>{p.tooltip}</title>
+          <circle cx={x(i)} cy={y(p.valor)} r="14" fill="transparent" />
+          <circle
+            cx={x(i)}
+            cy={y(p.valor)}
+            r="4"
+            class="fill-primario stroke-superficie group-hover:fill-primario-oscuro"
+            stroke-width="2"
+          />
+        </g>
+      )
+    )
+  }
+  {
+    indiceUltimo >= 0 && (
+      <text
+        x={x(indiceUltimo)}
+        y={y(puntos[indiceUltimo].valor!) - 10}
+        text-anchor={indiceUltimo === puntos.length - 1 && puntos.length > 1 ? 'end' : 'middle'}
+        class="fill-negro font-titulo font-bold text-[11px]"
+      >
+        {Math.round(puntos[indiceUltimo].valor!)}%
+      </text>
+    )
+  }
+</svg>

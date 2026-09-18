@@ -46,6 +46,8 @@
   --font-cuerpo: 'Barlow', system-ui, sans-serif;
 
   /* ── Border radius ── */
+  /* campo: 8px de DESIGN.md (campos de formulario y cuadrados de íconos). */
+  --radius-campo: 0.5rem;
   --radius-card: 1.5rem;
   --radius-pill: 9999px;
   --radius-btn: 9999px;
@@ -97,19 +99,24 @@ html {
        `transform`, animaciones con keyframes y sus iteraciones. */
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-property: color, background-color, border-color, outline-color,
-      opacity, box-shadow, fill !important;
+    transition-property:
+      color, background-color, border-color, outline-color, opacity, box-shadow, fill !important;
     scroll-behavior: auto !important;
   }
 }
 
 /* Anillo de foco visible y consistente para quien navega con teclado, sin
    mostrarlo en clics de mouse. Los componentes que necesitan otro color lo
-   sobrescriben con `focus-visible:ring-*`. */
-:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 3px solid var(--color-primario);
-  outline-offset: 2px;
-  border-radius: 4px;
+   sobrescriben con `focus-visible:ring-*`.
+   Va en `@layer base` (ver la nota de abajo): sin capa le ganaba a todas las
+   utilidades, así que `focus-visible:outline-none` no tenía efecto y el
+   `border-radius: 4px` dejaba cuadradas las píldoras y tarjetas al enfocarlas. */
+@layer base {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--color-primario);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 /* Las imágenes reservan su espacio con width/height y no desbordan el

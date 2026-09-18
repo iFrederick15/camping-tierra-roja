@@ -1,66 +1,85 @@
 ---
 import PanelLayout from '../../layouts/PanelLayout.astro';
 import FilaReserva from '../../components/panel/FilaReserva.astro';
+import BuscadorReservas from '../../components/panel/BuscadorReservas.astro';
 import { listarReservas } from '../../lib/reservas';
 
 const [llegadas, salidas] = await Promise.all([
   listarReservas({ modo: 'llegadas-hoy' }),
   listarReservas({ modo: 'salidas-hoy' }),
 ]);
+
+// La fecha va en el huso de Puerto Iguazú (Vercel corre en UTC), el mismo que
+// usa hoyISO() para elegir qué reservas son "de hoy": si no, pasada la
+// medianoche UTC el título diría mañana mientras la lista sigue en hoy.
+const fecha = new Date().toLocaleDateString('es-AR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'America/Argentina/Buenos_Aires',
+});
+const fechaTitulo = fecha.charAt(0).toUpperCase() + fecha.slice(1);
+
+const secciones = [
+  {
+    id: 'llegadas',
+    titulo: 'Llegadas de hoy',
+    filas: llegadas,
+    vacio: 'No hay llegadas programadas para hoy.',
+  },
+  {
+    id: 'salidas',
+    titulo: 'Salidas de hoy',
+    filas: salidas,
+    vacio: 'No hay salidas programadas para hoy.',
+  },
+];
 ---
 
 <PanelLayout title="Hoy" activo="hoy">
-  <div class="flex flex-col gap-2 mb-8">
-    <h1 class="font-titulo font-bold text-3xl text-negro">Hoy</h1>
-    <form method="GET" action="/panel/buscar" class="flex gap-2 max-w-md">
-      <input
-        type="text"
-        name="q"
-        placeholder="Buscar por nombre, DNI o código…"
-        class="w-full border-2 border-borde rounded-card px-4 py-2.5 focus:border-primario focus:outline-none transition-colors"
-      />
-      <button
-        type="submit"
-        class="shrink-0 border-2 border-borde rounded-card px-4 py-2.5 font-titulo font-medium text-texto-suave hover:border-primario-claro transition-colors"
+  <header class="mb-10 flex flex-col gap-5">
+    <div>
+      <h1 class="font-titulo text-3xl font-bold text-negro">Hoy</h1>
+      <p class="mt-1 text-texto-suave">{fechaTitulo}</p>
+    </div>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <BuscadorReservas class="w-full sm:max-w-lg" />
+      <!-- Desde lg la topbar ya muestra "Nueva reserva": repetirlo acá dejaba
+           dos botones rojos iguales en la misma pantalla. -->
+      <a
+        href="/panel/reservas/nueva"
+        class="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-pill bg-primario pl-4 pr-5 font-titulo font-bold text-white transition-colors hover:bg-primario-oscuro focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primario/40 focus-visible:ring-offset-2 sm:ml-auto lg:hidden"
       >
-        Buscar
-      </button>
-    </form>
-    <a
-      href="/panel/reservas/nueva"
-      class="self-start inline-flex items-center gap-2 bg-primario text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors mt-2"
-    >
-      + Nueva reserva
-    </a>
+        <span class="material-symbols-outlined text-xl" aria-hidden="true">add</span>
+        Nueva reserva
+      </a>
+    </div>
+  </header>
+
+  <div class="flex flex-col gap-10">
+    {
+      secciones.map((s) => (
+        <section aria-labelledby={`titulo-${s.id}`}>
+          <h2 id={`titulo-${s.id}`} class="mb-3 font-titulo text-xl font-bold text-negro">
+            {s.titulo}
+            <span class="font-medium tabular-nums text-texto-suave"> · {s.filas.length}</span>
+          </h2>
+          {s.filas.length === 0 ? (
+            <p class="rounded-card border-2 border-borde bg-superficie px-5 py-4 text-sm text-texto-suave">
+              {s.vacio}
+            </p>
+          ) : (
+            <ul class="flex flex-col gap-2">
+              {s.filas.map((r) => (
+                <li>
+                  <FilaReserva reserva={r} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))
+    }
   </div>
-
-  <section class="mb-10">
-    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Llegadas de hoy</h2>
-    {
-      llegadas.length === 0 ? (
-        <p class="text-texto-suave text-sm bg-superficie border-2 border-borde rounded-card px-5 py-4">
-          No hay llegadas programadas para hoy.
-        </p>
-      ) : (
-        <div class="flex flex-col gap-2">
-          {llegadas.map((r) => <FilaReserva reserva={r} />)}
-        </div>
-      )
-    }
-  </section>
-
-  <section>
-    <h2 class="font-titulo font-bold text-xl text-negro mb-3">Salidas de hoy</h2>
-    {
-      salidas.length === 0 ? (
-        <p class="text-texto-suave text-sm bg-superficie border-2 border-borde rounded-card px-5 py-4">
-          No hay salidas programadas para hoy.
-        </p>
-      ) : (
-        <div class="flex flex-col gap-2">
-          {salidas.map((r) => <FilaReserva reserva={r} />)}
-        </div>
-      )
-    }
-  </section>
 </PanelLayout>
