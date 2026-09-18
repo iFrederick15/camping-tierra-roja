@@ -142,10 +142,10 @@ export function construirEmailConfirmacion(datos: DatosConfirmacion): {
   const total = fmtMoneda(datos.montoTotal);
 
   const waComprobante = `https://wa.me/${NEGOCIO.whatsapp}?text=${encodeURIComponent(
-    `Hola Tierra Roja, envío el comprobante de la reserva ${codigo} a nombre de ${datos.nombreCliente}.`
+    `Hola Camping Tierra Roja, envío el comprobante de la reserva ${codigo} a nombre de ${datos.nombreCliente}.`
   )}`;
   const waConsulta = `https://wa.me/${NEGOCIO.whatsapp}?text=${encodeURIComponent(
-    `Hola Tierra Roja, consulto por la reserva ${codigo} a nombre de ${datos.nombreCliente}.`
+    `Hola Camping Tierra Roja, consulto por la reserva ${codigo} a nombre de ${datos.nombreCliente}.`
   )}`;
 
   // ── Encabezado ────────────────────────────────────────────────────────
