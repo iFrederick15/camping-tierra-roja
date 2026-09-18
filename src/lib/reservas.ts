@@ -649,7 +649,10 @@ type FiltroReservas =
   | { modo: 'llegadas-hoy' }
   | { modo: 'salidas-hoy' }
   | { modo: 'buscar'; q: string }
-  | { modo: 'pendientes-pago' };
+  | { modo: 'pendientes-pago' }
+  // Todo lo que toca un día cualquiera (vista Día del Calendario): quien
+  // llega, quien ya está y quien se va ese día.
+  | { modo: 'del-dia'; fecha: string };
 
 const SELECT_RESUMEN =
   'id, nombre_cliente, dni, telefono, email, fecha_ingreso, fecha_salida, monto_total, monto_pagado, fecha_limite_pago, estado, origen, cantidad_acompanantes, cantidad_menores, cantidad_mayores, detalle_precio, parcela_id, categoria_seleccionada, datos_vehiculo, unidades(nombre, tipo), parcelas(nombre)';
@@ -692,6 +695,15 @@ export async function listarReservas(filtro: FiltroReservas): Promise<ReservaRes
     query = query.eq('fecha_ingreso', hoy).eq('estado', 'CONFIRMADA');
   } else if (filtro.modo === 'salidas-hoy') {
     query = query.eq('fecha_salida', hoy).eq('estado', 'CHECKIN_HECHO');
+  } else if (filtro.modo === 'del-dia') {
+    // fecha_salida es exclusiva para ocupar la noche, pero la reserva que se
+    // va ese día sigue estando en el predio hasta el check-out: entra con
+    // `gte` y la vista la marca como salida.
+    query = query
+      .lte('fecha_ingreso', filtro.fecha)
+      .gte('fecha_salida', filtro.fecha)
+      .neq('estado', 'CANCELADA')
+      .order('fecha_ingreso', { ascending: true });
   } else if (filtro.modo === 'buscar') {
     // Allowlist estricta: solo letras (incl. acentos/ñ), números y espacios.
     // Evita que caracteres con significado en el filtro PostgREST

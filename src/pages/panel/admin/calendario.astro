@@ -1,15 +1,20 @@
 ---
 import PanelLayout from '../../../layouts/PanelLayout.astro';
+import FilaReserva from '../../../components/panel/FilaReserva.astro';
 import { supabaseAdmin } from '../../../lib/supabase';
 import {
   hoyISO,
+  diaSiguiente,
   calcularEstadoPago,
   listarBloqueos,
+  listarReservas,
   type TipoUnidad,
   type Bloqueo,
+  type ReservaResumen,
 } from '../../../lib/reservas';
 
 const pad = (n: number) => String(n).padStart(2, '0');
+const cortaISO = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
 const ETIQUETAS_TIPO: Record<TipoUnidad, string> = {
   CABANA: 'Cabaña',
@@ -45,10 +50,20 @@ const hoy = hoyISO();
 const esMesActual = hoy.slice(0, 7) === mesValido;
 const hoyDia = esMesActual ? Number(hoy.slice(8, 10)) : null;
 
-// Por defecto el tablero arranca en el día de hoy (lo que ya pasó no aporta
-// para decidir dónde meter una reserva nueva) pero el usuario puede pedir
-// ?completo=1 para volver a ver los días anteriores del mes actual. En
-// meses pasados/futuros siempre se ve el mes completo.
+// Tres vistas, como el calendario de anfitrión de Airbnb:
+//   ?vista=mes      → grilla del mes (la que se usa en el celular)
+//   ?vista=lugares  → línea de tiempo con una fila por lugar
+//   ?vista=dia      → todo lo que pasa un día: quién llega, quién está,
+//                     quién se va y qué está bloqueado, en los cuatro tipos
+const vistaParam = Astro.url.searchParams.get('vista');
+const vista: 'mes' | 'lugares' | 'dia' =
+  vistaParam === 'lugares' ? 'lugares' : vistaParam === 'dia' ? 'dia' : 'mes';
+
+// En la línea de tiempo el tablero arranca en el día de hoy (lo que ya pasó
+// no aporta para decidir dónde meter una reserva nueva) pero el usuario puede
+// pedir ?completo=1 para volver a ver los días anteriores del mes actual. En
+// meses pasados/futuros siempre se ve el mes completo. La grilla del mes
+// siempre muestra el mes entero: los días viejos solo quedan atenuados.
 const completoParam = Astro.url.searchParams.get('completo') === '1';
 const diaInicioVisible = esMesActual && !completoParam ? (hoyDia ?? 1) : 1;
 const inicioVisible = `${anio}-${pad(mesNum + 1)}-${pad(diaInicioVisible)}`;
@@ -56,9 +71,11 @@ const inicioVisible = `${anio}-${pad(mesNum + 1)}-${pad(diaInicioVisible)}`;
 const dias = Array.from({ length: diasEnMes - diaInicioVisible + 1 }, (_, i) => {
   const dia = diaInicioVisible + i;
   const fecha = new Date(anio, mesNum, dia);
+  const diaDeSemana = fecha.getDay();
   return {
     dia,
     diaSemana: fecha.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', ''),
+    finDeSemana: diaDeSemana === 0 || diaDeSemana === 6,
   };
 });
 
@@ -68,6 +85,47 @@ const tipoParam = Astro.url.searchParams.get('tipo');
 const tipoSeleccionado = ORDEN_TIPOS.includes(tipoParam as TipoUnidad)
   ? (tipoParam as TipoUnidad)
   : ORDEN_TIPOS[0];
+
+// Día que mira la vista Día: ?fecha=YYYY-MM-DD, y si no viene, hoy (o el
+// primero del mes que se está mirando).
+const fechaParam = Astro.url.searchParams.get('fecha');
+const fechaDia =
+  fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam) ? fechaParam : esMesActual ? hoy : inicioMes;
+
+// Espejo de diaSiguiente() de lib/reservas.ts para ir al día anterior.
+const diaAnterior = (iso: string) => {
+  const [a, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(a, m - 1, d) - 86400000).toISOString().slice(0, 10);
+};
+
+// Un solo armador de URL para las flechas de mes y de día, el botón Hoy, las
+// pastillas de tipo y el interruptor de vista: cada enlace conserva lo que no
+// cambia. Al moverse de día, el mes lo sigue: así volver a "Mes" cae en el
+// mes correcto.
+const enlace = (
+  cambios: {
+    mes?: string | null;
+    tipo?: TipoUnidad;
+    vista?: 'mes' | 'lugares' | 'dia';
+    completo?: boolean;
+    fecha?: string;
+  } = {}
+) => {
+  const params = new URLSearchParams();
+  const mes =
+    cambios.mes === undefined
+      ? cambios.fecha
+        ? cambios.fecha.slice(0, 7)
+        : mesValido
+      : cambios.mes;
+  if (mes) params.set('mes', mes);
+  params.set('tipo', cambios.tipo ?? tipoSeleccionado);
+  params.set('vista', cambios.vista ?? vista);
+  const fecha = cambios.fecha ?? fechaDia;
+  if (fecha) params.set('fecha', fecha);
+  if (cambios.completo) params.set('completo', '1');
+  return `/panel/admin/calendario?${params.toString()}`;
+};
 
 const { data: unidadSel } = await supabaseAdmin
   .from('unidades')
@@ -247,6 +305,150 @@ const ESTILO_VISUAL: Record<EstadoVisual, { label: string; className: string }> 
 const RAYADO_BLOQUEO =
   'repeating-linear-gradient(45deg, var(--color-texto) 0 6px, var(--color-texto-suave) 6px 12px)';
 
+// Texto del tooltip de un bloqueo: la nota si la hay, más quién lo puso.
+function tituloBloqueo(b: Bloqueo): string {
+  const partes = [b.nota?.trim() || 'Fechas bloqueadas'];
+  if (b.parcelaId === null && b.plazas === null) partes.push('toda la unidad');
+  if (b.creadoPor) partes.push(`bloqueó ${b.creadoPor}`);
+  return partes.join(' · ');
+}
+
+// ── Grilla del mes ─────────────────────────────────────────────────────
+// Los lugares del tipo son el denominador de cada día: "3 libres" sale de
+// contar cuántas filas del tablero quedan sin ocupación ese día.
+const capacidad = Math.max(filas.length, 1);
+
+interface ItemDia {
+  clase: 'reserva' | 'bloqueo';
+  id: string;
+  etiqueta: string;
+  className: string;
+  titulo: string;
+  href?: string;
+  nota?: string;
+  esInicio: boolean;
+  esFin: boolean;
+  // Cuántos lugares tapa ese día: un bloqueo de toda la unidad (o de varias
+  // plazas del camping) aparece una sola vez en la celda pero ocupa varios.
+  cantidad: number;
+}
+
+// Cada celda de la grilla dibuja, en pantallas medianas, una barra por
+// ocupación que sigue de un día al siguiente (el nombre se repite al empezar
+// cada semana) y, en el celular —donde no entra un nombre—, un punto por
+// ocupación.
+interface CeldaDia {
+  dia: number;
+  iso: string;
+  diaDeSemana: number;
+  esHoy: boolean;
+  pasado: boolean;
+  finDeSemana: boolean;
+  ocupados: number;
+  libres: number;
+  items: ItemDia[];
+}
+
+const celdasMes: CeldaDia[] = Array.from({ length: diasEnMes }, (_, i) => {
+  const dia = i + 1;
+  const iso = `${anio}-${pad(mesNum + 1)}-${pad(dia)}`;
+  const diaDeSemana = new Date(anio, mesNum, dia).getDay();
+  const porId = new Map<string, ItemDia>();
+  let ocupados = 0;
+
+  for (const fila of filas) {
+    for (const o of fila.ocupaciones) {
+      if (o.inicio > iso || o.fin <= iso) continue;
+      ocupados++;
+      const id = o.clase === 'reserva' ? o.reserva.id : o.bloqueo.id;
+      const repetido = porId.get(id);
+      if (repetido) {
+        repetido.cantidad++;
+        continue;
+      }
+      const esInicio = o.inicio === iso;
+      const esFin = o.fin === diaSiguiente(iso);
+      porId.set(
+        id,
+        o.clase === 'reserva'
+          ? {
+              clase: 'reserva',
+              id,
+              etiqueta: o.reserva.nombreCliente,
+              className: ESTILO_VISUAL[estadoVisual(o.reserva)].className,
+              titulo: `${o.reserva.nombreCliente} · ${ESTILO_VISUAL[estadoVisual(o.reserva)].label} · ${cortaISO(o.inicio)} → ${cortaISO(o.fin)}`,
+              href: `/panel/reservas/${o.reserva.id}`,
+              esInicio,
+              esFin,
+              cantidad: 1,
+            }
+          : {
+              clase: 'bloqueo',
+              id,
+              etiqueta: o.bloqueo.nota?.trim() || 'Bloqueado',
+              className: '',
+              titulo: `${tituloBloqueo(o.bloqueo)} · clic para quitar el bloqueo`,
+              nota: o.bloqueo.nota ?? '',
+              esInicio,
+              esFin,
+              cantidad: 1,
+            }
+      );
+    }
+  }
+
+  return {
+    dia,
+    iso,
+    diaDeSemana,
+    esHoy: iso === hoy,
+    pasado: iso < hoy,
+    finDeSemana: diaDeSemana === 0 || diaDeSemana === 6,
+    ocupados,
+    libres: Math.max(capacidad - ocupados, 0),
+    items: [...porId.values()],
+  };
+});
+
+// Semana que arranca el lunes, como el calendario de Airbnb en es-AR.
+const DIAS_SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+const huecosIniciales = (new Date(anio, mesNum, 1).getDay() + 6) % 7;
+const huecosFinales = (7 - ((huecosIniciales + diasEnMes) % 7)) % 7;
+
+// Lugares elegibles al reservar/bloquear desde la grilla (donde el clic no
+// dice sobre qué lugar se hizo). Solo MOTORHOME y QUINCHOS tienen parcelas
+// con identidad: el camping va por cupo y la cabaña es una sola.
+const pideLugar = tipoSeleccionado === 'MOTORHOME' || tipoSeleccionado === 'QUINCHOS';
+
+// Las opciones del <select id="select-lugar"> las llena el script con los
+// lugares libres en todo el rango elegido; la <option> que está en el markup
+// es solo el placeholder. Ojo: ese <select> tiene que quedar con contenido y
+// con su cierre — autocerrado (`<select />`), el compilador de Astro no le
+// pone `</select>` y se come el resto del template.
+
+function diasOcupadosDelMes(o: Ocupacion): string[] {
+  const dias: string[] = [];
+  let d = o.inicio < inicioMes ? inicioMes : o.inicio;
+  const tope = o.fin > finMes ? finMes : o.fin;
+  while (d < tope) {
+    dias.push(d);
+    d = diaSiguiente(d);
+  }
+  return dias;
+}
+
+const lugaresElegibles = pideLugar
+  ? filas
+      .filter((f) => f.parcelaId)
+      .map((f) => ({
+        id: f.parcelaId!,
+        etiqueta: f.etiqueta,
+        categoria: f.categoria ?? '',
+        dias: f.ocupaciones.flatMap(diasOcupadosDelMes),
+      }))
+  : [];
+
+// ── Línea de tiempo ───────────────────────────────────────────────────
 // Convierte las ocupaciones (no superpuestas) de una fila en una secuencia de
 // segmentos que cubre el mes completo: barras de varios días para cada
 // reserva o bloqueo (colspan) y celdas sueltas de 1 día para los huecos
@@ -284,177 +486,628 @@ const filasConSegmentos = filas.map((fila) => ({
   segmentos: construirSegmentos(fila.ocupaciones),
 }));
 
-// Texto del tooltip de un bloqueo: la nota si la hay, más quién lo puso.
-function tituloBloqueo(b: Bloqueo): string {
-  const partes = [b.nota?.trim() || 'Fechas bloqueadas'];
-  if (b.parcelaId === null && b.plazas === null) partes.push('toda la unidad');
-  if (b.creadoPor) partes.push(`bloqueó ${b.creadoPor}`);
-  return partes.join(' · ');
+// ── Vista Día ─────────────────────────────────────────────────────────
+// Lo que pasa un día concreto en los cuatro tipos a la vez: la grilla del mes
+// dice cuántos lugares quedan, esta dice quiénes son. Solo se consulta cuando
+// la vista está abierta.
+type MomentoDia = 'llega' | 'encurso' | 'sale';
+
+const CHIP_DIA: Record<MomentoDia, { label: string; className: string }> = {
+  llega: { label: 'Llegada', className: 'text-confirmado bg-confirmado/10 border-confirmado/25' },
+  encurso: { label: 'En el predio', className: 'text-texto-suave bg-fondo-alt border-borde' },
+  sale: { label: 'Salida', className: 'text-advertencia bg-advertencia/10 border-advertencia/25' },
+};
+
+// Llegada primero (es lo que hay que atender), después quien ya está y al
+// final quien se va.
+const ORDEN_MOMENTO: Record<MomentoDia, number> = { llega: 0, encurso: 1, sale: 2 };
+
+interface GrupoDia {
+  tipo: TipoUnidad;
+  capacidad: number;
+  ocupados: number;
+  items: { reserva: ReservaResumen; momento: MomentoDia }[];
+  bloqueos: { id: string; texto: string; titulo: string; lugares: number }[];
 }
+
+let gruposDia: GrupoDia[] = [];
+let tituloDia = '';
+
+if (vista === 'dia') {
+  const finDia = diaSiguiente(fechaDia);
+  const [reservasDia, unidadesRes] = await Promise.all([
+    listarReservas({ modo: 'del-dia', fecha: fechaDia }),
+    supabaseAdmin.from('unidades').select('id, tipo, nombre, cupo_total, parcelas(id, activa)'),
+  ]);
+  const unidades = (unidadesRes.data ?? []) as any[];
+  const bloqueosPorUnidad = await Promise.all(
+    unidades.map((u) => listarBloqueos(u.id, fechaDia, finDia))
+  );
+
+  gruposDia = ORDEN_TIPOS.map((tipo) => {
+    const indice = unidades.findIndex((u) => u.tipo === tipo);
+    const unidad = indice === -1 ? null : unidades[indice];
+    // Misma fórmula que la Vista operativa: la cabaña es una, el camping va
+    // por cupo y motorhome/quinchos por parcelas activas.
+    const capacidad = !unidad
+      ? 0
+      : tipo === 'CABANA'
+        ? 1
+        : tipo === 'CAMPING'
+          ? (unidad.cupo_total ?? 0)
+          : (unidad.parcelas ?? []).filter((pa: any) => pa.activa).length;
+
+    const items = reservasDia
+      .filter((r) => r.unidadTipo === tipo)
+      .map((r) => ({
+        reserva: r,
+        momento: (r.fechaSalida === fechaDia
+          ? 'sale'
+          : r.fechaIngreso === fechaDia
+            ? 'llega'
+            : 'encurso') as MomentoDia,
+      }))
+      .sort(
+        (a, b) =>
+          ORDEN_MOMENTO[a.momento] - ORDEN_MOMENTO[b.momento] ||
+          a.reserva.nombreCliente.localeCompare(b.reserva.nombreCliente)
+      );
+
+    const bloqueos = (indice === -1 ? [] : bloqueosPorUnidad[indice]).map((b) => ({
+      id: b.id,
+      texto: b.nota?.trim() || 'Fechas bloqueadas',
+      titulo: tituloBloqueo(b),
+      // Un bloqueo de toda la unidad tapa el cupo entero; si no, las plazas
+      // que diga (camping) o el lugar puntual (motorhome/quinchos).
+      lugares: b.parcelaId === null && b.plazas === null ? capacidad : (b.plazas ?? 1),
+    }));
+
+    // Ocupados esa NOCHE: quien se va ese día ya liberó el lugar.
+    const ocupados =
+      items.filter((it) => it.momento !== 'sale').length +
+      bloqueos.reduce((acc, b) => acc + b.lugares, 0);
+
+    return {
+      tipo,
+      capacidad,
+      ocupados: Math.min(ocupados, capacidad || ocupados),
+      items,
+      bloqueos,
+    };
+  });
+
+  tituloDia = new Date(`${fechaDia}T00:00:00`).toLocaleDateString('es-AR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+  tituloDia = tituloDia.charAt(0).toUpperCase() + tituloDia.slice(1);
+}
+
+const totalOcupadosDia = gruposDia.reduce((acc, g) => acc + g.ocupados, 0);
+const totalCapacidadDia = gruposDia.reduce((acc, g) => acc + g.capacidad, 0);
+const totalLlegadasDia = gruposDia.reduce(
+  (acc, g) => acc + g.items.filter((it) => it.momento === 'llega').length,
+  0
+);
+const totalSalidasDia = gruposDia.reduce(
+  (acc, g) => acc + g.items.filter((it) => it.momento === 'sale').length,
+  0
+);
+
+// Base para el enlace al detalle del día desde el script (el diálogo y el
+// "+N más" de la grilla).
+const urlDia = `/panel/admin/calendario?tipo=${tipoSeleccionado}&vista=dia`;
+
+const claseNav =
+  'w-9 h-9 shrink-0 flex items-center justify-center rounded-full border border-borde text-texto hover:bg-superficie-elevada transition-colors';
+const clasePill =
+  'shrink-0 whitespace-nowrap px-4 py-1.5 rounded-pill border border-borde text-texto font-titulo font-medium text-sm hover:bg-superficie-elevada transition-colors';
 ---
 
 <PanelLayout title="Calendario de ocupación" activo="calendario">
-  <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-    <h1 class="font-titulo font-bold text-3xl text-negro capitalize">{nombreMes}</h1>
-    <div class="flex flex-wrap items-center gap-2">
-      {
-        esMesActual && !completoParam && diaInicioVisible > 1 && (
-          <a
-            href={`/panel/admin/calendario?mes=${mesValido}&tipo=${tipoSeleccionado}&completo=1`}
-            class="shrink-0 whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-xs sm:text-sm hover:bg-superficie-elevada transition-colors"
-          >
-            <span class="sm:hidden">← Días ant.</span>
-            <span class="hidden sm:inline">← Ver días anteriores</span>
-          </a>
-        )
-      }
+  <!-- Encabezado: mes con las flechas al lado (como el calendario de
+       anfitrión de Airbnb) y, a la derecha, Hoy + interruptor de vista. -->
+  <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 mb-4">
+    <div class="flex items-center gap-1.5 min-w-0">
       <a
-        href={`/panel/admin/calendario?mes=${mesAnterior}&tipo=${tipoSeleccionado}`}
-        class="shrink-0 whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-xs sm:text-sm hover:bg-superficie-elevada transition-colors"
+        href={vista === 'dia'
+          ? enlace({ fecha: diaAnterior(fechaDia) })
+          : enlace({ mes: mesAnterior })}
+        aria-label={vista === 'dia' ? 'Día anterior' : 'Mes anterior'}
+        class={claseNav}
       >
-        <span class="sm:hidden">← Mes Ant.</span>
-        <span class="hidden sm:inline">← Mes anterior</span>
+        <span class="material-symbols-outlined text-[20px]">chevron_left</span>
       </a>
       <a
-        href={`/panel/admin/calendario?tipo=${tipoSeleccionado}`}
-        class="shrink-0 whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-xs sm:text-sm hover:bg-superficie-elevada transition-colors"
+        href={vista === 'dia'
+          ? enlace({ fecha: diaSiguiente(fechaDia) })
+          : enlace({ mes: mesSiguienteStr })}
+        aria-label={vista === 'dia' ? 'Día siguiente' : 'Mes siguiente'}
+        class={claseNav}
+      >
+        <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+      </a>
+      <h1
+        class="ml-1 font-titulo font-bold text-xl sm:text-3xl text-negro capitalize truncate"
+        aria-live="polite"
+      >
+        {vista === 'dia' ? tituloDia : nombreMes}
+      </h1>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a
+        href={vista === 'dia' ? enlace({ mes: null, fecha: hoy }) : enlace({ mes: null })}
+        class={clasePill}
       >
         Hoy
       </a>
-      <a
-        href={`/panel/admin/calendario?mes=${mesSiguienteStr}&tipo=${tipoSeleccionado}`}
-        class="shrink-0 whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-btn border-2 border-borde text-texto font-titulo font-medium text-xs sm:text-sm hover:bg-superficie-elevada transition-colors"
-      >
-        <span class="sm:hidden">Mes Sig. →</span>
-        <span class="hidden sm:inline">Mes siguiente →</span>
-      </a>
+      <div class="inline-flex items-center gap-0.5 p-0.5 rounded-pill border border-borde">
+        {
+          (
+            [
+              { clave: 'dia', label: 'Día', icono: 'today' },
+              { clave: 'mes', label: 'Mes', icono: 'calendar_month' },
+              { clave: 'lugares', label: 'Lugares', icono: 'view_timeline' },
+            ] as const
+          ).map((v) => (
+            <a
+              href={enlace({ vista: v.clave })}
+              aria-current={vista === v.clave ? 'page' : undefined}
+              class:list={[
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-pill font-titulo text-sm transition-colors',
+                vista === v.clave
+                  ? 'bg-superficie-elevada text-primario font-bold'
+                  : 'text-texto-suave font-medium hover:text-primario',
+              ]}
+            >
+              <span class="material-symbols-outlined text-[18px]">{v.icono}</span>
+              <span class="hidden min-[420px]:inline">{v.label}</span>
+            </a>
+          ))
+        }
+      </div>
     </div>
   </div>
 
-  <div class="flex gap-1.5 mb-4 flex-wrap">
-    {
-      ORDEN_TIPOS.map((tipo) => (
-        <a
-          href={`/panel/admin/calendario?mes=${mesValido}&tipo=${tipo}`}
-          class:list={[
-            'px-4 py-1.5 rounded-pill font-titulo font-medium text-sm transition-colors',
-            tipo === tipoSeleccionado
-              ? 'bg-superficie-elevada text-primario font-semibold'
-              : 'text-texto-suave hover:bg-superficie-elevada hover:text-primario',
-          ]}
-        >
-          {ETIQUETAS_TIPO[tipo]}
-        </a>
-      ))
-    }
+  <!-- Tipos de alojamiento: la "propiedad" que se está mirando. La vista Día
+       muestra los cuatro juntos, así que ahí no hace falta elegir. -->
+  <div
+    class:list={[
+      '-mx-4 px-4 lg:mx-0 lg:px-0 mb-4 overflow-x-auto',
+      vista === 'dia' ? 'hidden' : '',
+    ]}
+  >
+    <div class="flex gap-1.5 min-w-max">
+      {
+        ORDEN_TIPOS.map((tipo) => (
+          <a
+            href={enlace({ tipo })}
+            aria-current={tipo === tipoSeleccionado ? 'page' : undefined}
+            class:list={[
+              'px-4 py-1.5 rounded-pill font-titulo font-medium text-sm whitespace-nowrap transition-colors',
+              tipo === tipoSeleccionado
+                ? 'bg-superficie-elevada text-primario font-semibold'
+                : 'text-texto-suave hover:bg-superficie-elevada hover:text-primario',
+            ]}
+          >
+            {ETIQUETAS_TIPO[tipo]}
+          </a>
+        ))
+      }
+    </div>
   </div>
 
-  <div class="flex flex-wrap items-center gap-4 text-sm text-texto-suave mb-6">
+  <div
+    class:list={[
+      'flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm text-texto-suave mb-3',
+      vista === 'dia' ? 'hidden' : '',
+    ]}
+  >
     {
       (Object.keys(ESTILO_VISUAL) as EstadoVisual[]).map((clave) => (
         <span class="flex items-center gap-1.5">
           <span
-            class:list={['w-3 h-3 rounded-full inline-block', ESTILO_VISUAL[clave].className]}
+            class:list={['w-2.5 h-2.5 rounded-full inline-block', ESTILO_VISUAL[clave].className]}
           />
           {ESTILO_VISUAL[clave].label}
         </span>
       ))
     }
     <span class="flex items-center gap-1.5">
-      <span class="w-3 h-3 rounded-full inline-block" style={`background-image: ${RAYADO_BLOQUEO}`}
-      ></span>
+      <span
+        class="w-2.5 h-2.5 rounded-full inline-block"
+        style={`background-image: ${RAYADO_BLOQUEO}`}></span>
       Bloqueado
     </span>
   </div>
 
-  <p class="text-sm text-texto-suave mb-6 max-w-2xl">
-    Hacé clic (o arrastrá) sobre los días libres de una fila para crear una reserva o para
-    <strong class="font-medium text-texto">bloquear esas fechas</strong> y que dejen de poder reservarse
-    desde la web. Hacé clic sobre un bloqueo para quitarlo.
+  <p class:list={['text-sm text-texto-suave mb-4 max-w-2xl', vista === 'dia' ? 'hidden' : '']}>
+    Arrastrá con el mouse (o tocá el primer y el último día) sobre los días libres para crear una
+    reserva o para <strong class="font-medium text-texto">bloquear esas fechas</strong> y que dejen de
+    poder reservarse desde la web. Hacé clic sobre un bloqueo para quitarlo.
   </p>
 
-  <div class="bg-superficie rounded-card border-2 border-borde overflow-hidden">
-    <div class="overflow-x-auto pl-2">
-      <table class="border-collapse w-full select-none">
-        <thead>
-          <tr>
-            <th
-              class="sticky left-0 z-10 bg-superficie-elevada border-b-2 border-r-2 border-borde w-36 min-w-36 p-2 text-left text-xs font-titulo font-medium text-texto-suave"
+  {
+    vista === 'dia' ? (
+      <div class="flex flex-col gap-4">
+        <div class="bg-superficie rounded-card border border-borde p-4 sm:p-5 flex flex-wrap items-center gap-x-8 gap-y-4">
+          <div>
+            <p class="font-titulo text-[11px] tracking-[0.12em] uppercase text-texto-suave">
+              Ocupación
+            </p>
+            <p class="font-titulo font-bold text-2xl text-negro">
+              {totalOcupadosDia}
+              <span class="text-base font-medium text-texto-suave">
+                de {totalCapacidadDia} lugares
+              </span>
+            </p>
+          </div>
+          <div>
+            <p class="font-titulo text-[11px] tracking-[0.12em] uppercase text-texto-suave">
+              Llegadas
+            </p>
+            <p class="font-titulo font-bold text-2xl text-negro">{totalLlegadasDia}</p>
+          </div>
+          <div>
+            <p class="font-titulo text-[11px] tracking-[0.12em] uppercase text-texto-suave">
+              Salidas
+            </p>
+            <p class="font-titulo font-bold text-2xl text-negro">{totalSalidasDia}</p>
+          </div>
+          <a
+            href={`/panel/reservas/nueva?desde=${fechaDia}&hasta=${diaSiguiente(fechaDia)}`}
+            class="sm:ml-auto inline-flex items-center gap-1.5 bg-primario text-white px-4 py-2 rounded-pill font-titulo font-bold text-sm hover:bg-primario-oscuro transition-colors"
+          >
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Nueva reserva
+          </a>
+        </div>
+
+        {gruposDia.map((g) => (
+          <section class="bg-superficie rounded-card border border-borde overflow-hidden">
+            <header class="flex items-center justify-between gap-3 px-4 py-3 border-b border-borde bg-superficie-elevada">
+              <h2 class="font-titulo font-bold text-negro">{ETIQUETAS_TIPO[g.tipo]}</h2>
+              <div class="flex items-center gap-3">
+                <span class="text-sm text-texto-suave whitespace-nowrap">
+                  {g.ocupados} de {g.capacidad} ocupados
+                </span>
+                <a
+                  href={enlace({ tipo: g.tipo, vista: 'lugares', mes: fechaDia.slice(0, 7) })}
+                  class="hidden sm:inline font-titulo text-sm text-texto-suave hover:text-primario transition-colors"
+                >
+                  Ver lugares
+                </a>
+              </div>
+            </header>
+
+            {g.items.length === 0 && g.bloqueos.length === 0 ? (
+              <p class="px-4 py-4 text-sm text-texto-suave">Sin reservas este día.</p>
+            ) : (
+              <div class="flex flex-col gap-2 p-3">
+                {g.items.map((it) => (
+                  <FilaReserva
+                    reserva={it.reserva}
+                    mostrarFechas
+                    chipExtra={CHIP_DIA[it.momento]}
+                  />
+                ))}
+                {g.bloqueos.map((b) => (
+                  <button
+                    type="button"
+                    class="bloqueo-barra flex items-center justify-between gap-4 rounded-card border-2 border-borde px-5 py-4 bg-superficie text-left hover:border-primario-claro transition-colors"
+                    data-bloqueo-id={b.id}
+                    data-nota={b.texto}
+                    title={`${b.titulo} · clic para quitar el bloqueo`}
+                  >
+                    <span class="flex items-center gap-3 min-w-0">
+                      <span
+                        class="w-8 h-8 shrink-0 rounded-full"
+                        style={`background-image: ${RAYADO_BLOQUEO}`}
+                      />
+                      <span class="flex flex-col min-w-0">
+                        <span class="font-titulo font-bold text-negro truncate">{b.texto}</span>
+                        <span class="text-texto-suave text-sm">
+                          Bloqueado · {b.lugares} {b.lugares === 1 ? 'lugar' : 'lugares'}
+                        </span>
+                      </span>
+                    </span>
+                    <span class="shrink-0 whitespace-nowrap border border-borde rounded-pill px-3 py-1 text-xs font-titulo font-bold text-texto-suave">
+                      Quitar
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        ))}
+      </div>
+    ) : filas.length === 0 ? (
+      <div class="bg-superficie rounded-card border border-borde p-8 text-center">
+        <p class="font-titulo font-medium text-texto">
+          {ETIQUETAS_TIPO[tipoSeleccionado]} todavía no tiene lugares cargados.
+        </p>
+        <p class="text-sm text-texto-suave mt-1">
+          Se cargan en Configuración → Lugares, y recién ahí aparecen en el calendario.
+        </p>
+      </div>
+    ) : vista === 'mes' ? (
+      <div class="bg-superficie rounded-card border border-borde overflow-hidden">
+        <div class="grid grid-cols-7 bg-superficie-elevada border-b border-borde">
+          {DIAS_SEMANA.map((d, i) => (
+            <div
+              class:list={[
+                'py-2 text-center font-titulo text-[10px] sm:text-[11px] tracking-[0.12em] uppercase',
+                i >= 5 ? 'text-texto-suave/60' : 'text-texto-suave',
+              ]}
             >
-              {ETIQUETAS_TIPO[tipoSeleccionado]}
-            </th>
-            {
-              dias.map((d) => (
-                <th
+              <span class="sm:hidden">{d.charAt(0)}</span>
+              <span class="hidden sm:inline">{d}</span>
+            </div>
+          ))}
+        </div>
+
+        <div
+          id="grilla-mes"
+          data-grupo="mes"
+          data-origen="mes"
+          data-parcela-id=""
+          data-categoria=""
+          data-etiqueta={ETIQUETAS_TIPO[tipoSeleccionado]}
+          class="grid grid-cols-7 select-none"
+        >
+          {Array.from({ length: huecosIniciales }).map(() => (
+            <div class="min-h-[4.75rem] sm:min-h-[7rem] bg-fondo-alt/40 border-b border-r border-borde" />
+          ))}
+
+          {celdasMes.map((c) => (
+            <div
+              class:list={[
+                'relative flex flex-col gap-1 p-1 sm:p-2 min-h-[4.75rem] sm:min-h-[7rem] border-b border-r border-borde transition-colors',
+                c.libres > 0
+                  ? 'celda-sel cursor-pointer hover:bg-primario/5'
+                  : 'bg-superficie-elevada/70',
+                c.pasado && c.libres > 0 ? 'bg-fondo-alt/30' : '',
+                c.finDeSemana && !c.pasado && c.libres > 0 ? 'bg-fondo-alt/20' : '',
+              ]}
+              data-fecha={c.iso}
+              title={
+                c.libres > 0
+                  ? `${cortaISO(c.iso)} · ${c.libres} de ${capacidad} libre(s) — arrastrá o tocá para reservar o bloquear`
+                  : `${cortaISO(c.iso)} · sin lugares libres`
+              }
+            >
+              <div class="flex items-start justify-between gap-1">
+                <span
                   class:list={[
-                    'border-b-2 border-l border-borde w-[60px] min-w-[60px] py-1.5 text-xs font-titulo font-medium capitalize whitespace-nowrap',
-                    d.dia === hoyDia ? 'bg-amber-100 text-negro' : 'text-texto-suave',
+                    'w-6 h-6 shrink-0 flex items-center justify-center rounded-full font-titulo text-xs sm:text-sm',
+                    c.esHoy
+                      ? 'bg-negro text-white font-bold'
+                      : c.libres === 0
+                        ? 'text-texto-suave line-through'
+                        : c.pasado
+                          ? 'text-texto-suave font-medium'
+                          : 'text-texto font-medium',
                   ]}
                 >
-                  <div>{d.diaSemana}</div>
-                  <div class="text-sm">{d.dia}</div>
-                </th>
-              ))
-            }
-          </tr>
-        </thead>
-        <tbody>
-          {
-            filasConSegmentos.map((fila) => (
-              <tr
-                data-parcela-id={fila.parcelaId ?? ''}
-                data-categoria={fila.categoria ?? ''}
-                data-etiqueta={fila.etiqueta}
-              >
-                <td class="sticky left-0 z-10 bg-superficie border-b border-r-2 border-borde w-36 min-w-36 px-2 py-1.5 text-sm font-titulo font-medium text-texto whitespace-nowrap overflow-hidden text-ellipsis">
-                  {fila.etiqueta}
-                </td>
-                {fila.segmentos.map((seg) =>
-                  seg.ocupacion?.clase === 'reserva' ? (
-                    <td colspan={seg.colspan} class="border-b border-l border-borde p-0">
-                      <a
-                        href={`/panel/reservas/${seg.ocupacion.reserva.id}`}
-                        class:list={[
-                          'flex items-center h-9 px-2 text-xs font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis hover:brightness-110 transition-[filter]',
-                          ESTILO_VISUAL[estadoVisual(seg.ocupacion.reserva)].className,
-                        ]}
-                        title={`${seg.ocupacion.reserva.nombreCliente} · ${ESTILO_VISUAL[estadoVisual(seg.ocupacion.reserva)].label}`}
-                      >
-                        {seg.ocupacion.reserva.nombreCliente}
-                      </a>
-                    </td>
-                  ) : seg.ocupacion?.clase === 'bloqueo' ? (
-                    <td colspan={seg.colspan} class="border-b border-l border-borde p-0">
-                      <button
-                        type="button"
-                        class="bloqueo-barra flex items-center gap-1 w-full h-9 px-2 text-xs font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis hover:brightness-125 transition-[filter]"
-                        style={`background-image: ${RAYADO_BLOQUEO}`}
-                        data-bloqueo-id={seg.ocupacion.bloqueo.id}
-                        data-nota={seg.ocupacion.bloqueo.nota ?? ''}
-                        title={`${tituloBloqueo(seg.ocupacion.bloqueo)} · clic para quitar el bloqueo`}
-                      >
-                        <span class="material-symbols-outlined text-[14px] shrink-0">lock</span>
-                        <span class="overflow-hidden text-ellipsis">
-                          {seg.ocupacion.bloqueo.nota?.trim() || 'Bloqueado'}
-                        </span>
-                      </button>
-                    </td>
-                  ) : (
-                    <td
+                  {c.dia}
+                </span>
+                <span class="hidden sm:block text-[11px] leading-6 text-texto-suave whitespace-nowrap">
+                  {c.libres === 0 ? 'Completo' : capacidad > 1 ? `${c.libres} libres` : 'Libre'}
+                </span>
+              </div>
+
+              {capacidad > 1 && (
+                <div class="hidden sm:block h-1 rounded-pill bg-borde overflow-hidden">
+                  <div
+                    class="h-full bg-texto-suave"
+                    style={`width: ${Math.round((c.ocupados / capacidad) * 100)}%`}
+                  />
+                </div>
+              )}
+
+              <div class="hidden sm:flex flex-col gap-0.5 min-w-0">
+                {c.items.slice(0, 2).map((it) =>
+                  it.clase === 'reserva' ? (
+                    <a
+                      href={it.href}
+                      title={it.titulo}
                       class:list={[
-                        'celda-libre border-b border-l border-borde w-[60px] min-w-[60px] h-9 cursor-pointer hover:bg-primario/10 transition-colors',
-                        seg.inicioDia === hoyDia ? 'bg-amber-50' : '',
+                        'flex items-center h-5 px-1.5 text-[11px] font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis hover:brightness-110 transition-[filter]',
+                        it.className,
+                        it.esInicio || c.diaDeSemana === 1 ? 'rounded-l-[6px]' : '-ml-2',
+                        it.esFin || c.diaDeSemana === 0 ? 'rounded-r-[6px]' : '-mr-2',
                       ]}
-                      data-fecha={`${anio}-${pad(mesNum + 1)}-${pad(seg.inicioDia)}`}
-                      title="Haz clic o arrastra para reservar o bloquear estas fechas"
-                    />
+                    >
+                      {it.esInicio || c.diaDeSemana === 1 ? it.etiqueta : ''}
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      class:list={[
+                        'bloqueo-barra flex items-center gap-1 h-5 px-1.5 text-[11px] font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis hover:brightness-125 transition-[filter]',
+                        it.esInicio || c.diaDeSemana === 1 ? 'rounded-l-[6px]' : '-ml-2',
+                        it.esFin || c.diaDeSemana === 0 ? 'rounded-r-[6px]' : '-mr-2',
+                      ]}
+                      style={`background-image: ${RAYADO_BLOQUEO}`}
+                      data-bloqueo-id={it.id}
+                      data-nota={it.nota}
+                      title={it.titulo}
+                    >
+                      <span class="material-symbols-outlined text-[12px] shrink-0">lock</span>
+                      {it.esInicio || c.diaDeSemana === 1 ? (
+                        <span class="overflow-hidden text-ellipsis">{it.etiqueta}</span>
+                      ) : (
+                        ''
+                      )}
+                    </button>
                   )
                 )}
+                {c.items.length > 2 && (
+                  <a
+                    href={enlace({ vista: 'dia', fecha: c.iso })}
+                    class="px-1 text-[11px] text-texto-suave hover:text-primario transition-colors"
+                  >
+                    +{c.items.length - 2} más
+                  </a>
+                )}
+              </div>
+
+              <div class="sm:hidden mt-auto flex flex-wrap items-center gap-0.5">
+                {c.items.slice(0, 4).map((it) => (
+                  <span
+                    class:list={['w-1.5 h-1.5 rounded-full shrink-0', it.className]}
+                    style={it.clase === 'bloqueo' ? `background-image: ${RAYADO_BLOQUEO}` : ''}
+                  />
+                ))}
+                {c.items.length > 4 && (
+                  <span class="text-[9px] leading-none text-texto-suave">
+                    +{c.items.length - 4}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {Array.from({ length: huecosFinales }).map(() => (
+            <div class="min-h-[4.75rem] sm:min-h-[7rem] bg-fondo-alt/40 border-b border-r border-borde" />
+          ))}
+        </div>
+      </div>
+    ) : (
+      <div class="bg-superficie rounded-card border border-borde overflow-hidden">
+        {esMesActual && !completoParam && diaInicioVisible > 1 && (
+          <div class="px-3 py-2 border-b border-borde bg-superficie-elevada">
+            <a
+              href={enlace({ completo: true })}
+              class="inline-flex items-center gap-1 text-xs font-titulo font-medium text-texto-suave hover:text-primario transition-colors"
+            >
+              <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+              Ver los días anteriores del mes
+            </a>
+          </div>
+        )}
+        <div class="overflow-x-auto">
+          <table class="border-collapse w-full select-none">
+            <thead>
+              <tr>
+                <th class="sticky left-0 z-10 bg-superficie-elevada border-b border-r border-borde w-32 min-w-32 sm:w-36 sm:min-w-36 px-2 py-2 text-left font-titulo text-[10px] tracking-[0.12em] uppercase text-texto-suave">
+                  {ETIQUETAS_TIPO[tipoSeleccionado]}
+                </th>
+                {dias.map((d) => (
+                  <th
+                    class:list={[
+                      'border-b border-l border-borde w-[52px] min-w-[52px] py-1.5 text-xs font-titulo font-medium capitalize whitespace-nowrap',
+                      d.dia === hoyDia
+                        ? 'bg-primario/5 text-texto'
+                        : d.finDeSemana
+                          ? 'bg-fondo-alt/40 text-texto-suave'
+                          : 'text-texto-suave',
+                    ]}
+                  >
+                    <div class="text-[10px] uppercase tracking-wide">{d.diaSemana}</div>
+                    <div
+                      class:list={[
+                        'mx-auto mt-0.5 w-6 h-6 flex items-center justify-center rounded-full text-sm',
+                        d.dia === hoyDia ? 'bg-negro text-white font-bold' : 'text-texto',
+                      ]}
+                    >
+                      {d.dia}
+                    </div>
+                  </th>
+                ))}
               </tr>
-            ))
-          }
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {filasConSegmentos.map((fila) => (
+                <tr
+                  data-grupo="fila"
+                  data-origen="lugares"
+                  data-parcela-id={fila.parcelaId ?? ''}
+                  data-categoria={fila.categoria ?? ''}
+                  data-etiqueta={fila.etiqueta}
+                >
+                  <td class="sticky left-0 z-10 bg-superficie border-b border-r border-borde w-32 min-w-32 sm:w-36 sm:min-w-36 px-2 py-1.5 text-sm font-titulo font-medium text-texto whitespace-nowrap overflow-hidden text-ellipsis">
+                    {fila.etiqueta}
+                  </td>
+                  {fila.segmentos.map((seg) =>
+                    seg.ocupacion?.clase === 'reserva' ? (
+                      <td colspan={seg.colspan} class="border-b border-l border-borde p-0 h-11">
+                        <a
+                          href={`/panel/reservas/${seg.ocupacion.reserva.id}`}
+                          class:list={[
+                            'flex items-center h-8 mx-0.5 my-1.5 px-2 rounded-[8px] text-xs font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis hover:brightness-110 transition-[filter]',
+                            ESTILO_VISUAL[estadoVisual(seg.ocupacion.reserva)].className,
+                          ]}
+                          title={`${seg.ocupacion.reserva.nombreCliente} · ${ESTILO_VISUAL[estadoVisual(seg.ocupacion.reserva)].label} · ${cortaISO(seg.ocupacion.reserva.fechaIngreso)} → ${cortaISO(seg.ocupacion.reserva.fechaSalida)}`}
+                        >
+                          {seg.ocupacion.reserva.nombreCliente}
+                        </a>
+                      </td>
+                    ) : seg.ocupacion?.clase === 'bloqueo' ? (
+                      <td colspan={seg.colspan} class="border-b border-l border-borde p-0 h-11">
+                        <button
+                          type="button"
+                          class="bloqueo-barra flex items-center gap-1 w-[calc(100%-0.25rem)] h-8 mx-0.5 my-1.5 px-2 rounded-[8px] text-xs font-medium text-white whitespace-nowrap overflow-hidden text-ellipsis hover:brightness-125 transition-[filter]"
+                          style={`background-image: ${RAYADO_BLOQUEO}`}
+                          data-bloqueo-id={seg.ocupacion.bloqueo.id}
+                          data-nota={seg.ocupacion.bloqueo.nota ?? ''}
+                          title={`${tituloBloqueo(seg.ocupacion.bloqueo)} · clic para quitar el bloqueo`}
+                        >
+                          <span class="material-symbols-outlined text-[14px] shrink-0">lock</span>
+                          <span class="overflow-hidden text-ellipsis">
+                            {seg.ocupacion.bloqueo.nota?.trim() || 'Bloqueado'}
+                          </span>
+                        </button>
+                      </td>
+                    ) : (
+                      <td
+                        class:list={[
+                          'celda-sel border-b border-l border-borde w-[52px] min-w-[52px] h-11 cursor-pointer hover:bg-primario/10 transition-colors',
+                          seg.inicioDia === hoyDia ? 'bg-primario/5' : '',
+                        ]}
+                        data-fecha={`${anio}-${pad(mesNum + 1)}-${pad(seg.inicioDia)}`}
+                        title="Arrastrá o tocá para reservar o bloquear estas fechas"
+                      />
+                    )
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  <!--
+    Barra de confirmación para pantallas táctiles: ahí no hay arrastre, así que
+    el primer toque fija el inicio, los siguientes estiran el rango y esta
+    barra abre el diálogo.
+  -->
+  <div
+    id="barra-seleccion"
+    class="hidden fixed inset-x-0 bottom-0 z-40 pb-[env(safe-area-inset-bottom)]"
+  >
+    <div
+      class="mx-3 mb-3 flex items-center gap-2 rounded-pill border border-borde bg-superficie px-4 py-2 shadow-elevada"
+    >
+      <span id="barra-texto" class="flex-1 text-sm text-texto truncate"></span>
+      <button
+        type="button"
+        id="barra-cancelar"
+        class="px-2 py-1 font-titulo text-sm text-texto-suave hover:text-primario transition-colors"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        id="barra-continuar"
+        class="shrink-0 bg-primario text-white px-4 py-1.5 rounded-pill font-titulo font-bold text-sm hover:bg-primario-oscuro transition-colors"
+      >
+        Continuar
+      </button>
     </div>
   </div>
 
@@ -465,26 +1118,59 @@ function tituloBloqueo(b: Bloqueo): string {
   -->
   <div
     id="modal-seleccion"
-    class="hidden fixed inset-0 z-50 items-center justify-center bg-negro/40 p-4"
+    class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center bg-negro/40 sm:p-4"
   >
     <div
-      class="bg-superficie rounded-card border-2 border-borde w-full max-w-md px-6 py-6 flex flex-col gap-5"
+      class="bg-superficie w-full sm:max-w-md max-h-[92vh] overflow-y-auto border-t sm:border border-borde rounded-t-card sm:rounded-card px-5 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:p-6 flex flex-col gap-5"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-titulo"
     >
-      <div>
-        <h2 id="modal-titulo" class="font-titulo font-bold text-xl text-negro">
-          {ETIQUETAS_TIPO[tipoSeleccionado]}
-        </h2>
-        <p id="modal-rango" class="text-sm text-texto-suave mt-1"></p>
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 id="modal-titulo" class="font-titulo font-bold text-xl text-negro">
+            {ETIQUETAS_TIPO[tipoSeleccionado]}
+          </h2>
+          <p id="modal-rango" class="text-sm text-texto-suave mt-1"></p>
+        </div>
+        <button
+          type="button"
+          id="btn-cerrar-x"
+          aria-label="Cerrar"
+          class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-texto-suave hover:bg-superficie-elevada transition-colors"
+        >
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
       </div>
+
+      {
+        pideLugar && (
+          <div id="bloque-lugar" class="hidden flex-col gap-1">
+            <label for="select-lugar" class="font-titulo text-sm text-texto-suave">
+              Lugar
+            </label>
+            <select
+              id="select-lugar"
+              class="border-2 border-borde rounded-card px-3 py-2 text-texto bg-superficie focus:border-primario focus:outline-none disabled:opacity-40"
+            >
+              <option value="">Elegí un lugar</option>
+            </select>
+            <p id="aviso-lugar" class="hidden text-sm text-primario font-medium" />
+            {tipoSeleccionado === 'MOTORHOME' && (
+              <p class="text-xs text-texto-suave">
+                En una reserva nueva el lugar lo asigna el sistema; acá sirve para elegir cuál
+                bloquear.
+              </p>
+            )}
+          </div>
+        )
+      }
 
       <div id="modal-acciones" class="flex flex-col gap-2">
         <button
           type="button"
           id="btn-reservar"
-          class="inline-flex items-center justify-center gap-2 bg-primario text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors"
+          class="inline-flex items-center justify-center gap-2 bg-primario text-white px-5 py-2.5 rounded-pill font-titulo font-bold hover:bg-primario-oscuro transition-colors disabled:opacity-40 disabled:pointer-events-none"
         >
           <span class="material-symbols-outlined text-[18px]">event_available</span>
           Crear reserva
@@ -492,10 +1178,18 @@ function tituloBloqueo(b: Bloqueo): string {
         <button
           type="button"
           id="btn-bloquear"
-          class="inline-flex items-center justify-center gap-2 border-2 border-borde px-5 py-2.5 rounded-pill font-titulo font-medium text-texto hover:border-primario-claro transition-colors"
+          class="inline-flex items-center justify-center gap-2 border-2 border-borde px-5 py-2.5 rounded-pill font-titulo font-medium text-texto hover:border-primario-claro transition-colors disabled:opacity-40 disabled:pointer-events-none"
         >
           <span class="material-symbols-outlined text-[18px]">lock</span>
           Bloquear fechas
+        </button>
+        <button
+          type="button"
+          id="btn-ver-dia"
+          class="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill font-titulo font-medium text-texto-suave hover:text-primario transition-colors"
+        >
+          <span class="material-symbols-outlined text-[18px]">today</span>
+          <span id="btn-ver-dia-texto">Ver el día</span>
         </button>
       </div>
 
@@ -556,14 +1250,30 @@ function tituloBloqueo(b: Bloqueo): string {
     </div>
   </div>
 
-  <script define:vars={{ tipoSeleccionado }}>
-    // Clic (o arrastre) sobre celdas vacías de una misma fila → diálogo con
-    // las dos acciones posibles para ese rango: reservar o bloquear. El
-    // arrastre solo tiene sentido dentro de una fila (un mismo lugar), así
-    // que se ignora si el mouse sale de la fila donde empezó.
+  <style>
+    /* La marca del rango se pinta desde JS: un color plano de marca al 12% y
+       un contorno interior, para que se lea igual sobre celdas blancas, de
+       fin de semana y de días pasados. */
+    .celda-marcada {
+      background-color: color-mix(in srgb, var(--color-primario) 12%, transparent) !important;
+      box-shadow: inset 0 0 0 1px var(--color-primario);
+    }
+  </style>
+
+  <script define:vars={{ tipoSeleccionado, pideLugar, lugaresElegibles, urlDia }}>
+    // Selección de fechas sobre las dos vistas (grilla del mes y línea de
+    // tiempo). Cada contenedor de celdas seleccionables lleva [data-grupo]:
+    // en la grilla es la grilla entera (el lugar se elige después, en el
+    // diálogo) y en la línea de tiempo es la fila, que ya es un lugar.
+    //
+    // Mouse: arrastre. Táctil: un toque fija el inicio, el siguiente estira
+    // el rango y la barra inferior confirma (arrastrar con el dedo tiene que
+    // seguir scrolleando la página).
+    let tipoPuntero = 'mouse';
     let arrastrando = false;
-    let filaActiva = null;
-    let fechaInicio = null;
+    let grupo = null;
+    let ancla = null;
+    let rango = null;
 
     // Rango elegido, ya normalizado: "hasta" es exclusiva (fecha de salida),
     // igual que en toda la app.
@@ -574,6 +1284,15 @@ function tituloBloqueo(b: Bloqueo): string {
     const acciones = document.getElementById('modal-acciones');
     const formBloqueo = document.getElementById('form-bloqueo');
     const msgBloqueo = document.getElementById('msg-bloqueo');
+    const btnReservar = document.getElementById('btn-reservar');
+    const btnBloquear = document.getElementById('btn-bloquear');
+    const bloqueLugar = document.getElementById('bloque-lugar');
+    const selectLugar = document.getElementById('select-lugar');
+    const avisoLugar = document.getElementById('aviso-lugar');
+    const btnVerDia = document.getElementById('btn-ver-dia');
+    const btnVerDiaTexto = document.getElementById('btn-ver-dia-texto');
+    const barra = document.getElementById('barra-seleccion');
+    const barraTexto = document.getElementById('barra-texto');
 
     const fechaCorta = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
@@ -585,23 +1304,60 @@ function tituloBloqueo(b: Bloqueo): string {
       const [anio, mes, dia] = iso.split('-').map(Number);
       return Date.UTC(anio, mes - 1, dia);
     };
-    const diaSiguiente = (iso) => new Date(enUTC(iso) + 86400000).toISOString().slice(0, 10);
+    const sumarDias = (iso, n) => new Date(enUTC(iso) + n * 86400000).toISOString().slice(0, 10);
+    const diaSiguiente = (iso) => sumarDias(iso, 1);
     const cantidadDeDias = (desde, hasta) => Math.round((enUTC(hasta) - enUTC(desde)) / 86400000);
 
+    const fechasLibres = (g) =>
+      new Set(Array.from(g.querySelectorAll('.celda-sel')).map((c) => c.dataset.fecha));
+
+    // El rango se corta en el primer día no disponible: sin esto, arrastrar
+    // por encima de una reserva ya existente armaba un rango que el backend
+    // iba a rechazar igual.
+    function rangoContiguo(g, desdeAncla, objetivo) {
+      const libres = fechasLibres(g);
+      if (!libres.has(desdeAncla)) return [desdeAncla, desdeAncla];
+      const paso = objetivo >= desdeAncla ? 1 : -1;
+      let extremo = desdeAncla;
+      for (
+        let f = sumarDias(desdeAncla, paso);
+        paso > 0 ? f <= objetivo : f >= objetivo;
+        f = sumarDias(f, paso)
+      ) {
+        if (!libres.has(f)) break;
+        extremo = f;
+      }
+      return paso > 0 ? [desdeAncla, extremo] : [extremo, desdeAncla];
+    }
+
     function limpiarSeleccion() {
-      document.querySelectorAll('.celda-preseleccion').forEach((c) => {
-        c.classList.remove('celda-preseleccion', 'bg-primario/20');
+      document.querySelectorAll('.celda-marcada').forEach((c) => {
+        c.classList.remove('celda-marcada');
       });
     }
 
-    function marcarRango(fila, fechaA, fechaB) {
+    function marcarRango(g, desde, hasta) {
       limpiarSeleccion();
-      const desde = fechaA < fechaB ? fechaA : fechaB;
-      const hasta = fechaA < fechaB ? fechaB : fechaA;
-      fila.querySelectorAll('.celda-libre').forEach((c) => {
+      g.querySelectorAll('.celda-sel').forEach((c) => {
         const f = c.dataset.fecha;
-        if (f >= desde && f <= hasta) c.classList.add('celda-preseleccion', 'bg-primario/20');
+        if (f >= desde && f <= hasta) c.classList.add('celda-marcada');
       });
+    }
+
+    function textoRango(desde, ultimoDia) {
+      const dias = cantidadDeDias(desde, ultimoDia) + 1;
+      return dias === 1
+        ? `${fechaCorta(desde)} · 1 día`
+        : `${fechaCorta(desde)} al ${fechaCorta(ultimoDia)} · ${dias} días`;
+    }
+
+    function mostrarBarra() {
+      barraTexto.textContent = textoRango(rango[0], rango[1]);
+      barra.classList.remove('hidden');
+    }
+
+    function ocultarBarra() {
+      barra.classList.add('hidden');
     }
 
     function mostrarMensaje(texto, tono) {
@@ -614,10 +1370,60 @@ function tituloBloqueo(b: Bloqueo): string {
       modal.classList.add('hidden');
       modal.classList.remove('flex');
       limpiarSeleccion();
+      ocultarBarra();
       seleccion = null;
+      ancla = null;
+      rango = null;
     }
 
-    function abrirModal(fila, fechaA, fechaB) {
+    // Lugares libres en TODO el rango: que un día tenga lugar no garantiza
+    // que sea el mismo lugar todos los días del rango.
+    function prepararLugares() {
+      if (!pideLugar || !bloqueLugar || seleccion.origen !== 'mes') {
+        if (bloqueLugar) {
+          bloqueLugar.classList.add('hidden');
+          bloqueLugar.classList.remove('flex');
+        }
+        return true;
+      }
+
+      const libres = lugaresElegibles.filter(
+        (l) => !l.dias.some((d) => d >= seleccion.desde && d < seleccion.hasta)
+      );
+
+      // Siempre un lugar concreto: el bloqueo de Motorhome/Quinchos necesita
+      // parcela (o la unidad entera), así que una opción "cualquiera" solo
+      // llevaría al 400 del backend. En la reserva de Motorhome el valor se
+      // ignora —la parcela la asigna asignarParcelaMotorhome()—.
+      selectLugar.innerHTML = '';
+      for (const l of libres) {
+        const opcion = document.createElement('option');
+        opcion.value = l.id;
+        opcion.textContent = l.etiqueta;
+        selectLugar.append(opcion);
+      }
+
+      bloqueLugar.classList.remove('hidden');
+      bloqueLugar.classList.add('flex');
+      aplicarLugar();
+
+      const hay = libres.length > 0;
+      selectLugar.disabled = !hay;
+      avisoLugar.classList.toggle('hidden', hay);
+      if (!hay) {
+        avisoLugar.textContent = 'Ningún lugar está libre todos los días del rango: acortalo.';
+      }
+      return hay;
+    }
+
+    function aplicarLugar() {
+      if (!seleccion || !selectLugar) return;
+      const elegido = lugaresElegibles.find((l) => l.id === selectLugar.value);
+      seleccion.parcelaId = elegido ? elegido.id : '';
+      seleccion.categoria = elegido ? elegido.categoria : '';
+    }
+
+    function abrirModal(g, fechaA, fechaB) {
       const desde = fechaA < fechaB ? fechaA : fechaB;
       const ultimoDia = fechaA < fechaB ? fechaB : fechaA;
 
@@ -626,57 +1432,87 @@ function tituloBloqueo(b: Bloqueo): string {
         // "hasta" es la fecha de salida (exclusiva, como en toda la app): un
         // solo día seleccionado equivale a una noche.
         hasta: diaSiguiente(ultimoDia),
-        parcelaId: fila.dataset.parcelaId || '',
-        categoria: fila.dataset.categoria || '',
-        etiqueta: fila.dataset.etiqueta || '',
+        parcelaId: g.dataset.parcelaId || '',
+        categoria: g.dataset.categoria || '',
+        etiqueta: g.dataset.etiqueta || '',
+        origen: g.dataset.origen || 'mes',
       };
 
-      const dias = cantidadDeDias(desde, seleccion.hasta);
-      modalRango.textContent =
-        `${seleccion.etiqueta} · ` +
-        (dias === 1
-          ? `${fechaCorta(desde)} (1 día)`
-          : `${fechaCorta(desde)} al ${fechaCorta(ultimoDia)} (${dias} días)`);
+      modalRango.textContent = `${seleccion.etiqueta} · ${textoRango(desde, ultimoDia)}`;
+
+      btnVerDiaTexto.textContent = `Ver el día ${fechaCorta(desde)}`;
+
+      const hayLugar = prepararLugares();
+      btnReservar.disabled = !hayLugar;
+      btnBloquear.disabled = !hayLugar;
 
       acciones.classList.remove('hidden');
       formBloqueo.classList.add('hidden');
       formBloqueo.classList.remove('flex');
       formBloqueo.reset();
       msgBloqueo.classList.add('hidden');
+      ocultarBarra();
       modal.classList.remove('hidden');
       modal.classList.add('flex');
     }
 
-    document.querySelectorAll('.celda-libre').forEach((celda) => {
-      celda.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        arrastrando = true;
-        filaActiva = celda.closest('tr');
-        fechaInicio = celda.dataset.fecha ?? null;
-        if (filaActiva && fechaInicio) marcarRango(filaActiva, fechaInicio, fechaInicio);
-      });
-      celda.addEventListener('mouseenter', () => {
-        if (!arrastrando || !filaActiva || !fechaInicio) return;
-        if (celda.closest('tr') !== filaActiva) return;
-        marcarRango(filaActiva, fechaInicio, celda.dataset.fecha ?? fechaInicio);
-      });
+    const esInteractivo = (destino) => destino.closest('a, button, input, select, label');
+
+    document.addEventListener('pointerdown', (e) => {
+      tipoPuntero = e.pointerType || 'mouse';
+      if (tipoPuntero !== 'mouse') return;
+      const celda = e.target.closest?.('.celda-sel');
+      if (!celda || esInteractivo(e.target)) return;
+      e.preventDefault();
+      grupo = celda.closest('[data-grupo]');
+      ancla = celda.dataset.fecha;
+      rango = [ancla, ancla];
+      arrastrando = true;
+      marcarRango(grupo, ancla, ancla);
     });
 
-    document.addEventListener('mouseup', () => {
-      if (!arrastrando || !filaActiva || !fechaInicio) {
-        arrastrando = false;
-        return;
-      }
+    document.addEventListener('pointerover', (e) => {
+      if (!arrastrando) return;
+      const celda = e.target.closest?.('.celda-sel');
+      if (!celda || celda.closest('[data-grupo]') !== grupo) return;
+      rango = rangoContiguo(grupo, ancla, celda.dataset.fecha);
+      marcarRango(grupo, rango[0], rango[1]);
+    });
+
+    document.addEventListener('pointerup', () => {
+      if (!arrastrando) return;
       arrastrando = false;
-      const seleccionadas = Array.from(filaActiva.querySelectorAll('.celda-preseleccion'))
-        .map((c) => c.dataset.fecha)
-        .filter(Boolean)
-        .sort();
-      const fechaFin = seleccionadas[seleccionadas.length - 1] ?? fechaInicio;
-      abrirModal(filaActiva, fechaInicio, fechaFin);
+      if (grupo && rango) abrirModal(grupo, rango[0], rango[1]);
     });
 
-    document.getElementById('btn-reservar').addEventListener('click', () => {
+    // Táctil: el click llega después del toque, sin bloquear el scroll.
+    document.addEventListener('click', (e) => {
+      if (tipoPuntero === 'mouse') return;
+      const celda = e.target.closest?.('.celda-sel');
+      if (!celda || esInteractivo(e.target)) return;
+      const g = celda.closest('[data-grupo]');
+      if (g !== grupo || !ancla) {
+        grupo = g;
+        ancla = celda.dataset.fecha;
+      }
+      rango = rangoContiguo(grupo, ancla, celda.dataset.fecha);
+      marcarRango(grupo, rango[0], rango[1]);
+      mostrarBarra();
+    });
+
+    document.getElementById('barra-continuar').addEventListener('click', () => {
+      if (grupo && rango) abrirModal(grupo, rango[0], rango[1]);
+    });
+    document.getElementById('barra-cancelar').addEventListener('click', () => {
+      limpiarSeleccion();
+      ocultarBarra();
+      ancla = null;
+      rango = null;
+    });
+
+    if (selectLugar) selectLugar.addEventListener('change', aplicarLugar);
+
+    btnReservar.addEventListener('click', () => {
       if (!seleccion) return;
       const params = new URLSearchParams({
         tipo: tipoSeleccionado,
@@ -692,7 +1528,12 @@ function tituloBloqueo(b: Bloqueo): string {
       window.location.href = `/panel/reservas/nueva?${params}`;
     });
 
-    document.getElementById('btn-bloquear').addEventListener('click', () => {
+    btnVerDia.addEventListener('click', () => {
+      if (!seleccion) return;
+      window.location.href = `${urlDia}&fecha=${seleccion.desde}&mes=${seleccion.desde.slice(0, 7)}`;
+    });
+
+    btnBloquear.addEventListener('click', () => {
       acciones.classList.add('hidden');
       formBloqueo.classList.remove('hidden');
       formBloqueo.classList.add('flex');
@@ -706,8 +1547,18 @@ function tituloBloqueo(b: Bloqueo): string {
       msgBloqueo.classList.add('hidden');
     });
 
+    // Bloquear toda la unidad ignora el lugar elegido: se deshabilita para no
+    // prometer algo que el backend no va a mirar.
+    const checkToda = formBloqueo.querySelector('input[name="todaLaUnidad"]');
+    if (checkToda && selectLugar) {
+      checkToda.addEventListener('change', () => {
+        selectLugar.disabled = checkToda.checked || selectLugar.options.length === 0;
+      });
+    }
+
     document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModal);
-    modal.addEventListener('mousedown', (e) => {
+    document.getElementById('btn-cerrar-x').addEventListener('click', cerrarModal);
+    modal.addEventListener('pointerdown', (e) => {
       if (e.target === modal) cerrarModal();
     });
     document.addEventListener('keydown', (e) => {
@@ -751,29 +1602,30 @@ function tituloBloqueo(b: Bloqueo): string {
       }
     });
 
-    // Quitar un bloqueo: clic sobre la barra rayada.
-    document.querySelectorAll('.bloqueo-barra').forEach((barra) => {
-      barra.addEventListener('click', async () => {
-        const nota = barra.dataset.nota;
-        if (
-          !confirm(
-            `¿Quitar este bloqueo${nota ? ` (${nota})` : ''}? Las fechas vuelven a quedar disponibles.`
-          )
-        ) {
-          return;
-        }
-        const res = await fetch('/api/panel/admin/bloqueos', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: barra.dataset.bloqueoId }),
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          alert(data.error ?? 'No se pudo quitar el bloqueo');
-          return;
-        }
-        window.location.reload();
+    // Quitar un bloqueo: clic sobre la barra rayada (en la grilla el mismo
+    // bloqueo aparece en varias celdas, así que va por delegación).
+    document.addEventListener('click', async (e) => {
+      const barraBloqueo = e.target.closest?.('.bloqueo-barra');
+      if (!barraBloqueo) return;
+      const nota = barraBloqueo.dataset.nota;
+      if (
+        !confirm(
+          `¿Quitar este bloqueo${nota ? ` (${nota})` : ''}? Las fechas vuelven a quedar disponibles.`
+        )
+      ) {
+        return;
+      }
+      const res = await fetch('/api/panel/admin/bloqueos', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: barraBloqueo.dataset.bloqueoId }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error ?? 'No se pudo quitar el bloqueo');
+        return;
+      }
+      window.location.reload();
     });
   </script>
 </PanelLayout>
