@@ -74,11 +74,11 @@ const claseGuardar =
               <h3 class="font-titulo font-bold text-negro text-lg">{u.nombre}</h3>
               {u.tipo === 'CAMPING' && (
                 <form
-                  class="form-unidad flex flex-wrap items-end gap-3"
+                  class="form-unidad flex flex-wrap items-center gap-3"
                   data-id={u.id}
                   data-nombre={u.nombre}
                 >
-                  <label class="flex flex-col gap-1 text-sm text-texto-suave">
+                  <label class="flex items-center gap-2 text-sm text-texto-suave">
                     Cupo total
                     <input
                       type="number"
