@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 interface Props {
   reservaId: string;
+  saldo: number;
 }
 
 // Único punto interactivo de la pantalla de Detalle: registra un pago sin
@@ -9,7 +10,7 @@ interface Props {
 // recarga la página — así el estado de check-in/check-out (que vive en el
 // server, en src/lib/reservas.ts) queda como única fuente de verdad, sin
 // duplicar esas reglas acá.
-export default function RegistrarPago({ reservaId }: Props) {
+export default function RegistrarPago({ reservaId, saldo }: Props) {
   const [monto, setMonto] = useState('');
   const [metodo, setMetodo] = useState('Transferencia');
   const [nota, setNota] = useState('');
@@ -19,6 +20,10 @@ export default function RegistrarPago({ reservaId }: Props) {
 
   async function registrarPago(e: React.FormEvent) {
     e.preventDefault();
+    if (Number(monto) > saldo) {
+      setError(`El monto supera el saldo pendiente (${saldo.toFixed(2)})`);
+      return;
+    }
     setEnviando(true);
     setError(null);
     try {
@@ -46,9 +51,10 @@ export default function RegistrarPago({ reservaId }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <input
           type="number"
-          min={1}
+          min={0.01}
+          max={saldo}
           step="0.01"
-          placeholder="Monto"
+          placeholder={`Monto (máx. ${saldo.toFixed(2)})`}
           className={input}
           value={monto}
           onChange={(e) => setMonto(e.target.value)}

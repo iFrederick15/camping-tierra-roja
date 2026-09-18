@@ -2,7 +2,8 @@
 // Edición de una reserva ya creada por Staff o Admin (cambio de fechas,
 // unidad, categoría, cantidades o datos del cliente). Revalida
 // disponibilidad excluyendo la propia reserva y recalcula monto_total /
-// detalle_precio con la misma lógica que la carga manual (manual.ts).
+// detalle_precio con la misma lógica que la carga manual (manual.ts),
+// restando el descuento vigente.
 // NO toca monto_pagado, estado, origen ni fecha_limite_pago.
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../../lib/supabase';
@@ -29,10 +30,9 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     return new Response(JSON.stringify({ error: 'Reserva no encontrada' }), { status: 404 });
   }
   if (reserva.estado === 'CANCELADA' || reserva.estado === 'CHECKOUT_HECHO') {
-    return new Response(
-      JSON.stringify({ error: 'Esta reserva ya no se puede editar' }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: 'Esta reserva ya no se puede editar' }), {
+      status: 400,
+    });
   }
 
   const body = await request.json();
@@ -58,10 +58,9 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   }
 
   if (!nombreCliente || !dni || !fechaIngreso || !fechaSalida) {
-    return new Response(
-      JSON.stringify({ error: 'Nombre, DNI y fechas son obligatorios' }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: 'Nombre, DNI y fechas son obligatorios' }), {
+      status: 400,
+    });
   }
   if (fechaSalida <= fechaIngreso) {
     return new Response(
@@ -75,10 +74,9 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     return new Response(JSON.stringify({ error: errorDatos }), { status: 400 });
   }
   if (unidadTipo === 'QUINCHOS' && fechaSalida !== diaSiguiente(fechaIngreso)) {
-    return new Response(
-      JSON.stringify({ error: 'Los quinchos se reservan por un solo día' }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: 'Los quinchos se reservan por un solo día' }), {
+      status: 400,
+    });
   }
 
   const { data: unidad, error: errUnidad } = await supabaseAdmin
@@ -152,10 +150,9 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   } else {
     const d = disp.disponibilidad;
     if ((d.tipo === 'cupo' || d.tipo === 'unica') && !d.disponible) {
-      return new Response(
-        JSON.stringify({ error: 'No hay disponibilidad para esas fechas' }),
-        { status: 409 }
-      );
+      return new Response(JSON.stringify({ error: 'No hay disponibilidad para esas fechas' }), {
+        status: 409,
+      });
     }
   }
 
@@ -169,7 +166,13 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   if ('error' in precio) {
     return new Response(JSON.stringify({ error: precio.error }), { status: precio.status });
   }
-  const { montoTotal, detalle } = precio;
+  // El descuento aplicado desde el Panel (sql/016) se conserva al editar. Si
+  // la reserva iba por la casa (total 0) sigue así con el precio nuevo; si no,
+  // se mantiene el monto, recortado para que el total no sea negativo.
+  const { detalle } = precio;
+  const porLaCasa = reserva.descuento > 0 && reserva.montoTotal <= 0;
+  const descuento = porLaCasa ? precio.montoTotal : Math.min(reserva.descuento, precio.montoTotal);
+  const montoTotal = precio.montoTotal - descuento;
 
   const { error: errUpdate } = await supabaseAdmin
     .from('reservas')
@@ -189,12 +192,15 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       fecha_ingreso: fechaIngreso,
       fecha_salida: fechaSalida,
       monto_total: montoTotal,
+      descuento,
     })
     .eq('id', id);
 
   if (errUpdate) {
     console.error('PATCH /api/panel/reservas/[id] — error actualizando:', errUpdate);
-    return new Response(JSON.stringify({ error: 'No se pudo guardar la reserva' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'No se pudo guardar la reserva' }), {
+      status: 500,
+    });
   }
 
   const actualizada = await obtenerReserva(id);

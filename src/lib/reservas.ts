@@ -11,6 +11,8 @@ export { codigoReserva } from './codigo-reserva';
 export type EstadoPago = 'NO_PAGADO' | 'PARCIAL' | 'PAGADO';
 
 export function calcularEstadoPago(montoTotal: number, montoPagado: number): EstadoPago {
+  // Descuento del 100% ("por la casa", sql/016): no hay nada que cobrar.
+  if (montoTotal <= 0) return 'PAGADO';
   if (montoPagado <= 0) return 'NO_PAGADO';
   if (montoPagado >= montoTotal) return 'PAGADO';
   return 'PARCIAL';
@@ -670,6 +672,11 @@ export interface ReservaResumen {
   cantidadMenores: number;
   cantidadMayores: number;
   detallePrecio: ItemPrecio[];
+  // Ya restado de montoTotal (sql/016): el subtotal de lista es montoTotal + descuento.
+  descuento: number;
+  descuentoMotivo: string | null;
+  descuentoPor: string | null;
+  descuentoEn: string | null;
   parcelaId: string | null;
   categoriaSeleccionada: string | null;
   datosVehiculo: string | null;
@@ -689,7 +696,7 @@ type FiltroReservas =
   | { modo: 'del-dia'; fecha: string };
 
 const SELECT_RESUMEN =
-  'id, nombre_cliente, dni, telefono, email, fecha_ingreso, fecha_salida, monto_total, monto_pagado, fecha_limite_pago, estado, origen, cantidad_acompanantes, cantidad_menores, cantidad_mayores, detalle_precio, parcela_id, categoria_seleccionada, datos_vehiculo, creado_en, checkin_en, checkout_en, unidades(nombre, tipo), parcelas(nombre)';
+  'id, nombre_cliente, dni, telefono, email, fecha_ingreso, fecha_salida, monto_total, monto_pagado, fecha_limite_pago, estado, origen, cantidad_acompanantes, cantidad_menores, cantidad_mayores, detalle_precio, descuento, descuento_motivo, descuento_por, descuento_en, parcela_id, categoria_seleccionada, datos_vehiculo, creado_en, checkin_en, checkout_en, unidades(nombre, tipo), parcelas(nombre)';
 
 function mapearResumen(r: any): ReservaResumen {
   return {
@@ -712,6 +719,10 @@ function mapearResumen(r: any): ReservaResumen {
     cantidadMenores: r.cantidad_menores ?? 0,
     cantidadMayores: r.cantidad_mayores ?? 0,
     detallePrecio: r.detalle_precio ?? [],
+    descuento: Number(r.descuento ?? 0),
+    descuentoMotivo: r.descuento_motivo ?? null,
+    descuentoPor: r.descuento_por ?? null,
+    descuentoEn: r.descuento_en ?? null,
     parcelaId: r.parcela_id ?? null,
     categoriaSeleccionada: r.categoria_seleccionada ?? null,
     datosVehiculo: r.datos_vehiculo ?? null,

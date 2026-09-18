@@ -76,6 +76,7 @@ export const ICONOS_MATERIAL = [
   'remove',
   'schedule',
   'search',
+  'sell',
   'shopping_bag',
   'shower',
   'spa',

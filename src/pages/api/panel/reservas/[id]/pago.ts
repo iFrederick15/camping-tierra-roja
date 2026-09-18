@@ -35,6 +35,20 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     return new Response(JSON.stringify({ error: 'Indica el método de pago' }), { status: 400 });
   }
 
+  // Redondeo a centavos para que 0.1 + 0.2 no deje un saldo fantasma.
+  const saldo = Math.round((reserva.montoTotal - reserva.montoPagado) * 100) / 100;
+  if (saldo <= 0) {
+    return new Response(JSON.stringify({ error: 'La reserva ya está pagada por completo' }), {
+      status: 400,
+    });
+  }
+  if (monto > saldo) {
+    return new Response(
+      JSON.stringify({ error: `El monto supera el saldo pendiente (${saldo.toFixed(2)})` }),
+      { status: 400 }
+    );
+  }
+
   const { error } = await supabaseAdmin.rpc('registrar_pago', {
     p_reserva_id: id,
     p_monto: monto,
@@ -44,6 +58,12 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   });
 
   if (error) {
+    // La RPC vuelve a validar con la fila bloqueada (sql/015): cubre dos pagos simultáneos.
+    if (error.message?.includes('SALDO_EXCEDIDO')) {
+      return new Response(JSON.stringify({ error: 'El monto supera el saldo pendiente' }), {
+        status: 400,
+      });
+    }
     console.error('POST /api/panel/reservas/[id]/pago:', error);
     return new Response(JSON.stringify({ error: 'No se pudo registrar el pago' }), { status: 500 });
   }

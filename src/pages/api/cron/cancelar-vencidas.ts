@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ request }) => {
 
   const { data: vencidas, error: errBusqueda } = await supabaseAdmin
     .from('reservas')
-    .select('id, monto_pagado')
+    .select('id, monto_total, monto_pagado')
     // Las impagas son REALIZADA (sql/012); CONFIRMADA queda por las que se
     // crearon antes de esa migración. El filtro de monto_pagado de abajo es
     // el que decide igual.
@@ -61,7 +61,10 @@ export const GET: APIRoute = async ({ request }) => {
   // ingresar, que es lo que prometen los Términos y el email de confirmación.
   // Antes se cancelaba todo lo que no estuviera pagado al 100%, y eso daba de
   // baja justamente a los clientes que habían hecho lo que se les pidió.
-  const idsACancelar = (vencidas ?? []).filter((r) => Number(r.monto_pagado) <= 0).map((r) => r.id);
+  // Una reserva con descuento del 100% (total 0, sql/016) no espera ningún pago.
+  const idsACancelar = (vencidas ?? [])
+    .filter((r) => Number(r.monto_pagado) <= 0 && Number(r.monto_total) > 0)
+    .map((r) => r.id);
 
   if (idsACancelar.length === 0) {
     return new Response(JSON.stringify({ ok: true, canceladas: 0 }), { status: 200 });

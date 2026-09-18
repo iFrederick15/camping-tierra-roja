@@ -1,6 +1,7 @@
 ---
 import PanelLayout from '../../../layouts/PanelLayout.astro';
 import RegistrarPago from '../../../components/panel/RegistrarPago.tsx';
+import AplicarDescuento from '../../../components/panel/AplicarDescuento.tsx';
 import EditarReserva from '../../../components/panel/EditarReserva.tsx';
 import ComentariosReserva from '../../../components/panel/ComentariosReserva.tsx';
 import {
@@ -45,6 +46,8 @@ const esperandoLlegada = reserva.estado === 'REALIZADA' || reserva.estado === 'C
 
 const noches = calcularNoches(reserva.fechaIngreso, reserva.fechaSalida);
 const saldo = Math.max(0, reserva.montoTotal - reserva.montoPagado);
+// Total de lista, antes del descuento aplicado desde el Panel (sql/016).
+const subtotal = reserva.montoTotal + reserva.descuento;
 const porcentajePagado =
   reserva.montoTotal > 0
     ? Math.min(100, Math.round((reserva.montoPagado / reserva.montoTotal) * 100))
@@ -142,6 +145,12 @@ const eventos = [
     titulo: 'Check-out',
     detalle: null,
     conHora: true,
+  },
+  {
+    fecha: reserva.descuento > 0 ? (reserva.descuentoEn ?? '') : '',
+    titulo: `Descuento de ${fmtMoneda(reserva.descuento)}`,
+    detalle: reserva.descuentoPor,
+    conHora: false,
   },
   ...pagos.map((p) => ({
     fecha: p.creadoEn,
@@ -350,7 +359,7 @@ const etiqueta = 'text-texto-suave text-xs font-titulo font-medium uppercase tra
               </p>
             </div>
             <span class="font-titulo font-bold text-negro shrink-0">
-              {fmtMoneda(reserva.montoTotal)}
+              {fmtMoneda(subtotal)}
             </span>
           </div>
 
@@ -374,6 +383,22 @@ const etiqueta = 'text-texto-suave text-xs font-titulo font-medium uppercase tra
             )
           }
 
+          {
+            reserva.descuento > 0 && (
+              <div class="border-t border-fondo-alt px-5 py-3 text-sm flex justify-between gap-3">
+                <span class="text-texto">
+                  Descuento
+                  {reserva.descuentoMotivo && (
+                    <span class="text-texto-suave"> · {reserva.descuentoMotivo}</span>
+                  )}
+                </span>
+                <span class="text-confirmado font-medium shrink-0">
+                  −{fmtMoneda(reserva.descuento)}
+                </span>
+              </div>
+            )
+          }
+
           <div
             class="border-t-2 border-borde px-5 py-3.5 flex justify-between items-baseline gap-3"
           >
@@ -383,6 +408,19 @@ const etiqueta = 'text-texto-suave text-xs font-titulo font-medium uppercase tra
             </span>
           </div>
         </div>
+
+        {
+          activa && (
+            <AplicarDescuento
+              client:load
+              reservaId={reserva.id}
+              subtotal={subtotal}
+              montoPagado={reserva.montoPagado}
+              descuentoActual={reserva.descuento}
+              motivoActual={reserva.descuentoMotivo}
+            />
+          )
+        }
       </section>
 
       <!-- 4. Pagos -->
@@ -449,9 +487,9 @@ const etiqueta = 'text-texto-suave text-xs font-titulo font-medium uppercase tra
         </div>
 
         {
-          activa && (
+          activa && saldo > 0 && (
             <div id="registrar-pago" class="scroll-mt-6">
-              <RegistrarPago reservaId={reserva.id} client:load />
+              <RegistrarPago reservaId={reserva.id} saldo={saldo} client:load />
             </div>
           )
         }
@@ -475,6 +513,14 @@ const etiqueta = 'text-texto-suave text-xs font-titulo font-medium uppercase tra
             <dt class="text-texto-suave">Total</dt>
             <dd class="text-texto">{fmtMoneda(reserva.montoTotal)}</dd>
           </div>
+          {
+            reserva.descuento > 0 && (
+              <div class="flex justify-between gap-3">
+                <dt class="text-texto-suave">Descuento incluido</dt>
+                <dd class="text-texto">−{fmtMoneda(reserva.descuento)}</dd>
+              </div>
+            )
+          }
           <div class="flex justify-between gap-3">
             <dt class="text-texto-suave">Pagado</dt>
             <dd class="text-texto">{fmtMoneda(reserva.montoPagado)}</dd>
