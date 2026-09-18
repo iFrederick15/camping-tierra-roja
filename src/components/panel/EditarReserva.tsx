@@ -460,9 +460,13 @@ export default function EditarReserva(props: Props) {
             className={inputCls}
             type="tel"
             inputMode="numeric"
+            aria-describedby="editar-telefono-ayuda"
             value={telefono}
             onChange={(e) => setTelefono(e.target.value.replace(/\D/g, ''))}
           />
+          <span id="editar-telefono-ayuda" className="text-xs">
+            Con código de país, sin 0 ni 15. Ej.: 5493757123456
+          </span>
         </label>
         <label className={`${labelCls} sm:col-span-2`}>
           Vehículo

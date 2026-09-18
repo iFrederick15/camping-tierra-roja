@@ -43,6 +43,7 @@ export interface TextosWidget {
   dniPlaceholder: string;
   emailPlaceholder: string;
   telefonoPlaceholder: string;
+  telefonoAyuda: string;
   alojamiento: string;
   noches: string;
   dias: string;
@@ -110,6 +111,7 @@ const es: TextosWidget = {
   dniPlaceholder: 'DNI o Pasaporte',
   emailPlaceholder: 'Email',
   telefonoPlaceholder: 'Teléfono',
+  telefonoAyuda: 'Con código de país, sin 0 ni 15. Ej.: 5493757123456',
   alojamiento: 'Alojamiento',
   noches: 'Noches',
   dias: 'Días',
@@ -140,7 +142,10 @@ const pt: TextosWidget = {
     CAMPING: { label: 'Camping', descripcion: 'Monte sua barraca cercado de natureza.' },
     MOTORHOME: { label: 'Motorhome', descripcion: 'Vaga com luz e água para o seu veículo.' },
     CABANA: { label: 'Cabana', descripcion: 'Conforto em plena natureza.' },
-    QUINCHOS: { label: 'Quincho', descripcion: 'Espaço coberto com churrasqueira para o seu grupo.' },
+    QUINCHOS: {
+      label: 'Quincho',
+      descripcion: 'Espaço coberto com churrasqueira para o seu grupo.',
+    },
   },
   porNoche: '/ noite',
   porDia: '/ dia',
@@ -169,6 +174,7 @@ const pt: TextosWidget = {
   dniPlaceholder: 'RG, documento ou passaporte',
   emailPlaceholder: 'E-mail',
   telefonoPlaceholder: 'Telefone',
+  telefonoAyuda: 'Com código do país e DDD. Ex.: 5511912345678',
   alojamiento: 'Hospedagem',
   noches: 'Noites',
   dias: 'Dias',
@@ -244,6 +250,7 @@ const en: TextosWidget = {
   dniPlaceholder: 'ID or passport number',
   emailPlaceholder: 'Email',
   telefonoPlaceholder: 'Phone',
+  telefonoAyuda: 'Include your country code. E.g.: 5493757123456',
   alojamiento: 'Stay type',
   noches: 'Nights',
   dias: 'Days',

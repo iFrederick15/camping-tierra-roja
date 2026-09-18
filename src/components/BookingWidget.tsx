@@ -1148,11 +1148,20 @@ export default function BookingWidget({
               type="tel"
               inputMode="numeric"
               autoComplete="tel"
+              aria-describedby="reserva-telefono-ayuda"
               value={datosCliente.telefono}
               onChange={(e) =>
                 setDatosCliente({ ...datosCliente, telefono: e.target.value.replace(/\D/g, '') })
               }
             />
+            {/* El panel arma el link de WhatsApp con este número tal cual:
+                sin el código de país no hay forma de saber a dónde escribir. */}
+            <span
+              id="reserva-telefono-ayuda"
+              className="text-xs text-texto-suave font-normal font-cuerpo"
+            >
+              {T.telefonoAyuda}
+            </span>
           </label>
 
           {(unidadElegida || noches || detalle.length > 0) && resumen(true)}
