@@ -256,7 +256,7 @@ export function construirEmailConfirmacion(datos: DatosConfirmacion): {
               ${tituloSeccion('Para confirmar tu reserva')}
               <p style="margin:0 0 4px;font-family:${FUENTE_CUERPO};font-size:15px;line-height:23px;color:${C.texto};">
                 ${haySaldo ? 'Transfiere al menos la seña antes del' : `Transfiere el total de <strong>${total}</strong> antes del`}
-                <strong style="color:${C.advertencia};">${fmtFechaHora(datos.fechaLimitePago)}</strong>
+                <strong style="color:${C.primario};">${fmtFechaHora(datos.fechaLimitePago)}</strong>
                 y envíanos el comprobante por WhatsApp.
               </p>
               ${filasSena}
