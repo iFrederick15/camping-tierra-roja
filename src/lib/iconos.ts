@@ -60,6 +60,7 @@ export const ICONOS_MATERIAL = [
   'local_activity',
   'location_on',
   'lock',
+  'lock_open',
   'logout',
   'mail',
   'map',

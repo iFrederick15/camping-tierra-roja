@@ -30,8 +30,8 @@ const ORDEN_TIPOS: TipoUnidad[] = ['CAMPING', 'MOTORHOME', 'CABANA', 'QUINCHOS',
 // ocupado. En su tablero un bloqueo se lee como "ocupado", no "bloqueado".
 const textoBloqueo = (tipo: TipoUnidad) =>
   tipo === 'SALON'
-    ? { vacio: 'Ocupado', autor: 'anotó', quitar: 'clic para liberar la fecha' }
-    : { vacio: 'Bloqueado', autor: 'bloqueó', quitar: 'clic para quitar el bloqueo' };
+    ? { vacio: 'Ocupado', autor: 'anotó', quitar: 'clic para ver el detalle' }
+    : { vacio: 'Bloqueado', autor: 'bloqueó', quitar: 'clic para ver el detalle' };
 
 // Mes visible: querystring ?mes=YYYY-MM, default al mes actual (huso horario
 // de Puerto Iguazú, igual que hoyISO()) — evita el off-by-one de usar la
@@ -325,6 +325,15 @@ function tituloBloqueo(b: Bloqueo, tipo: TipoUnidad = tipoSeleccionado): string 
   return partes.join(' · ');
 }
 
+// Línea de fechas y autor de la ficha que se abre al tocar un bloqueo: en el
+// celular no hay tooltip, así que la nota y estos datos van ahí.
+function detalleBloqueo(b: Bloqueo, tipo: TipoUnidad = tipoSeleccionado): string {
+  const partes = [`${cortaISO(b.fechaInicio)} → ${cortaISO(b.fechaFin)}`];
+  if (tipo !== 'SALON' && b.parcelaId === null && b.plazas === null) partes.push('toda la unidad');
+  if (b.creadoPor) partes.push(`${textoBloqueo(tipo).autor} ${b.creadoPor}`);
+  return partes.join(' · ');
+}
+
 // ── Grilla del mes ─────────────────────────────────────────────────────
 // Los lugares del tipo son el denominador de cada día: "3 libres" sale de
 // contar cuántas filas del tablero quedan sin ocupación ese día.
@@ -338,6 +347,7 @@ interface ItemDia {
   titulo: string;
   href?: string;
   nota?: string;
+  detalle?: string;
   esInicio: boolean;
   esFin: boolean;
   // Cuántos lugares tapa ese día: un bloqueo de toda la unidad (o de varias
@@ -401,6 +411,7 @@ const celdasMes: CeldaDia[] = Array.from({ length: diasEnMes }, (_, i) => {
               className: '',
               titulo: `${tituloBloqueo(o.bloqueo)} · ${textosBloqueo.quitar}`,
               nota: o.bloqueo.nota ?? '',
+              detalle: detalleBloqueo(o.bloqueo),
               esInicio,
               esFin,
               cantidad: 1,
@@ -569,6 +580,7 @@ if (vista === 'dia') {
       id: b.id,
       texto: b.nota?.trim() || textoBloqueo(tipo).vacio,
       titulo: tituloBloqueo(b, tipo),
+      detalle: detalleBloqueo(b, tipo),
       // Un bloqueo de toda la unidad tapa el cupo entero; si no, las plazas
       // que diga (camping) o el lugar puntual (motorhome/quinchos).
       lugares: b.parcelaId === null && b.plazas === null ? capacidad : (b.plazas ?? 1),
@@ -827,6 +839,7 @@ const clasePill =
                     class="bloqueo-barra flex items-center justify-between gap-4 rounded-card border-2 border-borde px-5 py-4 bg-superficie text-left hover:border-primario-claro transition-colors"
                     data-bloqueo-id={b.id}
                     data-nota={b.texto}
+                    data-detalle={b.detalle}
                     data-salon={g.tipo === 'SALON' ? '1' : undefined}
                     title={`${b.titulo} · ${textoBloqueo(g.tipo).quitar}`}
                   >
@@ -836,7 +849,9 @@ const clasePill =
                         style={`background-image: ${RAYADO_BLOQUEO}`}
                       />
                       <span class="flex flex-col min-w-0">
-                        <span class="font-titulo font-bold text-negro truncate">{b.texto}</span>
+                        <span class="font-titulo font-bold text-negro break-words whitespace-pre-line">
+                          {b.texto}
+                        </span>
                         <span class="text-texto-suave text-sm">
                           {g.tipo === 'SALON'
                             ? 'Ocupado'
@@ -845,7 +860,7 @@ const clasePill =
                       </span>
                     </span>
                     <span class="shrink-0 whitespace-nowrap border border-borde rounded-pill px-3 py-1 text-xs font-titulo font-bold text-texto-suave">
-                      {g.tipo === 'SALON' ? 'Liberar' : 'Quitar'}
+                      Ver
                     </span>
                   </button>
                 ))}
@@ -964,6 +979,7 @@ const clasePill =
                       style={`background-image: ${RAYADO_BLOQUEO}`}
                       data-bloqueo-id={it.id}
                       data-nota={it.nota}
+                      data-detalle={it.detalle}
                       title={it.titulo}
                     >
                       <span class="material-symbols-outlined text-[12px] shrink-0">lock</span>
@@ -984,6 +1000,14 @@ const clasePill =
                   </a>
                 )}
               </div>
+
+              {c.libres === 0 && (
+                <a
+                  href={enlace({ vista: 'dia', fecha: c.iso })}
+                  class="sm:hidden absolute inset-0"
+                  aria-label={`Ver el ${cortaISO(c.iso)}`}
+                />
+              )}
 
               <div class="sm:hidden mt-auto flex flex-wrap items-center gap-0.5">
                 {c.items.slice(0, 4).map((it) => (
@@ -1084,6 +1108,7 @@ const clasePill =
                           style={`background-image: ${RAYADO_BLOQUEO}`}
                           data-bloqueo-id={seg.ocupacion.bloqueo.id}
                           data-nota={seg.ocupacion.bloqueo.nota ?? ''}
+                          data-detalle={detalleBloqueo(seg.ocupacion.bloqueo)}
                           title={`${tituloBloqueo(seg.ocupacion.bloqueo)} · ${textosBloqueo.quitar}`}
                         >
                           <span class="material-symbols-outlined text-[14px] shrink-0">lock</span>
@@ -1299,6 +1324,60 @@ const clasePill =
       >
         Cancelar
       </button>
+    </div>
+  </div>
+
+  <!--
+    Ficha de un bloqueo: en el celular no hay tooltip, así que tocar la barra
+    muestra la nota completa acá, y liberar la fecha es un paso aparte.
+  -->
+  <div
+    id="modal-bloqueo"
+    class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center bg-negro/40 sm:p-4"
+  >
+    <div
+      class="bg-superficie w-full sm:max-w-md max-h-[92vh] overflow-y-auto border-t sm:border border-borde rounded-t-card sm:rounded-card px-5 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:p-6 flex flex-col gap-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ficha-nota"
+    >
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p id="ficha-tipo" class="font-titulo text-sm text-texto-suave"></p>
+          <h2
+            id="ficha-nota"
+            class="font-titulo font-bold text-xl text-negro mt-1 break-words whitespace-pre-line"
+          >
+          </h2>
+          <p id="ficha-detalle" class="text-sm text-texto-suave mt-2"></p>
+        </div>
+        <button
+          type="button"
+          id="ficha-cerrar-x"
+          aria-label="Cerrar"
+          class="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-texto-suave hover:bg-superficie-elevada transition-colors"
+        >
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <button
+          type="button"
+          id="ficha-quitar"
+          class="inline-flex items-center justify-center gap-2 border-2 border-borde px-5 py-2.5 rounded-pill font-titulo font-medium text-texto hover:border-primario-claro transition-colors disabled:opacity-40 disabled:pointer-events-none"
+        >
+          <span class="material-symbols-outlined text-[18px]">lock_open</span>
+          <span id="ficha-quitar-texto">Quitar bloqueo</span>
+        </button>
+        <button
+          type="button"
+          id="ficha-cerrar"
+          class="self-center px-5 py-2 text-sm font-titulo text-texto-suave hover:text-primario transition-colors"
+        >
+          Cerrar
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1655,27 +1734,65 @@ const clasePill =
       }
     });
 
-    // Quitar un bloqueo: clic sobre la barra rayada (en la grilla el mismo
-    // bloqueo aparece en varias celdas, así que va por delegación).
-    document.addEventListener('click', async (e) => {
+    // Ficha de un bloqueo: clic sobre la barra rayada (en la grilla el mismo
+    // bloqueo aparece en varias celdas, así que va por delegación). Muestra la
+    // nota completa y desde ahí se quita.
+    const modalBloqueo = document.getElementById('modal-bloqueo');
+    const fichaQuitar = document.getElementById('ficha-quitar');
+    let barraAbierta = null;
+
+    function cerrarFicha() {
+      modalBloqueo.classList.add('hidden');
+      modalBloqueo.classList.remove('flex');
+      barraAbierta = null;
+    }
+
+    document.addEventListener('click', (e) => {
       const barraBloqueo = e.target.closest?.('.bloqueo-barra');
       if (!barraBloqueo) return;
-      const nota = barraBloqueo.dataset.nota;
-      const pregunta =
-        esSalon || barraBloqueo.dataset.salon
-          ? `¿Liberar esta fecha del salón${nota ? ` (${nota})` : ''}?`
-          : `¿Quitar este bloqueo${nota ? ` (${nota})` : ''}? Las fechas vuelven a quedar disponibles.`;
-      if (!confirm(pregunta)) {
-        return;
-      }
+      const salon = esSalon || Boolean(barraBloqueo.dataset.salon);
+      const nota = barraBloqueo.dataset.nota?.trim();
+      barraAbierta = barraBloqueo;
+      document.getElementById('ficha-tipo').textContent = salon
+        ? 'Salón de eventos · ocupado'
+        : 'Bloqueo';
+      document.getElementById('ficha-nota').textContent =
+        nota || (salon ? 'Ocupado, sin detalle' : 'Bloqueado, sin nota');
+      document.getElementById('ficha-detalle').textContent = barraBloqueo.dataset.detalle ?? '';
+      document.getElementById('ficha-quitar-texto').textContent = salon
+        ? 'Liberar la fecha'
+        : 'Quitar bloqueo';
+      fichaQuitar.disabled = false;
+      modalBloqueo.classList.remove('hidden');
+      modalBloqueo.classList.add('flex');
+    });
+
+    document.getElementById('ficha-cerrar').addEventListener('click', cerrarFicha);
+    document.getElementById('ficha-cerrar-x').addEventListener('click', cerrarFicha);
+    modalBloqueo.addEventListener('pointerdown', (e) => {
+      if (e.target === modalBloqueo) cerrarFicha();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modalBloqueo.classList.contains('hidden')) cerrarFicha();
+    });
+
+    fichaQuitar.addEventListener('click', async () => {
+      if (!barraAbierta) return;
+      const salon = esSalon || Boolean(barraAbierta.dataset.salon);
+      const pregunta = salon
+        ? '¿Liberar esta fecha del salón?'
+        : '¿Quitar este bloqueo? Las fechas vuelven a quedar disponibles.';
+      if (!confirm(pregunta)) return;
+      fichaQuitar.disabled = true;
       const res = await fetch('/api/panel/admin/bloqueos', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: barraBloqueo.dataset.bloqueoId }),
+        body: JSON.stringify({ id: barraAbierta.dataset.bloqueoId }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         alert(data.error ?? 'No se pudo quitar el bloqueo');
+        fichaQuitar.disabled = false;
         return;
       }
       window.location.reload();
