@@ -138,6 +138,11 @@ const enlace = (
   return `/panel/admin/calendario?${params.toString()}`;
 };
 
+// Si la vista ya muestra hoy, el enlace de "Hoy" cargaría la misma página y
+// parecería no hacer nada: en ese caso el botón lleva la vista hasta la marca
+// de hoy (ver el script al final).
+const yaEnHoy = vista === 'dia' ? fechaDia === hoy : esMesActual && !completoParam;
+
 const { data: unidadSel } = await supabaseAdmin
   .from('unidades')
   .select('id, nombre, cupo_total')
@@ -655,6 +660,7 @@ const clasePill =
         <span class="material-symbols-outlined text-[20px]">chevron_right</span>
       </a>
       <h1
+        data-marca-hoy={vista === 'dia' && fechaDia === hoy ? '' : undefined}
         class="ml-1 font-titulo font-bold text-xl sm:text-3xl text-negro capitalize truncate"
         aria-live="polite"
       >
@@ -664,7 +670,9 @@ const clasePill =
 
     <div class="flex items-center gap-2">
       <a
-        href={vista === 'dia' ? enlace({ mes: null, fecha: hoy }) : enlace({ mes: null })}
+        id="btn-hoy"
+        href={enlace({ mes: null, fecha: hoy })}
+        data-ya-en-hoy={yaEnHoy ? '' : undefined}
         class={clasePill}
       >
         Hoy
@@ -926,6 +934,7 @@ const clasePill =
             >
               <div class="flex items-start justify-between gap-1">
                 <span
+                  data-marca-hoy={c.esHoy ? '' : undefined}
                   class:list={[
                     'w-6 h-6 shrink-0 flex items-center justify-center rounded-full font-titulo text-xs sm:text-sm',
                     c.esHoy
@@ -1063,6 +1072,7 @@ const clasePill =
                   >
                     <div class="text-[10px] uppercase tracking-wide">{d.diaSemana}</div>
                     <div
+                      data-marca-hoy={d.dia === hoyDia ? '' : undefined}
                       class:list={[
                         'mx-auto mt-0.5 w-6 h-6 flex items-center justify-center rounded-full text-sm',
                         d.dia === hoyDia ? 'bg-negro text-white font-bold' : 'text-texto',
@@ -1796,6 +1806,30 @@ const clasePill =
         return;
       }
       window.location.reload();
+    });
+  </script>
+
+  <script>
+    // "Hoy" cuando la vista ya muestra hoy: en vez de recargar la misma
+    // página, lleva la marca de hoy a la vista y la hace destellar.
+    const btnHoy = document.getElementById('btn-hoy');
+    btnHoy?.addEventListener('click', (e) => {
+      if (!btnHoy.hasAttribute('data-ya-en-hoy')) return;
+      const marca = document.querySelector<HTMLElement>('[data-marca-hoy]');
+      if (!marca) return;
+      e.preventDefault();
+      const quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      marca.scrollIntoView({
+        behavior: quieto ? 'auto' : 'smooth',
+        block: 'center',
+        inline: 'center',
+      });
+      if (!quieto) {
+        marca.animate(
+          [{ boxShadow: '0 0 0 0 var(--color-primario)' }, { boxShadow: '0 0 0 6px transparent' }],
+          { duration: 700, iterations: 2 }
+        );
+      }
     });
   </script>
 </PanelLayout>
